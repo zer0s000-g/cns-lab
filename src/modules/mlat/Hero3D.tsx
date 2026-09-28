@@ -362,7 +362,7 @@ function SignalFront({ t, replayRef }: { t: ThemeTokens; replayRef: MutableRefOb
         uniforms: { uColor: { value: col(t, 'stage-signal') } },
         vertexShader: `varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
         fragmentShader: `uniform vec3 uColor; varying vec3 vN; varying vec3 vV;
-          void main(){ float rim = pow(1.0 - abs(dot(vN, vV)), 2.5); float a = 0.04 + rim * 0.5; gl_FragColor = vec4(uColor * a, a); }`,
+          void main(){ float rim = pow(clamp(1.0 - abs(dot(vN, vV)), 0.0, 1.0), 2.5); float a = 0.04 + rim * 0.5; gl_FragColor = vec4(uColor * a, a); }`,
       }),
     [t],
   )

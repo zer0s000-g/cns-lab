@@ -217,8 +217,18 @@ export function Stage({
   const reduced = useReducedMotion()
   const [ok, setOk] = useState<boolean | null>(null)
   const [quality, setQuality] = useState<Quality>('high')
-  const [dpr, setDpr] = useState(1.5)
+  // Start at the screen's own pixel ratio (capped at 2) and only ever step down:
+  // stepping up on a fast GPU resizes the canvas mid-scene, which shows as a flash.
+  const [dpr, setDpr] = useState(() => Math.min(2, Math.max(1, typeof window !== 'undefined' ? window.devicePixelRatio : 1)))
   useEffect(() => setOk(webglAvailable()), [])
+  // The canvas measures its box with a ResizeObserver that React's development
+  // StrictMode (mount, unmount, mount) can leave detached until the next window
+  // resize. One resize nudge after mount makes the first measurement reliable.
+  useEffect(() => {
+    if (!ok) return
+    const id = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
+    return () => cancelAnimationFrame(id)
+  }, [ok])
   // Stop rendering while the stage is scrolled out of view (browsers already
   // throttle hidden tabs).
   const root = useRef<HTMLDivElement>(null)
@@ -250,7 +260,6 @@ export function Stage({
               setQuality((q) => (q === 'high' ? 'medium' : 'low'))
               setDpr((d) => Math.max(1, d - 0.25))
             }}
-            onIncline={() => setDpr((d) => Math.min(2, d + 0.25))}
           >
             <Suspense fallback={null}>
               <StudioLights t={t} />

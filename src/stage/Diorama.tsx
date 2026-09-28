@@ -93,12 +93,15 @@ export function makeTerrainMaterial(t: ThemeTokens) {
         `#include <emissivemap_fragment>
          // Contour lines every 1,000 ft (above sea level only).
          float h = vWorldPos.y / uStep;
-         float fw = fwidth(h);
+         // fwidth is 0 on flat ground (sea, coastal plain): a zero-width smoothstep is
+         // undefined and gives NaN on some GPUs (Apple Metal), which bloom then smears
+         // across the frame. Keep the edge width strictly positive.
+         float fw = max(fwidth(h), 1e-4);
          float line = 1.0 - smoothstep(0.0, fw * 1.4, abs(fract(h + 0.5) - 0.5));
          line *= step(0.35, h);
          // Every fifth contour (5,000 ft) is an index line, drawn heavier.
          float h5 = h / 5.0;
-         float index = 1.0 - smoothstep(0.0, fwidth(h5) * 1.6, abs(fract(h5 + 0.5) - 0.5));
+         float index = 1.0 - smoothstep(0.0, max(fwidth(h5), 1e-4) * 1.6, abs(fract(h5 + 0.5) - 0.5));
          index *= step(0.35, h);
          diffuseColor.rgb = mix(diffuseColor.rgb, uLine, max(line * 0.42, index * 0.75));
          // Sweep afterglow: bright just behind the beam, fading around the turn.

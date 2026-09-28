@@ -340,7 +340,7 @@ function BeamBlade({ t, engine }: { t: ThemeTokens; engine: SurfaceEngine }) {
         vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
         fragmentShader: `varying vec2 vUv; uniform vec3 uColor;
           void main(){
-            float a = pow(1.0 - vUv.x, 1.3) * smoothstep(0.0, 0.04, vUv.x) * (1.0 - vUv.y * 0.6);
+            float a = pow(max(1.0 - vUv.x, 0.0), 1.3) * smoothstep(0.0, 0.04, vUv.x) * (1.0 - vUv.y * 0.6);
             gl_FragColor = vec4(uColor * a * 0.5, a * 0.5);
           }`,
       }),

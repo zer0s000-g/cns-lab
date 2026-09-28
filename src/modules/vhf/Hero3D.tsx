@@ -64,7 +64,7 @@ const BEAM_FRAG = `varying vec2 vUv; uniform vec3 uColor; uniform float uOpacity
     if (uDash > 0.0) a *= step(0.42, fract(s / uDash));
     float p = fract((s - uTime * uFlow) / 0.8);
     float q = uFlow >= 0.0 ? p : 1.0 - p;
-    a += uPulse * pow(q, 5.0) * 1.8;
+    a += uPulse * pow(max(q, 0.0), 5.0) * 1.8;
     gl_FragColor = vec4(uColor * a, a);
   }`
 

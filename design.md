@@ -178,3 +178,9 @@ Before calling any UI change done:
 - Run `npm test`, `npx tsc -b` and `npm run build` (which includes the budget).
 - For layout or loading changes, check the axe audit (zero violations) and LCP/CLS on a
   throttled mobile profile.
+- **For any shader or stage change, render on a real GPU**, not only the software
+  renderer: `node scripts/verify/gpu-render.mjs` visits every route and chapter with
+  headless Chrome on Metal and flags black frames or flicker. Swiftshader hid a NaN
+  (zero-width `smoothstep` on flat terrain, `pow()` of a negative base) that turned the
+  stages black on Apple GPUs. Shader rules: `max(fwidth(x), 1e-4)` for edge widths,
+  `pow(max(b, 0.0), k)`, no division by values that can reach zero.

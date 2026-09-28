@@ -58,7 +58,7 @@ function BeamBlade({ t, engine }: { t: ThemeTokens; engine: PsrEngine }) {
           void main(){
             float along = vUv.x;               // 0 at the antenna, 1 at the table edge
             float up = vUv.y;                  // 0 at the ground, 1 at the top of the coverage
-            float a = pow(1.0 - along, 1.6) * (1.0 - smoothstep(0.55, 1.0, up)) * smoothstep(0.0, 0.05, along);
+            float a = pow(max(1.0 - along, 0.0), 1.6) * (1.0 - smoothstep(0.55, 1.0, up)) * smoothstep(0.0, 0.05, along);
             gl_FragColor = vec4(uColor * a * 0.55, a * 0.55);
           }`,
         toneMapped: false,
@@ -387,7 +387,7 @@ function PulseArcs({ t, engine, replayRef }: { t: ThemeTokens; engine: PsrEngine
       fragmentShader: `varying vec2 vUv; uniform vec3 uColor;
         void main(){
           float edge = smoothstep(0.0, 0.2, vUv.x) * smoothstep(1.0, 0.8, vUv.x);
-          float a = edge * pow(1.0 - vUv.y, 1.4);
+          float a = edge * pow(max(1.0 - vUv.y, 0.0), 1.4);
           gl_FragColor = vec4(uColor * a * 1.4, a);
         }`,
     })

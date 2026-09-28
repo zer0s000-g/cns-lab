@@ -67,7 +67,7 @@ function InterrogationBeam({ t, engine }: { t: ThemeTokens; engine: SsrEngine })
         vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
         fragmentShader: `varying vec2 vUv; uniform vec3 uColor;
           void main(){
-            float a = pow(1.0 - vUv.x, 1.5) * (1.0 - smoothstep(0.5, 1.0, vUv.y)) * smoothstep(0.0, 0.05, vUv.x);
+            float a = pow(max(1.0 - vUv.x, 0.0), 1.5) * (1.0 - smoothstep(0.5, 1.0, vUv.y)) * smoothstep(0.0, 0.05, vUv.x);
             gl_FragColor = vec4(uColor * a * 0.5, a * 0.5);
           }`,
       }),
@@ -319,7 +319,7 @@ function curtain(t: ThemeTokens, name: keyof ThemeTokens, gain: number) {
     fragmentShader: `varying vec2 vUv; uniform vec3 uColor; uniform float uGain;
       void main(){
         float edge = smoothstep(0.0, 0.2, vUv.x) * smoothstep(1.0, 0.8, vUv.x);
-        float a = edge * pow(1.0 - vUv.y, 1.4) * uGain;
+        float a = edge * pow(max(1.0 - vUv.y, 0.0), 1.4) * uGain;
         gl_FragColor = vec4(uColor * a * 1.4, a);
       }`,
   })

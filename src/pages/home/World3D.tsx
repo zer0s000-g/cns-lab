@@ -469,7 +469,7 @@ function RadarSweep({ t, getAz, at }: { t: ThemeTokens; getAz: () => number; at:
         toneMapped: false,
         uniforms: { uColor: { value: col(t, 'stage-signal') } },
         vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-        fragmentShader: `varying vec2 vUv; uniform vec3 uColor; void main(){ float a = pow(1.0 - vUv.x, 1.8) * smoothstep(0.0, 0.04, vUv.x) * (1.0 - vUv.y) * 0.4; gl_FragColor = vec4(uColor * a, a); }`,
+        fragmentShader: `varying vec2 vUv; uniform vec3 uColor; void main(){ float a = pow(max(1.0 - vUv.x, 0.0), 1.8) * smoothstep(0.0, 0.04, vUv.x) * (1.0 - vUv.y) * 0.4; gl_FragColor = vec4(uColor * a, a); }`,
       }),
     [t],
   )

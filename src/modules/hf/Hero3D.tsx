@@ -63,7 +63,7 @@ const BEAM_FRAG = `varying vec2 vUv; uniform vec3 uColor; uniform float uOpacity
     float s = uOffset + vUv.y * uLen;
     float a = uOpacity;
     float p = fract((s - uTime * 3.0) / 1.2);
-    a += uPulse * pow(p, 6.0) * 2.0;
+    a += uPulse * pow(max(p, 0.0), 6.0) * 2.0;
     gl_FragColor = vec4(uColor * a, a);
   }`
 const beamGeo = (() => {

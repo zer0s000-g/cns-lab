@@ -481,13 +481,13 @@ function OceanScene({ t, ocean, portal }: { t: ThemeTokens; ocean: AdscEngine; p
           void main(){
             // A faint 100 NM grid, so distances on the flat ocean read.
             vec2 g = vW.xz / uGrid;
-            vec2 gw = fwidth(g);
+            vec2 gw = max(fwidth(g), vec2(1e-4));
             vec2 gl = 1.0 - smoothstep(vec2(0.0), gw * 1.2, abs(fract(g + 0.5) - 0.5));
             float grid = max(gl.x, gl.y) * 0.08;
             float a = 0.0;
             for (int i = 0; i < 2; i++) {
               float d = length(vW.xz - uRx[i]);
-              float fw = fwidth(d);
+              float fw = max(fwidth(d), 1e-4);
               float rim = 1.0 - smoothstep(0.0, fw * 1.8, abs(d - uR[i]));
               float fill = (1.0 - step(uR[i], d)) * 0.06;
               a = max(a, max(rim * 0.85, fill));
