@@ -1,0 +1,41 @@
+### Surveillance data fusion
+
+A tracker keeps one **track** per aircraft: a best estimate of position and velocity with an uncertainty. Every time a sensor reports, the tracker predicts the track to that moment and blends in the new measurement, trusting precise sources more. This sandbox uses a constant-velocity Kalman filter per axis:
+
+<Formula>{`predict:  x ← x + v·Δt          P ← F·P·Fᵀ + Q
+update:   K = P / (P + R)       x ← x + K·(z − x)      P ← (1 − K)·P
+R = (sensor error)²   radar ≈ 0.03 NM + range × 0.08°,   ADS-B ≈ 10 m,   WAM ≈ HDOP × 6 m`}</Formula>
+
+Real trackers (for example ARTAS in Europe) also solve **association**: deciding which report belongs to which track. Here every report is already labelled with its aircraft, which is a simplification.
+
+Different sources have different update intervals: approach radar every 4.8 s, en-route radar every 12 s, ADS-B about twice a second, WAM once a second, ADS-C every few minutes (with tens of seconds of delay over satellite). A track with no fresh data **coasts** on its prediction and is dropped after a minute; an oceanic ADS-C track is kept until its next report is overdue.
+
+### Safety nets
+
+<Formula>{`STCA: predict both tracks along straight lines for 120 s;
+      alert if at the same time  horizontal < 3 NM (terminal) or 5 NM (en-route)
+                            and  vertical   < 1,000 ft
+MSAW: predict the track for 60 s; alert if  altitude < terrain + 1,000 ft
+      (inhibited on the ILS final, where aircraft are meant to be low)`}</Formula>
+
+Both use the controller's tracks, so they only work while surveillance works. On board, TCAS (traffic) and TAWS (terrain) provide an independent last layer.
+
+{/* TODO(expert-review): STCA and MSAW parameters are ANSP-specific; values here are illustrative. */}
+
+### Redundancy and graceful degradation
+
+| If this fails | These carry on |
+|---|---|
+| Radar | ADS-B, WAM (and ADS-C over the ocean) |
+| GNSS | Radar, WAM, VOR/DME, DME/DME, inertial, ILS |
+| VHF main transmitters | Standby transmitters, CPDLC, SATCOM, HF, guard 121.5 MHz |
+| Everything near the ground | Procedural control: position reports, times and bigger separation |
+
+The design goal is that no single failure makes an aircraft disappear, and that each failure is noticed quickly.
+
+### How each pillar supports modern ATM
+
+- **Navigation → PBN.** Performance-based navigation (RNAV and RNP) lets aircraft fly precise paths anywhere, mostly with GNSS, backed up by DME/DME and inertial.
+- **Surveillance → smaller separation.** ADS-B and WAM give accurate, frequent positions where radar cannot reach, allowing reduced separation.
+- **Communication → data link.** CPDLC and SATCOM make clearances precise and reach the whole ocean.
+- Together they enable **trajectory-based operations**: aircraft and ground share the planned 4D path (position and time) and manage it together, supported by system-wide information sharing (SWIM).

@@ -1,0 +1,13 @@
+[
+  { "id": "data-fusion", "term": "Data fusion (surveillance tracking)", "definition": "Combining the positions reported by several surveillance systems into one best estimate for each aircraft, weighted by how accurate each system is." },
+  { "id": "track", "term": "Track", "definition": "The system's running estimate of one aircraft: its position, speed, direction, altitude and identity, updated whenever a sensor reports it." },
+  { "id": "coasting", "term": "Coasting", "definition": "When no fresh data arrives, a track keeps moving along its predicted path for a short time and is marked as coasting, before it is dropped." },
+  { "id": "safety-net", "term": "Safety net", "definition": "An automatic check that warns the controller or pilot when something is about to go wrong, as a last line of defence." },
+  { "id": "stca", "term": "STCA (short-term conflict alert)", "definition": "A ground safety net that warns the controller when two aircraft are predicted to come too close within the next minute or two." },
+  { "id": "msaw", "term": "MSAW (minimum safe altitude warning)", "definition": "A ground safety net that warns the controller when an aircraft is, or soon will be, too close to the terrain below it." },
+  { "id": "taws", "term": "TAWS (terrain awareness and warning system)", "definition": "An on-board system with a terrain map that warns the pilots, for example with \"TERRAIN, PULL UP\", before the aircraft gets too close to the ground." },
+  { "id": "graceful-degradation", "term": "Graceful degradation", "definition": "When one part of a system fails, the whole keeps working in a reduced but safe way instead of stopping completely." },
+  { "id": "procedural-separation", "term": "Procedural separation", "definition": "Keeping aircraft apart using position reports, times and levels instead of a live surveillance picture, with larger safety distances." },
+  { "id": "oceanic-airspace", "term": "Oceanic airspace", "definition": "Airspace over the ocean, far from ground radar and VHF radio, where aircraft rely on satellite links, HF radio and position reports." },
+  { "id": "separation", "term": "Separation", "definition": "The minimum distance aircraft must keep from each other, sideways (for example 3 or 5 NM) or vertically (usually 1,000 ft)." }
+]

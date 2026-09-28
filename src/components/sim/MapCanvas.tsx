@@ -22,6 +22,8 @@ export interface MapCanvasProps {
   rangeNm: number
   center?: Vec2
   showTerrain?: boolean
+  /** Label the terrain peaks (default true). */
+  peakLabels?: boolean
   terrain?: Terrain
   /** Draw module-specific content (under the aircraft). */
   drawOverlay?: (ctx: CanvasRenderingContext2D, view: MapView, info: DrawInfo) => void
@@ -60,6 +62,7 @@ export function MapCanvas({
   rangeNm,
   center = { x: 0, y: 0 },
   showTerrain = true,
+  peakLabels = true,
   terrain = DEFAULT_TERRAIN,
   drawOverlay,
   drawTop,
@@ -92,8 +95,8 @@ export function MapCanvas({
       ctx.fillStyle = t['sim-bg']
       ctx.fillRect(0, 0, width, height)
       if (showTerrain) {
-        const key = `${width}x${height}:${rangeNm}:${center.x},${center.y}:${t.isDark}:${info.dpr}`
-        if (!cache.current || cache.current.key !== key) cache.current = { key, canvas: renderTerrain(view, terrain, t, info.dpr) }
+        const key = `${width}x${height}:${rangeNm}:${center.x},${center.y}:${t.isDark}:${info.dpr}:${peakLabels}`
+        if (!cache.current || cache.current.key !== key) cache.current = { key, canvas: renderTerrain(view, terrain, t, info.dpr, peakLabels) }
         ctx.drawImage(cache.current.canvas, 0, 0, width, height)
       }
       props.current.drawOverlay?.(ctx, view, info)
@@ -110,7 +113,7 @@ export function MapCanvas({
       drawScaleBar(ctx, view, t)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [rangeNm, center.x, center.y, showTerrain, terrain],
+    [rangeNm, center.x, center.y, showTerrain, terrain, peakLabels],
   )
 
   const hit = (p: { x: number; y: number }): MapAircraft | null => {
@@ -179,7 +182,7 @@ export function MapCanvas({
   )
 }
 
-function renderTerrain(view: MapView, terrain: Terrain, t: ThemeTokens, dpr: number): HTMLCanvasElement {
+function renderTerrain(view: MapView, terrain: Terrain, t: ThemeTokens, dpr: number, peakLabels = true): HTMLCanvasElement {
   // Sample the terrain on a coarse grid into a small image, then scale it up
   // with smoothing so the elevation bands get soft edges.
   const cell = 4 // CSS px per terrain sample
@@ -237,6 +240,7 @@ function renderTerrain(view: MapView, terrain: Terrain, t: ThemeTokens, dpr: num
     first = false
   }
   ctx.stroke()
+  if (!peakLabels) return c
   // Peak labels.
   ctx.font = `500 10px ${t.fontSans}`
   ctx.textAlign = 'center'
