@@ -27,7 +27,7 @@ spectrum, and an instrument library page (`/instruments`).
 
 ## Requirements
 
-- Node.js 20 or newer (developed with Node 22) and npm.
+- Node.js 22 or newer (CI uses Node 24) and npm.
 
 ## Run, test and build
 
@@ -37,22 +37,25 @@ npm run dev          # development server at http://localhost:5173
 npm run test         # Vitest unit tests for the simulation core and module engines
 npm run typecheck    # TypeScript project check
 npm run lint         # oxlint
-npm run build        # type-check and production build into dist/
+npm run build        # type-check, production build into dist/, route pages, bundle budget check
+npm run budget       # re-run the first-load size budget on dist/ (250 kB JS / 50 kB CSS gzip)
 npm run preview      # serve the production build locally
 npm run expert-review  # regenerate docs/EXPERT_REVIEW.md from TODO(expert-review) comments
 ```
 
 ## Deploy as a static site
 
-`npm run build` produces a fully static site in `dist/` (no backend). Because CNS Lab is a
-single-page app with routes such as `/modules/psr`, the host must send unknown paths to
-`index.html`:
+`npm run build` produces a fully static site in `dist/` (no backend). It writes one HTML file
+per route (`dist/modules/psr.html`, `dist/glossary.html`, ...) with that page's title,
+description and preload hints, so deep links load fast and return a normal 200. It also adds a
+small service worker (`sw.js`) so pages opened once keep working offline, and a web app manifest.
+For paths that have no file, the host should fall back to `index.html`:
 
 - **Netlify**: `public/_redirects` is copied into `dist/` and does this automatically.
 - **Vercel**: `vercel.json` contains the rewrite.
-- **GitHub Pages**: the build also writes `dist/404.html` (a copy of `index.html`). If the site
-  lives under a sub-path, build with that base, for example
-  `npx vite build --base=/cns-lab/` (the router reads the base automatically).
+- **GitHub Pages**: `.github/workflows/deploy.yml` tests, builds with the repository sub-path,
+  checks the budget and deploys on every push to `main`. Unknown paths get `dist/404.html`
+  (a copy of `index.html`).
 - **Any other static server** (nginx, S3 + CloudFront, Azure Static Web Apps): configure a
   fallback to `/index.html` for 404s.
 
@@ -62,12 +65,15 @@ single-page app with routes such as `/modules/psr`, the host must send unknown p
 src/
   core/          Pure TypeScript simulation logic (unit tested in tests/core)
   instruments/   Reusable instruments: CDI/HSI, ADF/RMI, DME readout, radar scope, oscilloscope, spectrum
+  hud/           Flight Deck HUD kit: panels, telemetry, dials, levers, chapter scrubber, mission clock
+  stage/         3D stage (lazy three.js), terrain diorama table, camera shots, pen-plot reveal, callouts
   components/    UI: shadcn/ui primitives (ui/), module layout (module/), simulator building blocks (sim/)
-  modules/       One folder per module, plus registry.ts (names, pillars, routes)
+  modules/       One folder per module (engine, simulator console, Hero3D stage scene), plus registry.ts
   content/       Glossary JSON files and the frequency chart data
   pages/         Home, Glossary, Frequency chart, Instruments, Airspace Sandbox
   stores/        Preferences (theme, sound, captions, reduced motion) and quiz progress
-tests/           Vitest tests (core physics, module engines, content integrity)
+tests/           Vitest tests (core physics, module engines, content integrity, presentation helpers)
+scripts/         postbuild (route pages, 404, service worker stamp), budget check, expert-review list
 docs/            Development guide, module authoring guide, expert review list
 design.md        Design system (single source of design truth)
 CLAUDE.md        Project rules
@@ -75,9 +81,13 @@ CLAUDE.md        Project rules
 
 ## Design and accessibility
 
-- Enterprise blue-and-white design system with light and dark themes (`design.md`); colours
-  come only from CSS variables in `src/globals.css`, including every canvas and 3D scene.
-- Keyboard accessible controls with visible focus, labelled sliders and switches, screen-reader
+- "Flight Deck" design system (`design.md`, live style guide at `/instruments`): dark-first
+  HUD chrome over 3D tabletop dioramas, with a full light theme. Each module's 3D stage is
+  driven by the same engine as its 2D views, and every exaggeration is labelled on screen.
+  Colours come only from CSS variables in `src/globals.css`, including every canvas and 3D scene.
+- Fast and light: about 181 kB gzip of JavaScript on first load; three.js loads only after the
+  page is up. Measured LCP under 2.5 s and CLS under 0.03 on a throttled mobile profile.
+- No axe violations on any route in either theme. Keyboard accessible controls with visible focus, labelled sliders and switches, screen-reader
   descriptions for every canvas, captions for every sound, a reduced-motion mode, and no
   information carried by colour alone.
 - Responsive at 390, 768 and 1440 px; on phones the simulator sits above its controls.
