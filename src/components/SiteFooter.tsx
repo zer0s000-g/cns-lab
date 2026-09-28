@@ -5,9 +5,9 @@ export const DISCLAIMER = 'For educational use only, not for operational use.'
 
 export function SiteFooter() {
   return (
-    <footer className="mt-16 border-t">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-6 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between md:px-6">
-        <p className="flex items-center gap-2 font-medium text-foreground">
+    <footer className="border-t border-hud-line">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-6 pb-28 text-[12px] text-muted-foreground md:flex-row md:items-center md:justify-between md:px-8">
+        <p className="hud-label flex items-center gap-2 text-foreground/80">
           <ShieldAlert className="size-4 shrink-0" aria-hidden />
           {DISCLAIMER}
         </p>

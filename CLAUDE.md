@@ -26,11 +26,11 @@ Web Audio, Zustand, MDX, React Router, Vitest.
   view freezes the world; it never lets an aircraft move during a microsecond event.
 
 ## Design
-design.md is the single source of design truth (enterprise blue/white system,
-shadcn/ui, light and dark themes, 390/768/1440 px). Colours come only from the
-CSS variables in src/globals.css; canvases read them with useThemeTokens().
-This replaces the dark/green palette from the original guide, per the user's
-global UI rules.
+design.md is the single source of design truth: the "Flight Deck" system (dark-first
+graphite, cyan signal and brass accents, HUD chrome, 3D tabletop dioramas; light and
+dark themes; 390/768/1440 px). The live style guide is /instruments. Colours come only
+from the CSS variables in src/globals.css; canvases read them with useThemeTokens(),
+three.js with col(t, 'token'). The UI kit lives in src/hud and src/stage.
 
 ## Commands
 npm run dev | npm run test | npm run build | npm run typecheck

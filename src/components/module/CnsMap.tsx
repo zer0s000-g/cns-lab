@@ -1,41 +1,24 @@
 import { Link } from 'react-router'
-import { MapPin } from 'lucide-react'
-import { PILLAR_ICON } from '@/components/PillarBadge'
 import { PILLARS, isModuleReady, modulesByPillar } from '@/modules/registry'
 import { cn } from '@/lib/utils'
 
-/** Small CNS map: every system grouped by pillar, with the current one highlighted. */
+/** Compact CNS index: every system grouped by pillar, the current one marked. */
 export function CnsMap({ current }: { current: string }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" role="list" aria-label="CNS map">
+    <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4" role="list" aria-label="CNS map">
       {PILLARS.map((p) => {
         const mods = modulesByPillar(p.id)
         const here = mods.some((m) => m.id === current)
-        const Icon = PILLAR_ICON[p.id]
         return (
-          <div
-            key={p.id}
-            role="listitem"
-            className={cn('flex flex-col gap-2 rounded-lg border p-3', here ? 'border-primary bg-accent/50' : 'bg-card')}
-          >
-            <p className="flex items-center gap-1.5 text-xs font-semibold">
-              <Icon className="size-3.5" aria-hidden />
-              {p.name}
-              {here && <span className="ml-auto text-[11px] font-medium text-accent-foreground">This pillar</span>}
-            </p>
-            <ul className="flex flex-wrap gap-1.5">
+          <div key={p.id} role="listitem" className="flex flex-col gap-1.5">
+            <p className={cn('hud-label border-b border-hud-line pb-1', here && 'text-signal')}>{p.name}</p>
+            <ul className="flex flex-col gap-0.5">
               {mods.map((m) => {
                 const isCurrent = m.id === current
                 const ready = isModuleReady(m.id)
-                const chip = (
-                  <span
-                    className={cn(
-                      'inline-flex h-7 items-center gap-1 rounded-md border px-2 text-xs',
-                      isCurrent ? 'border-primary bg-primary font-semibold text-primary-foreground' : 'bg-background',
-                      !ready && !isCurrent && 'border-dashed text-muted-foreground',
-                    )}
-                  >
-                    {isCurrent && <MapPin className="size-3" aria-hidden />}
+                const text = (
+                  <span className={cn('flex items-center gap-1.5 text-[12.5px] leading-6', isCurrent ? 'text-foreground' : ready ? 'text-foreground/65 hover:text-foreground' : 'text-muted-foreground/50')}>
+                    <span aria-hidden className={cn('inline-block size-1.5 rounded-full', isCurrent ? 'bg-signal shadow-[0_0_8px_var(--signal)]' : 'bg-foreground/20')} />
                     {m.short}
                   </span>
                 )
@@ -43,14 +26,12 @@ export function CnsMap({ current }: { current: string }) {
                   <li key={m.id}>
                     {isCurrent ? (
                       <span aria-current="page" aria-label={`${m.short} (you are here)`}>
-                        {chip}
+                        {text}
                       </span>
                     ) : ready ? (
-                      <Link to={m.path} className="rounded-md hover:opacity-80">
-                        {chip}
-                      </Link>
+                      <Link to={m.path}>{text}</Link>
                     ) : (
-                      <span title="Coming soon">{chip}</span>
+                      <span title="Coming soon">{text}</span>
                     )}
                   </li>
                 )

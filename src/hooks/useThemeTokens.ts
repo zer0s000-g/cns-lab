@@ -65,10 +65,28 @@ export const TOKEN_NAMES = [
   'marker-outer',
   'marker-middle',
   'marker-inner',
+  'brass',
+  'signal',
+  'hud-line',
+  'hud-panel',
+  'stage-bg',
+  'stage-floor',
+  'stage-fog',
+  'stage-line',
+  'stage-metal',
+  'stage-metal-dark',
+  'stage-paint',
+  'stage-terrain',
+  'stage-terrain-high',
+  'stage-water',
+  'stage-signal',
+  'stage-brass',
+  'stage-alert',
+  'stage-glass',
 ] as const
 
 export type TokenName = (typeof TOKEN_NAMES)[number]
-export type ThemeTokens = Record<TokenName, string> & { isDark: boolean; fontSans: string; fontMono: string }
+export type ThemeTokens = Record<TokenName, string> & { isDark: boolean; fontSans: string; fontMono: string; fontDisplay: string }
 
 export function readThemeTokens(): ThemeTokens {
   const out = {} as ThemeTokens
@@ -76,14 +94,16 @@ export function readThemeTokens(): ThemeTokens {
     for (const n of TOKEN_NAMES) out[n] = 'rgb(128, 128, 128)'
     out.isDark = false
     out.fontSans = 'sans-serif'
+    out.fontDisplay = 'sans-serif'
     out.fontMono = 'monospace'
     return out
   }
   const cs = getComputedStyle(document.documentElement)
   for (const n of TOKEN_NAMES) out[n] = cs.getPropertyValue(`--${n}`).trim() || 'rgb(128, 128, 128)'
   out.isDark = document.documentElement.classList.contains('dark')
-  out.fontSans = '"Inter Variable", ui-sans-serif, system-ui, sans-serif'
+  out.fontSans = '"Inter Tight Variable", ui-sans-serif, system-ui, sans-serif'
   out.fontMono = '"JetBrains Mono Variable", ui-monospace, monospace'
+  out.fontDisplay = '"Michroma", "Inter Tight Variable", sans-serif'
   return out
 }
 

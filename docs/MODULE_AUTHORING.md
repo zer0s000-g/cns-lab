@@ -3,8 +3,8 @@
 How to build a CNS Lab module so it matches the rest of the site. The reference
 implementation is **`src/modules/psr`** (Primary Surveillance Radar). Read it first:
 `index.tsx` (content + page), `state.tsx` (store + context), `engine.ts` (scenario),
-`Simulator.tsx` (views + controls + loop), `TruthMap.tsx`, `PulseView.tsx`,
-`Antenna3D.tsx`, `visuals.tsx` (How-it-works diagrams), `deeper.mdx`.
+`Simulator.tsx` (the Simulator-chapter console + loop), `Hero3D.tsx` (the 3D stage),
+`TruthMap.tsx`, `PulseView.tsx`, `visuals.tsx` (How-it-works diagrams), `deeper.mdx`.
 
 Also read `CLAUDE.md`, `design.md` and the module's section in
 `docs/ATM_Simulation_Development_Guide.md`.
@@ -16,7 +16,8 @@ Also read `CLAUDE.md`, `design.md` and the module's section in
 | `src/modules/<id>/index.tsx` | Default export: the page. Wraps content in the module's provider and renders `<ModuleLayout moduleId="<id>" …>` with all 7 sections. |
 | `src/modules/<id>/state.tsx` | Zustand store (UI parameters and failure toggles) + React context holding the engine and clock. |
 | `src/modules/<id>/engine.ts` | Scenario engine (mutable state, stepping). Uses only pure functions from `src/core`. |
-| `src/modules/<id>/Simulator.tsx` | Views, controls panel, readouts and the simulation loop. |
+| `src/modules/<id>/Simulator.tsx` | The Simulator chapter: views, control deck, telemetry and the simulation loop. |
+| `src/modules/<id>/Hero3D.tsx` | Optional 3D stage scene. Reads every pose from the engine each frame (never its own physics). |
 | `src/modules/<id>/visuals.tsx` | Small SVG diagrams for "How it works" (animations omitted when reduced motion is on). |
 | `src/modules/<id>/deeper.mdx` | "Go deeper" content: formulas, frequencies, specifications. `Formula`, `Note` and `Term` are available without importing. GFM tables work. |
 | `src/core/<topic>.ts` | Pure physics / signal / geometry functions for the module. No DOM, no React, no randomness except through a passed-in generator. |
@@ -29,7 +30,8 @@ creating `src/modules/<id>/index.tsx` makes the module "ready" automatically.
 
 ## 2. Shared building blocks (do not duplicate, do not modify)
 
-- **Layout** `@/components/module/ModuleLayout` → `<ModuleLayout moduleId nextId idea={{ analogy, what, where }} simulator howItWorks tryThis failures failuresNote? goDeeper quiz />`
+- **Layout** `@/components/module/ModuleLayout` → `<ModuleLayout moduleId nextId idea={{ analogy, what, where }} simulator howItWorks tryThis failures failuresNote? goDeeper quiz stage? />`
+  - `stage?: StageSpec` switches to the cinematic layout: `{ scene: (t, quality) => <Hero />, shots: Record<ChapterId, Shot>, howShots?, labels (honesty), telemetry?, clock: { getTimeS, running, sub? }, label }`. Frame each shot so the subject sits right of the chapter panel (panels are on the left).
   - `howItWorks: Step[]` (`{ title, body, visual? }`) from `@/components/module/Stepper`
   - `tryThis: Experiment[]` (`{ id, question, action, notice, setup?, setupLabel? }`), 3–5 items; `setup` configures the simulator and scrolls to it
   - `failures: FailureItem[]` (`{ id, title, explanation, watch?, checked, onChange }`) — bound to the SAME store as the simulator toggles
@@ -37,7 +39,8 @@ creating `src/modules/<id>/index.tsx` makes the module "ready" automatically.
 - **Controls** `@/components/sim/Controls`: `ControlsPanel`, `ControlGroup`, `ControlSlider`, `ControlSwitch`, `ControlChoice`, `Readout`, `ReadoutGrid`, `SimLabel`, `AudioCaption`, `ClockControls`, `ClockSpeedLabel`.
 - **Canvas** `@/components/sim/Canvas2D` (`draw(ctx, { width, height, dt, now, tokens })`, 60 fps, DPR-aware, pauses off-screen, `label` for screen readers, pointer/key handlers).
 - **Maps** `@/components/sim/MapCanvas` (north-up map, terrain, draggable aircraft, arrow-key nudging, `drawOverlay`/`drawTop`) and `@/components/sim/mapDraw` (`drawAircraftIcon`, `drawStation`, `drawRangeRing`, `drawBeamWedge`, `haloText`).
-- **3D** `@/components/sim/Scene3D` (react-three-fiber canvas with themed background, WebGL fallback, `tc(t, 'token')` colour helper). See `psr/Antenna3D.tsx`. three.js: east = +x, up = +y, north = −z; use `worldToThree` and `bearingToThreeRotationY` from `@/core/geometry`.
+- **3D** `@/stage/Stage` (the stage canvas: lights, floor, effects, camera shots, `col(t, 'token')`), `@/stage/Diorama` (60 NM terrain table from `core/world`, `toU`, `RadarTower`, `AircraftModel`), `@/stage/PenPlot`, `@/stage/Callout3D`. See `psr/Hero3D.tsx`. The older `@/components/sim/Scene3D` still works for small inline views. three.js: east = +x, up = +y, north = −z; use `bearingToThreeRotationY` from `@/core/geometry`.
+- **HUD kit** `@/hud/*`: `HudPanel`, `TitleBlock`, `CornerBrackets`, `StatusLamp`, `TelemetryRow`, `BarMeter`, `NeedleGauge`, `BigReadout`, `Dial`, `LeverSwitch`, `Segmented`, `HudButton`, `MissionClock`. Live examples at `/instruments`.
 - **Instruments** `@/instruments`: `CDI` (CDI/HSI, OBS, TO/FROM, glideslope), `ADF` (ADF/RMI), `DMEReadout`, `RadarScope` (PPI with phosphor, tracks with labels and shape-coded symbols), `Oscilloscope`, `Spectrum`. They take a `read()` callback that is called every frame; keep it cheap.
 - **Clock** `@/hooks/useSimClock`: `useSimClock({ speeds? })`, `useSimulationLoop(clock, (dt, realDt) => …)`, `useClock(clock, selector)`. Speeds default to 0.25×–4×; pass custom `speeds` only when the scenario really needs time-lapse (e.g. ocean crossings) and label it.
 - **Readouts** `@/hooks/useSampled` (poll a getter ~10 Hz for text readouts; never re-render React every frame).
@@ -92,13 +95,15 @@ files outside your module(s), your core/test files and your glossary file.
 - Colours only from tokens: Tailwind token classes (`bg-card`, `text-muted-foreground`,
   `fill-sim-signal`, `stroke-scope-grid`, …) or `tokens['sim-signal']` in canvas code.
   **Never** hex, rgb literals, or Tailwind palette classes such as `bg-blue-500`.
-- Maps follow the theme (`--sim-*`); radar scopes and cockpit instruments are dark in both
-  themes (`--scope-*`, `--instrument-*`).
+- Maps follow the theme (`--sim-*`); radar scopes, cockpit instruments and 3D stages are
+  dark in both themes (`--scope-*`, `--instrument-*`, `--stage-*`).
 - Meaning is never carried by colour alone: add a label, shape, dash pattern or text.
-- Layout like PSR: views in a `grid gap-4 md:grid-cols-2` (or full width), controls in
-  `ControlsPanel` in a right column at `xl` (`xl:grid-cols-[minmax(0,1fr)_320px]`), stacked
-  below on smaller screens. Must work at 390, 768 and 1440 px without horizontal scrolling.
-- Each view gets a `figcaption` (title + one-line hint) and honesty `SimLabel`s where needed.
+- Layout like PSR: with a stage, the Simulator chapter is a console (view panel left,
+  control deck right, stage visible between, slow-motion panel below), built from
+  `HudPanel`s. Without a stage: views in a grid, controls in `ControlsPanel`. Must work at
+  390, 768 and 1440 px without horizontal scrolling, in dark and light.
+- Each view gets a title (panel title or `figcaption`) and honesty labels where needed:
+  `SimLabel` on 2D views, `stage.labels` on 3D stages (what is not to scale, time scale).
 - Canvases get a meaningful `label` (screen-reader text) that updates with the state.
 - Draggable things also have a keyboard or slider alternative.
 

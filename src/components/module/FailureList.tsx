@@ -1,7 +1,5 @@
 import { useId, type ReactNode } from 'react'
-import { ShieldCheck, TriangleAlert } from 'lucide-react'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
+import { Switch as SwitchPrimitive } from 'radix-ui'
 import { cn } from '@/lib/utils'
 
 export interface FailureItem {
@@ -14,58 +12,68 @@ export interface FailureItem {
   checked: boolean
   onChange: (v: boolean) => void
   disabled?: boolean
-  /** A remedy rather than a failure (e.g. MTI, RAIM): shown in blue, not amber. */
+  /** A remedy rather than a failure (e.g. MTI, RAIM): shown in cyan, not red. */
   kind?: 'failure' | 'fix'
 }
 
 /**
- * "When things go wrong": each card has a switch bound to the same state as
- * the simulator, so flipping it here changes the simulator above.
+ * "When things go wrong" as a bank of fault levers. Each lever is bound to
+ * the same state as the simulator, so throwing it here changes the scene.
  */
 export function FailureList({ items }: { items: FailureItem[] }) {
   return (
-    <ul className="grid gap-3 md:grid-cols-2">
-      {items.map((f) => (
-        <FailureCard key={f.id} f={f} />
+    <ul className="grid gap-x-8 gap-y-1 md:grid-cols-2">
+      {items.map((f, i) => (
+        <FailureRow key={f.id} f={f} n={i + 1} />
       ))}
     </ul>
   )
 }
 
-function FailureCard({ f }: { f: FailureItem }) {
+function FailureRow({ f, n }: { f: FailureItem; n: number }) {
   const id = useId()
   const fix = f.kind === 'fix'
-  const Icon = fix ? ShieldCheck : TriangleAlert
   return (
-    <li className={cn('flex flex-col gap-3 rounded-lg border bg-card p-4', f.checked && (fix ? 'border-primary/60' : 'border-warning/60'))}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <span
-            className={cn(
-              'grid size-7 shrink-0 place-items-center rounded-md',
-              f.checked ? (fix ? 'bg-accent text-accent-foreground' : 'bg-warning/15 text-warning') : 'bg-muted text-muted-foreground',
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
+    <li className={cn('flex gap-3 border-b border-hud-line py-3.5', f.checked && (fix ? 'border-signal/40' : 'border-destructive/40'))}>
+      <SwitchPrimitive.Root
+        id={id}
+        checked={f.checked}
+        onCheckedChange={f.onChange}
+        disabled={f.disabled}
+        aria-describedby={`${id}-d`}
+        className={cn(
+          'relative mt-0.5 h-9 w-5 shrink-0 rounded-[3px] border border-hud-line bg-background outline-offset-2 disabled:opacity-40',
+          f.checked && (fix ? 'border-signal/70 shadow-[0_0_14px_-4px_var(--signal)]' : 'border-destructive/70 shadow-[0_0_14px_-4px_var(--destructive)]'),
+        )}
+      >
+        <SwitchPrimitive.Thumb
+          className={cn(
+            'absolute left-[2px] block h-3.5 w-3.5 rounded-[2px] bg-foreground/60 transition-transform duration-150',
+            'data-[state=unchecked]:translate-y-[16px] data-[state=checked]:translate-y-[2px]',
+            f.checked && (fix ? 'bg-signal' : 'bg-destructive'),
+          )}
+        />
+      </SwitchPrimitive.Root>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor={id} className="cursor-pointer text-[13.5px] leading-5 font-medium text-foreground">
+            <span className="hud-value mr-2 text-[10.5px] text-muted-foreground">{fix ? 'FIX' : `F${String(n).padStart(2, '0')}`}</span>
+            {f.title}
+          </label>
+          <span className={cn('hud-label shrink-0', f.checked ? (fix ? 'text-signal' : 'text-destructive') : 'text-muted-foreground/60')}>
+            {f.checked ? (fix ? 'Engaged' : 'Active') : 'Off'}
           </span>
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <Label htmlFor={id} className="text-sm font-semibold">
-              {f.title}
-            </Label>
-            <span className="text-xs text-muted-foreground">{f.checked ? 'On in the simulator' : 'Off'}</span>
-          </div>
         </div>
-        <Switch id={id} checked={f.checked} onCheckedChange={f.onChange} disabled={f.disabled} aria-describedby={`${id}-d`} />
+        <div id={`${id}-d`} className="prose-lab text-[13.5px] leading-6 text-foreground/75">
+          {f.explanation}
+        </div>
+        {f.watch && (
+          <p className="text-[12px] text-muted-foreground">
+            <span className="hud-label mr-1 text-foreground/70">Watch</span>
+            {f.watch}
+          </p>
+        )}
       </div>
-      <div id={`${id}-d`} className="prose-lab text-sm">
-        {f.explanation}
-      </div>
-      {f.watch && (
-        <p className="text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">Watch for: </span>
-          {f.watch}
-        </p>
-      )}
     </li>
   )
 }

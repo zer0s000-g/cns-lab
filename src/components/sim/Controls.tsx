@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 /** The panel of controls next to (desktop) or under (phone) a simulator view. */
 export function ControlsPanel({ children, className, title = 'Controls' }: { children: ReactNode; className?: string; title?: string }) {
   return (
-    <section aria-label={title} className={cn('flex flex-col gap-5 rounded-lg border bg-card p-4', className)}>
+    <section aria-label={title} className={cn('hud-panel flex flex-col gap-5 rounded-md p-4', className)}>
       {children}
     </section>
   )
@@ -24,8 +24,11 @@ export function ControlsPanel({ children, className, title = 'Controls' }: { chi
 export function ControlGroup({ title, children, className, description }: { title: string; children: ReactNode; className?: string; description?: ReactNode }) {
   return (
     <fieldset className={cn('flex min-w-0 flex-col gap-3', className)}>
-      <legend className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{title}</legend>
-      {description && <p className="-mt-1 text-xs text-muted-foreground">{description}</p>}
+      <legend className="hud-label mb-1 flex w-full items-center gap-2 text-foreground/70">
+        <span className="h-px w-3 bg-signal" aria-hidden />
+        {title}
+      </legend>
+      {description && <p className="-mt-1 text-[12px] text-muted-foreground">{description}</p>}
       {children}
     </fieldset>
   )
@@ -50,10 +53,10 @@ export function ControlSlider({ label, value, min, max, step = 1, onChange, form
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3">
-        <Label id={`${id}-label`} className="text-sm font-medium">
+        <Label id={`${id}-label`} className="text-[12.5px] font-normal text-foreground/85">
           <span>{label}</span>
         </Label>
-        <span className="font-mono text-xs tabular-nums text-muted-foreground" aria-hidden>
+        <span className="hud-value text-[11.5px] text-signal" aria-hidden>
           {shown}
         </span>
       </div>
@@ -91,7 +94,7 @@ export function ControlSwitch({
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <Label htmlFor={id} className="text-sm leading-5 font-medium">
+        <Label htmlFor={id} className="text-[12.5px] leading-5 font-normal text-foreground/85">
           <span>{label}</span>
         </Label>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
@@ -117,7 +120,7 @@ export function ControlChoice<T extends string>({
   const id = useId()
   return (
     <div className="flex flex-col gap-2">
-      <span id={id} className="text-sm font-medium">
+      <span id={id} className="text-[12.5px] text-foreground/85">
         {label}
       </span>
       <ToggleGroup
@@ -157,11 +160,11 @@ export function Readout({
   className?: string
 }) {
   return (
-    <div className={cn('flex min-w-0 flex-col gap-0.5 rounded-md border bg-card px-3 py-2', className)}>
-      <span className="truncate text-xs text-muted-foreground">{label}</span>
+    <div className={cn('flex min-w-0 flex-col gap-1 border-l border-hud-line py-1 pl-3', className)}>
+      <span className="hud-label truncate">{label}</span>
       <span
         className={cn(
-          'font-mono text-base leading-6 font-medium tabular-nums',
+          'hud-value text-[17px] leading-6 font-light text-foreground',
           tone === 'warning' && 'text-warning',
           tone === 'alert' && 'text-destructive',
           tone === 'ok' && 'text-success',
@@ -169,9 +172,9 @@ export function Readout({
         )}
       >
         {value}
-        {unit && <span className="ml-1 text-xs font-normal text-muted-foreground">{unit}</span>}
+        {unit && <span className="ml-1 text-[10.5px] font-normal text-muted-foreground">{unit}</span>}
       </span>
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      {hint && <span className="text-[11.5px] leading-4 text-muted-foreground">{hint}</span>}
     </div>
   )
 }
@@ -190,7 +193,7 @@ export function SimLabel({ children, icon = 'timer', className }: { children: Re
   return (
     <span
       className={cn(
-        'pointer-events-none inline-flex items-center gap-1.5 rounded-md border border-border bg-background/90 px-2 py-1 text-xs font-medium text-foreground',
+        'hud-label pointer-events-none inline-flex items-center gap-1.5 rounded-[3px] border border-hud-line bg-background/75 px-2 py-1 text-foreground/85 backdrop-blur-sm',
         className,
       )}
     >
@@ -207,7 +210,7 @@ export function AudioCaption({ className }: { className?: string }) {
   return (
     <div aria-live="polite" className={cn('min-h-0', className)}>
       {on && text && (
-        <span className="inline-flex max-w-full items-center gap-2 rounded-md border bg-background/95 px-2.5 py-1.5 text-xs font-medium">
+        <span className="hud-panel inline-flex max-w-full items-center gap-2 rounded-[3px] px-2.5 py-1.5 text-[12px]">
           <Volume2 className="size-3.5 shrink-0 text-primary" aria-hidden />
           <span className="truncate">{text}</span>
         </span>

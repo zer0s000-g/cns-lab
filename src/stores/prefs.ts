@@ -18,7 +18,7 @@ interface PrefsState {
 export const usePrefs = create<PrefsState>()(
   persist(
     (set) => ({
-      theme: 'system',
+      theme: 'dark',
       reducedMotionOverride: null,
       soundOn: true,
       captionsOn: true,
@@ -27,7 +27,12 @@ export const usePrefs = create<PrefsState>()(
       setSoundOn: (soundOn) => set({ soundOn }),
       setCaptionsOn: (captionsOn) => set({ captionsOn }),
     }),
-    { name: 'cnslab.prefs' },
+    {
+      name: 'cnslab.prefs',
+      // v1: the Flight Deck redesign is dark-first; earlier saved "system"/"light" choices reset to dark.
+      version: 1,
+      migrate: (persisted) => ({ ...(persisted as PrefsState), theme: 'dark' }),
+    },
   ),
 )
 

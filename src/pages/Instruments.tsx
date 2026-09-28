@@ -1,23 +1,21 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { HudPanel } from '@/hud/HudFrame'
 import { ClockControls, ControlChoice, ControlSlider, ControlSwitch } from '@/components/sim/Controls'
 import { ADF, CDI, DMEReadout, Oscilloscope, RadarScope, Spectrum, type ScopePaint, type ScopeTrack } from '@/instruments'
 import { normalize360, bearingDeg, distanceNm, sweepCovers } from '@/core/geometry'
 import { createAircraft, stepAircraftFine, type Aircraft } from '@/core/world'
 import { useSimClock, useSimulationLoop } from '@/hooks/useSimClock'
+import { StyleGuide } from './StyleGuide'
 
-function Demo({ title, description, children, controls }: { title: string; description: string; children: ReactNode; controls: ReactNode }) {
+function Demo({ n, title, description, children, controls }: { n: number; title: string; description: string; children: ReactNode; controls: ReactNode }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 items-center justify-center">{children}</div>
-        <div className="flex min-w-0 flex-col gap-4">{controls}</div>
-      </CardContent>
-    </Card>
+    <HudPanel index={`I${String(n).padStart(2, '0')}`} title={title} bodyClassName="grid gap-6 p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="flex min-w-0 items-center justify-center">{children}</div>
+      <div className="flex min-w-0 flex-col gap-4">
+        <p className="text-[13px] leading-5 text-muted-foreground">{description}</p>
+        {controls}
+      </div>
+    </HudPanel>
   )
 }
 
@@ -31,6 +29,7 @@ function CdiDemo() {
   const [heading, setHeading] = useState(80)
   return (
     <Demo
+      n={1}
       title="CDI / HSI"
       description="Course deviation indicator with OBS knob and TO/FROM flag. Drag the card, use the buttons, or focus it and press the arrow keys."
       controls={
@@ -61,6 +60,7 @@ function AdfDemo() {
   const [mode, setMode] = useState<'adf' | 'rmi'>('adf')
   return (
     <Demo
+      n={2}
       title="ADF and RMI"
       description="The ADF needle shows the relative bearing (from the nose). On the RMI the card turns with the heading, so the needle reads the magnetic bearing to the station."
       controls={
@@ -86,6 +86,7 @@ function DmeDemo() {
   const [status, setStatus] = useState<'LOCK' | 'SEARCH' | 'MEMORY' | 'OFF'>('LOCK')
   return (
     <Demo
+      n={3}
       title="DME readout"
       description="Distance (slant range), groundspeed and time to station."
       controls={
@@ -147,6 +148,7 @@ function ScopeDemo() {
   })
   return (
     <Demo
+      n={4}
       title="Radar PPI scope"
       description="Rotating sweep, glowing and fading returns, range rings and labelled tracks."
       controls={
@@ -183,6 +185,7 @@ function OscilloscopeDemo() {
   const [phase, setPhase] = useState(90)
   return (
     <Demo
+      n={5}
       title="Dual-trace oscilloscope"
       description="Two 30 Hz signals. The shift between them is their phase difference."
       controls={<ControlSlider label="Phase difference" value={phase} min={0} max={359} onChange={setPhase} format={(v) => `${v}°`} />}
@@ -212,6 +215,7 @@ function SpectrumDemo() {
   const [ident, setIdent] = useState(true)
   return (
     <Demo
+      n={6}
       title="Spectrum view"
       description="What a VOR's modulation contains, by frequency: the 30 Hz signal, the 1020 Hz Morse ident, and the 9960 Hz subcarrier."
       controls={<ControlSwitch label="Ident tone on" checked={ident} onChange={setIdent} />}
@@ -238,12 +242,14 @@ function SpectrumDemo() {
 
 export default function Instruments() {
   return (
-    <div className="mx-auto flex max-w-[1200px] flex-col gap-6 px-4 py-8 md:px-6 md:py-12">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Instrument library</h1>
-        <p className="text-[15px] text-muted-foreground">
-          Every reusable instrument in CNS Lab, with test controls. Modules drive these same components from their
-          simulations. Values here are set by hand.
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-4 py-10 md:px-10 md:py-16">
+      <h1 className="sr-only">Style guide and instrument library</h1>
+      <StyleGuide />
+      <header className="mt-10 flex flex-col gap-2 border-t border-hud-line pt-10">
+        <p className="hud-label text-signal">Instrument library</p>
+        <h2 className="hud-title text-[22px] text-foreground md:text-[28px]">Every reusable instrument</h2>
+        <p className="max-w-[70ch] text-[14px] leading-6 text-muted-foreground">
+          Modules drive these same components from their simulations. Values here are set by hand.
         </p>
       </header>
       <CdiDemo />

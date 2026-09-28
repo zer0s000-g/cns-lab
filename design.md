@@ -1,90 +1,128 @@
-# CNS Lab — Design System
+# CNS Lab: Design System ("Flight Deck")
 
-Single source of design truth for CNS Lab. Every UI change must follow this file.
-It applies the enterprise UI rules (shadcn/ui, blue and white, responsive, both themes)
-to an educational simulation site.
+This file is the single source of design truth for CNS Lab, and every UI change must
+follow it. The live reference is `/instruments`, which renders the style guide
+(`src/pages/StyleGuide.tsx`) above the instrument library.
 
 ## 1. Design language
 
-- **Feel:** calm, professional, dense but breathable. The simulations are the stars;
-  the chrome around them stays quiet.
-- **Palette:** blue and white. Blue (`--primary`) is the only accent colour.
-  Red (`--destructive`), green (`--success`) and amber (`--warning`) are used only
-  for their meaning (alert, OK, caution), never for decoration.
-- **Surfaces:** white (light) or slate-950 (dark) backgrounds, 1px borders,
-  no drop shadows beyond `shadow-sm`. Depth comes from borders and spacing.
-- **Radius:** 8px cards and panels (`rounded-lg`), 6px inputs and buttons (`rounded-md`).
-- **Type:** Inter for UI, JetBrains Mono for numeric readouts.
-  13px UI text (`text-sm`), 12px meta (`text-xs`), 15px reading prose (`.prose-lab`,
-  `text-prose`). Headings `font-semibold`. All numbers use `tabular-nums`.
-- **Spacing:** 4px grid. Section padding 24px, card padding 16–24px, list rows ≥ 40px.
-- **Icons:** `lucide-react` only, 16px inline, 20px in toolbars. No emoji.
-- **Never:** gradients, glassmorphism, animated page backgrounds, decorative illustrations.
-  Animation is allowed only where it teaches (signals, sweeps, needles) and it always
-  respects the reduced-motion setting.
+The site should feel like an instrument console in a dark studio. Each module opens
+on a **tabletop diorama**: a lit miniature of the system on a terrain table, framed by
+**HUD chrome** (hairlines, corner brackets, mono labels, telemetry). The simulations
+are the heroes. The chrome is precise and quiet around them.
 
-## 2. Tokens
+- **Dark first.** The default theme is dark (graphite). Light theme is fully supported.
+  Stages, scopes and cockpit instruments stay night-scene in both themes.
+- **One accent pair.**
+  - Cyan `--signal` means live signal, focus and the primary action.
+  - Brass `--brass` means hardware, the analogy and a second signal.
+  - Red `--destructive` is only for alarms and failures. Green `--success` is only
+    for OK or completed. Neither is used for decoration.
+- **Hairlines, not boxes.** Surfaces are separated by 1px `--hud-line` rules and
+  `hud-panel` glass: a translucent `--hud-panel` fill with a backdrop blur. Radius is
+  small: 4–6px on panels and 3–4px on controls. There are no drop shadows. A glow
+  (`shadow-[0_0_Npx_var(--signal)]`) marks only live or active things.
+- **Type.**
 
-All colour values live in `src/globals.css` as CSS variables. Tailwind classes reference
-them (`bg-primary`, `text-muted-foreground`, `bg-scope-bg`). Canvas and three.js code reads
-them at runtime through `useThemeTokens()` (`src/hooks/useThemeTokens.ts`).
-Hex values in components are forbidden.
+  | Role | Font | Where |
+  |---|---|---|
+  | Display | Michroma, `.hud-title` (uppercase, wide) | Titles, panel names, chapter heads |
+  | Reading | Inter Tight | Prose, 15–18px |
+  | Data | JetBrains Mono, `.hud-label` / `.hud-value` | Labels (uppercase, tracked, 10–11px) and numbers |
+
+  All numbers use tabular figures.
+- **Motion teaches.**
+  - Camera moves between chapter shots, and pen-plot edges reveal the miniatures.
+  - Sweeps, pulses and needles show what the physics does.
+  - Everything respects reduced motion: the camera snaps and decorative motion stops.
+- **Never:**
+  - hex or rgb literals in components;
+  - Tailwind palette classes (`bg-blue-500`);
+  - emoji;
+  - decoration that contradicts the physics.
+
+## 2. Tokens (`src/globals.css`)
+
+Every colour is a CSS variable. Tailwind classes reference the variables.
+- Canvas code reads `tokens[...]` via `useThemeTokens()`.
+- three.js code uses `col(t, 'token')` from `@/stage/Stage`.
 
 | Group | Tokens | Notes |
 |---|---|---|
-| Core | `--background --foreground --card --popover --primary --secondary --muted --muted-foreground --accent --border --input --ring` | shadcn theming |
-| Semantic | `--destructive --success --warning` | meaning only |
-| Charts | `--chart-1 … --chart-5` | blue monochrome series |
-| Maps and diagrams | `--sim-bg --sim-land --sim-water --sim-terrain --sim-terrain-high --sim-grid --sim-grid-strong --sim-ink --sim-muted --sim-signal --sim-signal-2 --sim-neutral --sim-coverage --sim-shadow-zone --sim-warning --sim-alert --sim-ok --sim-sky --sim-fog` | follow the theme |
-| Screens and scopes | `--scope-bg --scope-grid --scope-grid-strong --scope-trace --scope-trace-2 --scope-blip --scope-text --scope-dim --scope-clutter --scope-warning --scope-alert` | dark in both themes, like real displays |
-| Cockpit instruments | `--instrument-face --instrument-bezel --instrument-marking --instrument-dim --instrument-needle --instrument-accent --instrument-flag` | dark in both themes |
-| ILS lobes | `--lobe-90 --lobe-150` | always paired with a label and a hatch pattern |
-| Marker lamps | `--marker-outer --marker-middle --marker-inner` | real cockpit colours, always labelled O / M / I |
+| Core | `--background --foreground --card --popover --primary --secondary --muted --muted-foreground --accent --border --input --ring` | shadcn theming. In dark, `--primary` is the signal cyan. |
+| Flight Deck | `--signal --brass --hud-line --hud-panel` | Accent pair, hairline, glass |
+| Semantic | `--destructive --success --warning` | Meaning only |
+| Stage (3D) | `--stage-bg --stage-floor --stage-fog --stage-line --stage-metal --stage-metal-dark --stage-paint --stage-terrain --stage-terrain-high --stage-water --stage-signal --stage-brass --stage-alert --stage-glass` | Night scene in both themes |
+| Maps | `--sim-*` | Follow the theme |
+| Scopes | `--scope-*` | Dark in both themes |
+| Cockpit instruments | `--instrument-*` | Dark in both themes |
+| ILS lobes, marker lamps | `--lobe-90 --lobe-150 --marker-*` | Always labelled |
 
-Light core values: primary `221 83% 53%`, background white, foreground `222 47% 11%`,
-muted-foreground `215 16% 47%`, border `214 32% 91%`, destructive `0 72% 51%`.
-Dark: white ↔ slate-950 inversion, primary lightened to `217 91% 60%` with dark text on it
-(keeps contrast ≥ 4.5:1).
+Stage chrome sits inside a `dark` class scope, so HUD text on a night stage stays
+legible in the light theme too.
 
 ## 3. Components
 
-- Everything interactive comes from shadcn/ui in `src/components/ui`
-  (Button, Card, Slider, Switch, Tabs, Tooltip, Popover, Accordion, Collapsible, RadioGroup,
-  Badge, Separator, Select, Input, Label, Sheet, Progress, Alert, DropdownMenu, Table,
-  Toggle, ToggleGroup, ScrollArea, Skeleton, Kbd). They have been tuned to this file:
-  6px radius, 36px controls on desktop and 40px on touch screens (`pointer-coarse:`),
-  `shadow-sm` at most.
-- Project patterns in `src/components` compose those primitives:
-  `ModuleLayout`, `Section`, `ControlsPanel`, `ControlSlider`, `ControlSwitch`,
-  `Readout`, `Term` (glossary popover), `Stepper`, `TryThis`, `FailureCard`, `GoDeeper`,
-  `Quiz`, `SimLabel` ("Slowed down so you can see it"), `CnsMap`, `SiteHeader`, `SiteFooter`.
-- Instruments in `src/instruments` are drawn on canvas or SVG with instrument tokens and
-  are reused by every module. Never duplicate an instrument.
+- **HUD kit** (`src/hud`):
+  - `HudFrame`: `CornerBrackets`, `TitleBlock`, `StatusLamp`, `HudPanel`.
+  - `Telemetry`: `TelemetryRow`, `BigReadout`, `BarMeter` (vertical or horizontal), `NeedleGauge`.
+  - `Controls`: `Dial`, `LeverSwitch`, `Segmented`, `HudButton`.
+  - Also `ChapterScrubber` and `MissionClock`.
+  - Every control is keyboard operable and labelled. `Dial` is a `role="slider"` with
+    arrow, Page and Home/End keys.
+- **Stage** (`src/stage`):
+  - `Stage`: WebGL check, performance tiers, bloom, vignette and grain, reduced-motion snap.
+  - `CameraRig` (eased shots), `StudioLights`, `StudioFloor`, `PenPlot` (edge-draw reveal).
+  - `Callout3D`: a world-anchored DOM label.
+  - `Diorama`: the 60 NM terrain table from `core/world`, `RadarTower`, `AircraftModel`, `toU`.
+- **shadcn/ui** primitives (`src/components/ui`) are restyled to this file: mono
+  uppercase buttons, hairline outlines, brass slider thumb. Use them for anything the
+  HUD kit does not cover (Select, Popover, Tooltip, Sheet and so on).
+- **Instruments** (`src/instruments`) are reused everywhere. Never duplicate one.
 
 ## 4. Layout
 
-- Site header: CNS Lab wordmark, module name, pillar badge, Home link, theme toggle.
-- Module pages use the 7 standard sections in this order:
-  1 The simple idea · 2 Simulator · 3 How it works · 4 Try this ·
-  5 When things go wrong · 6 Go deeper (collapsed) · 7 Quick quiz.
-- Desktop (≥ 1024px): simulator view on the left, controls panel (320px) on the right,
-  an "On this page" rail on wide screens (≥ 1440px).
-- Tablet (768px): simulator full width, controls below in two columns.
-- Phone (390px): simulator above the controls, one column, no horizontal page scroll.
-- Footer on every page: "For educational use only, not for operational use."
+- **Header:** blurred bar with the CNS LAB wordmark, `// module · pillar` and mono nav.
+- **Module page with a hero** (`ModuleLayout` with `stage`):
+  - A sticky full-bleed stage sits under the header. The 7 chapters (Idea, Simulator,
+    How, Try, Failures, Spec, Quiz) scroll over it in `hud-panel`s.
+  - Each chapter has its own camera shot. "How it works" steps can have one shot each.
+  - A fixed bottom `ChapterScrubber` shows the chapters; ←/→ move between them.
+  - The Simulator chapter is a console: the view on the left, the control deck on the
+    right, the stage visible between them, and a slow-motion panel below.
+- **Module page without a hero yet:** the same chrome with the chapters in flow (the
+  flat layout).
+- **Breakpoints:**
+
+  | Width | Stage | Panels |
+  |---|---|---|
+  | 1440 | Full height, behind everything | 3 columns in the Simulator chapter |
+  | 768 | Full height | 2 columns |
+  | 390 | 42svh sticky strip on top | Content in one column below |
+
+  No page may scroll sideways at any width.
+- **Home:** a hero diorama of every CNS system (labels link to modules, with a pillar
+  filter), then the learning-path track, then the typographic module index.
+- **Footer on every page:** "For educational use only, not for operational use."
 
 ## 5. Accessibility
 
-- Contrast ≥ 4.5:1 for body text in both themes.
-- Every control has a visible label; icon-only buttons have `aria-label`.
-- Focus ring visible on every interactive element (2px `--ring`).
-- Colour never carries meaning alone: add a label, a shape, a pattern or a text readout.
-- Canvases have `role="img"` with a live text alternative, and keyboard alternatives
-  (sliders, arrow keys) for anything that can be dragged.
+- Contrast is at least 4.5:1 for body text in both themes. Stage text sits on a scrim
+  or in `hud-panel`s.
+- Every control has a visible label, and focus rings are visible (`--ring`).
+- Colour never carries meaning alone.
+- Stages and canvases have `role="img"` with a text description. Keyboard users reach
+  every 3D link through an equivalent list: the Home 3D labels duplicate the module
+  index and are taken out of the tab order.
 - Audio always has a caption.
-- Reduced motion: decorative motion stops; simulations start paused and can be stepped.
 
 ## 6. Honesty labels
 
-When a view slows down, speeds up or simplifies reality, show a `SimLabel` on the view,
-for example "Slowed down so you can see it" or "Distances not to scale".
+Every stage shows what is not to scale, for example "Table 120 NM across · heights ×3.6 ·
+radar and aircraft larger than life" or "Not to scale · airport drawn 10× larger · time ×20".
+Slow-motion replays show "Slowed down so you can see it" and freeze the world.
+
+## 7. Verification
+
+Take screenshots at 1440, 768 and 390 px, in dark and light, before calling any UI
+change done. Also run `npm test`, `npx tsc -b` and `npm run build`.

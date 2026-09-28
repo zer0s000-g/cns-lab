@@ -1,10 +1,9 @@
 import { Link, NavLink } from 'react-router'
-import { BookOpen, ChevronRight, House, Menu, RadioReceiver, SlidersHorizontal } from 'lucide-react'
+import { BookOpen, House, Menu, RadioReceiver, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { PillarBadge } from '@/components/PillarBadge'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { PILLARS, isModuleReady, modulesByPillar, type ModuleMeta } from '@/modules/registry'
+import { PILLARS, isModuleReady, modulesByPillar, pillarName, type ModuleMeta } from '@/modules/registry'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -17,22 +16,25 @@ const NAV = [
 /** Top bar: CNS Lab wordmark, current module and pillar, Home link, settings. */
 export function SiteHeader({ module }: { module?: ModuleMeta }) {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 md:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-2 rounded-md font-semibold tracking-tight" aria-label="CNS Lab home">
-          <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
-            <RadioReceiver className="size-4" aria-hidden />
+    <header className="sticky top-0 z-40 border-b border-hud-line bg-background/75 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-4 px-4 md:px-8">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5 rounded-sm" aria-label="CNS Lab home">
+          <span className="relative grid size-6 place-items-center border border-foreground/60" aria-hidden>
+            <span className="absolute inset-1 rounded-full border border-signal/70" />
+            <span className="size-1 rounded-full bg-signal shadow-[0_0_6px_var(--signal)]" />
           </span>
-          <span className="text-[15px]">CNS Lab</span>
+          <span className="hud-title text-[12.5px] text-foreground">CNS Lab</span>
         </Link>
 
         {module && (
           <div className="flex min-w-0 items-center gap-2">
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="truncate text-sm font-medium" title={module.name}>
+            <span className="hud-label text-muted-foreground/60" aria-hidden>
+              //
+            </span>
+            <span className="hud-label truncate text-foreground/85" title={module.name}>
               {module.short}
             </span>
-            <PillarBadge pillar={module.pillar} className="hidden sm:inline-flex" />
+            <span className="hud-label hidden text-muted-foreground/70 sm:inline">· {pillarName(module.pillar)}</span>
           </div>
         )}
 
@@ -43,13 +45,9 @@ export function SiteHeader({ module }: { module?: ModuleMeta }) {
               to={n.to}
               end={n.to === '/'}
               className={({ isActive }) =>
-                cn(
-                  'inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
-                  isActive && 'bg-accent text-accent-foreground',
-                )
+                cn('hud-label inline-flex h-9 items-center px-3 transition-colors hover:text-foreground', isActive ? 'text-signal' : 'text-muted-foreground')
               }
             >
-              <n.icon className="size-4" aria-hidden />
               {n.label}
             </NavLink>
           ))}

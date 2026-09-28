@@ -6,6 +6,11 @@ import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
 import { maxUnambiguousRangeNm } from '@/core/radar'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { BarMeter, TelemetryRow } from '@/hud/Telemetry'
+import type { StageSpec } from '@/components/module/ModuleLayout'
+import { PsrHero, tableScaleLabel } from './Hero3D'
 import Deeper from './deeper.mdx'
 import { PsrSimulator } from './Simulator'
 import { PsrProvider, usePsr, usePsrState } from './state'
@@ -137,11 +142,72 @@ const quiz: QuizQuestion[] = [
   },
 ]
 
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [13, 7, 15], target: [0, 1, 0], fov: 32 },
+  simulator: { position: [0, 22, 14], target: [0, 0, 1], fov: 38 },
+  how: { position: [3.8, 2.3, 5.4], target: [-1.0, 1.25, 0.8], fov: 36 },
+  try: { position: [-9, 10, 15], target: [-4, 0.5, 0], fov: 36 },
+  wrong: { position: [-14, 9, 8], target: [-6, 0.5, -1], fov: 36 },
+  deeper: { position: [18, 10, 18], target: [-3, 0, 2], fov: 30 },
+  quiz: { position: [-4, 30, 0.1], target: [-4, 0, 0], fov: 34 },
+}
+
+/** Close-ups for the six "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Send a pulse: close on the antenna, framed right of the panel.
+  { position: [3.8, 2.3, 5.4], target: [-1.0, 1.25, 0.8], fov: 36 },
+  // 2 Listen for the echo: antenna and the nearest aircraft.
+  { position: [8, 5, 9], target: [-0.5, 0.8, 1.5], fov: 38 },
+  // 3 Time into distance: low along the beam.
+  { position: [2, 7, 14], target: [-3, 0.4, 2], fov: 36 },
+  // 4 Direction: from above and behind, the lighthouse sweep.
+  { position: [-4, 9, 9], target: [-2.5, 0.8, 0], fov: 40 },
+  // 5 The screen: straight down on the table.
+  { position: [-3, 24, 0.1], target: [-3, 0, 0], fov: 36 },
+  // 6 Limits: clutter on the hills.
+  { position: [-12, 8, -8], target: [-4, 0.5, 0], fov: 36 },
+]
+
+function PsrTelemetry() {
+  const { engine } = usePsr()
+  const params = usePsrState((s) => s.params)
+  const seen = useSampled(() => {
+    const n = engine.aircraft.length
+    const k = engine.aircraft.filter((a) => engine.lastLook.get(a.id)?.detected).length
+    return { n, k, az: Math.round(engine.antennaAz) }
+  }, 250)
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Antenna" value={String(seen.az).padStart(3, '0')} unit="°" tone="signal" />
+      <TelemetryRow label="Turn" value={params.rotationPeriodS.toFixed(1)} unit="s" />
+      <TelemetryRow label="Pulse rate" value={params.prfHz} unit="/s" />
+      <TelemetryRow label="Painted" value={`${seen.k}/${seen.n}`} />
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <span className="hud-label">Last turn</span>
+        <BarMeter orientation="horizontal" value={seen.n ? seen.k / seen.n : 0} segments={14} label="Share of aircraft painted on the last turn" />
+      </div>
+    </div>
+  )
+}
+
 function PsrPage() {
-  const { engine, store } = usePsr()
+  const { engine, store, clock, replayRef } = usePsr()
   const env = usePsrState((s) => s.env)
   const params = usePsrState((s) => s.params)
+  const replaying = usePsrState((s) => s.pulse.phase === 'replay')
+  const running = useClock(clock, (c) => c.running)
   const s = store.getState()
+
+  const stage: StageSpec = {
+    scene: (t) => <PsrHero t={t} engine={engine} replayRef={replayRef} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'S-band · about 2.8 GHz',
+    labels: [tableScaleLabel, ...(replaying ? ['Slowed down so you can see it · the world is frozen'] : [])],
+    telemetry: <PsrTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: replaying ? 'Pulse replay' : 'Sim time' },
+    label: 'A tabletop model of the airspace: a primary radar on a hill sweeps its beam over the terrain; aircraft fly above it and flash when the beam paints them.',
+  }
 
   const experiments: Experiment[] = [
     {
@@ -334,6 +400,7 @@ function PsrPage() {
   return (
     <ModuleLayout
       moduleId="psr"
+      stage={stage}
       nextId="ssr"
       idea={{
         analogy: (

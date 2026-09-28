@@ -1,8 +1,9 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import { createStore, useStore, type StoreApi } from 'zustand'
 import { DEFAULT_RADAR, type RadarParams } from '@/core/radar'
 import { useSimClock, type SimClock } from '@/hooks/useSimClock'
 import { DEFAULT_ENV, PsrEngine, type EchoAlongBeam, type PsrEnv } from './engine'
+import type { Replay } from './PulseView'
 
 export type PulsePhase = 'idle' | 'armed' | 'replay'
 
@@ -71,17 +72,20 @@ interface PsrContextValue {
   engine: PsrEngine
   clock: SimClock
   store: StoreApi<PsrState>
+  /** The single-pulse slow-motion replay, shared by the 2D pulse view and the 3D stage. */
+  replayRef: MutableRefObject<Replay | null>
 }
 
 const Ctx = createContext<PsrContextValue | null>(null)
 
 export function PsrProvider({ children }: { children: ReactNode }) {
   const clock = useSimClock()
+  const replayRef = useRef<Replay | null>(null)
   const [value] = useState(() => {
     const engine = new PsrEngine()
     return { engine, clock, store: createPsrStore(engine) }
   })
-  return <Ctx.Provider value={{ ...value, clock }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ ...value, clock, replayRef }}>{children}</Ctx.Provider>
 }
 
 export function usePsr() {

@@ -1,8 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/inter-tight";
 @import "@fontsource-variable/jetbrains-mono";
+@import "@fontsource/michroma";
 
 /*
  * CNS Lab design tokens — the single place where colour values live.
@@ -13,8 +14,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
+  /* Wide display face for titles, chapter names and HUD headings (always uppercase). */
+  --font-display: "Michroma", "Inter Tight Variable", ui-sans-serif, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
 
   /* 13px UI text, 12px meta, 15px reading prose */
@@ -85,6 +88,11 @@
   --color-instrument-dim: var(--instrument-dim);
   --color-instrument-accent: var(--instrument-accent);
   --color-instrument-flag: var(--instrument-flag);
+  --color-brass: var(--brass);
+  --color-signal: var(--signal);
+  --color-hud-line: var(--hud-line);
+  --color-hud-panel: var(--hud-panel);
+  --color-stage-bg: var(--stage-bg);
   --color-lobe-90: var(--lobe-90);
   --color-lobe-150: var(--lobe-150);
   --color-marker-outer: var(--marker-outer);
@@ -98,7 +106,7 @@
 }
 
 :root {
-  --radius: 0.5rem; /* 8px cards; md = 6px inputs and buttons */
+  --radius: 0.375rem; /* 6px panels; md ≈ 4.5px controls: crisp, instrument-like */
 
   /* Enterprise core (light) */
   --background: hsl(0 0% 100%);
@@ -178,62 +186,108 @@
   --marker-outer: hsl(217 91% 60%);
   --marker-middle: hsl(38 92% 50%);
   --marker-inner: hsl(0 0% 100%);
+
+  /* Flight Deck accents (light variant) */
+  --brass: hsl(32 70% 40%);
+  --signal: hsl(192 90% 36%);
+  --hud-line: hsl(215 25% 20% / 0.22);
+  --hud-panel: hsl(0 0% 100% / 0.82);
+  /* The 3D stage is a night scene in both themes, like a lit studio. */
+  --stage-bg: hsl(220 22% 5%);
+  --stage-floor: hsl(218 16% 9%);
+  --stage-fog: hsl(220 20% 6%);
+  --stage-line: hsl(205 30% 88% / 0.75);
+  --stage-metal: hsl(215 10% 34%);
+  --stage-metal-dark: hsl(220 10% 14%);
+  --stage-paint: hsl(210 8% 78%);
+  --stage-terrain: hsl(212 9% 36%);
+  --stage-terrain-high: hsl(36 14% 76%);
+  --stage-water: hsl(206 42% 15%);
+  --stage-signal: hsl(188 95% 60%);
+  --stage-brass: hsl(36 80% 56%);
+  --stage-alert: hsl(356 90% 60%);
+  --stage-glass: hsl(195 60% 80%);
 }
 
+/*
+ * Flight Deck: the primary, dark-first palette. Graphite stage, hairline
+ * HUD lines, electric cyan for radio energy and live data, warm brass for
+ * hardware, one red for alarms only.
+ */
 .dark {
-  --background: hsl(229 84% 5%);
-  --foreground: hsl(210 40% 98%);
-  --card: hsl(226 55% 7%);
-  --card-foreground: hsl(210 40% 98%);
-  --popover: hsl(226 55% 8%);
-  --popover-foreground: hsl(210 40% 98%);
-  --primary: hsl(217 91% 60%);
-  --primary-foreground: hsl(229 84% 5%);
-  --secondary: hsl(217 33% 14%);
-  --secondary-foreground: hsl(210 40% 98%);
-  --muted: hsl(217 33% 13%);
-  --muted-foreground: hsl(215 20% 68%);
-  --accent: hsl(217 50% 16%);
-  --accent-foreground: hsl(213 94% 78%);
-  --destructive: hsl(0 84% 62%);
-  --success: hsl(142 69% 52%);
+  --background: hsl(220 22% 5%);
+  --foreground: hsl(210 22% 92%);
+  --card: hsl(220 18% 8%);
+  --card-foreground: hsl(210 22% 92%);
+  --popover: hsl(220 18% 9%);
+  --popover-foreground: hsl(210 22% 92%);
+  --primary: hsl(188 92% 58%);
+  --primary-foreground: hsl(220 30% 6%);
+  --secondary: hsl(218 14% 13%);
+  --secondary-foreground: hsl(210 22% 92%);
+  --muted: hsl(218 14% 11%);
+  --muted-foreground: hsl(214 12% 62%);
+  --accent: hsl(190 55% 14%);
+  --accent-foreground: hsl(188 92% 72%);
+  --destructive: hsl(356 88% 62%);
+  --success: hsl(152 58% 52%);
   --warning: hsl(38 92% 58%);
-  --border: hsl(217 33% 18%);
-  --input: hsl(217 33% 24%);
-  --ring: hsl(217 91% 60%);
+  --border: hsl(210 20% 100% / 0.1);
+  --input: hsl(210 20% 100% / 0.16);
+  --ring: hsl(188 92% 58%);
 
-  --chart-1: hsl(217 91% 60%);
-  --chart-2: hsl(213 94% 78%);
-  --chart-3: hsl(221 83% 45%);
-  --chart-4: hsl(199 89% 55%);
-  --chart-5: hsl(215 20% 50%);
+  --chart-1: hsl(188 92% 58%);
+  --chart-2: hsl(36 80% 58%);
+  --chart-3: hsl(205 80% 66%);
+  --chart-4: hsl(170 60% 52%);
+  --chart-5: hsl(214 12% 50%);
 
-  --sim-bg: hsl(226 60% 6%);
-  --sim-land: hsl(222 38% 10%);
-  --sim-water: hsl(215 62% 15%);
-  --sim-terrain: hsl(215 20% 30%);
-  --sim-terrain-high: hsl(215 16% 52%);
-  --sim-grid: hsl(217 33% 16%);
-  --sim-grid-strong: hsl(217 25% 30%);
-  --sim-ink: hsl(210 40% 96%);
-  --sim-muted: hsl(215 20% 66%);
-  --sim-signal: hsl(217 91% 64%);
-  --sim-signal-2: hsl(199 89% 58%);
-  --sim-neutral: hsl(215 16% 58%);
-  --sim-coverage: hsl(217 91% 60% / 0.14);
-  --sim-shadow-zone: hsl(0 0% 0% / 0.3);
-  --sim-warning: hsl(38 92% 55%);
-  --sim-alert: hsl(0 84% 62%);
-  --sim-ok: hsl(142 69% 52%);
-  --sim-sky: hsl(222 45% 11%);
-  --sim-fog: hsl(218 20% 30%);
+  --sim-bg: hsl(220 22% 6%);
+  --sim-land: hsl(218 16% 10%);
+  --sim-water: hsl(208 40% 11%);
+  --sim-terrain: hsl(212 10% 24%);
+  --sim-terrain-high: hsl(206 10% 46%);
+  --sim-grid: hsl(210 20% 100% / 0.07);
+  --sim-grid-strong: hsl(210 20% 100% / 0.18);
+  --sim-ink: hsl(210 22% 92%);
+  --sim-muted: hsl(214 12% 62%);
+  --sim-signal: hsl(188 92% 58%);
+  --sim-signal-2: hsl(36 80% 58%);
+  --sim-neutral: hsl(214 10% 56%);
+  --sim-coverage: hsl(188 92% 58% / 0.1);
+  --sim-shadow-zone: hsl(0 0% 0% / 0.35);
+  --sim-warning: hsl(38 92% 58%);
+  --sim-alert: hsl(356 88% 62%);
+  --sim-ok: hsl(152 58% 52%);
+  --sim-sky: hsl(220 20% 8%);
+  --sim-fog: hsl(214 12% 30%);
 
-  --scope-bg: hsl(226 60% 4%);
-  --instrument-face: hsl(222 36% 6%);
-  --instrument-bezel: hsl(220 13% 20%);
+  --scope-bg: hsl(220 30% 3.5%);
+  --scope-grid: hsl(188 60% 80% / 0.12);
+  --scope-grid-strong: hsl(188 60% 80% / 0.26);
+  --scope-trace: hsl(188 95% 60%);
+  --scope-trace-2: hsl(36 80% 62%);
+  --scope-blip: hsl(186 100% 76%);
+  --scope-text: hsl(190 30% 92%);
+  --scope-dim: hsl(200 14% 58%);
+  --scope-clutter: hsl(200 12% 52%);
+  --scope-warning: hsl(38 92% 60%);
+  --scope-alert: hsl(356 90% 64%);
+  --instrument-face: hsl(220 18% 5%);
+  --instrument-bezel: hsl(218 10% 17%);
+  --instrument-marking: hsl(40 20% 94%);
+  --instrument-dim: hsl(214 10% 58%);
+  --instrument-needle: hsl(40 30% 96%);
+  --instrument-accent: hsl(188 95% 60%);
+  --instrument-flag: hsl(356 88% 60%);
 
-  --lobe-90: hsl(217 91% 60%);
-  --lobe-150: hsl(215 16% 62%);
+  --lobe-90: hsl(188 92% 58%);
+  --lobe-150: hsl(36 80% 58%);
+
+  --brass: hsl(36 80% 58%);
+  --signal: hsl(188 92% 58%);
+  --hud-line: hsl(205 30% 90% / 0.22);
+  --hud-panel: hsl(220 22% 6% / 0.72);
 }
 
 @layer base {
@@ -262,6 +316,42 @@
 }
 
 @layer utilities {
+  /* HUD typography */
+  .hud-title {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .hud-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    line-height: 14px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+  .hud-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .hud-panel {
+    background: var(--hud-panel);
+    border: 1px solid var(--hud-line);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  }
+  /* Film grain over the whole page (an SVG noise filter, no colour values). */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: -50%;
+    pointer-events: none;
+    z-index: 60;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: overlay;
+  }
   .prose-lab {
     font-size: var(--text-prose);
     line-height: var(--text-prose--line-height);
@@ -318,6 +408,10 @@
     font-weight: 600;
     color: var(--muted-foreground);
   }
+  .prose-lab strong {
+    color: var(--foreground);
+    font-weight: 600;
+  }
   .prose-lab a {
     color: var(--primary);
     text-decoration: underline;
@@ -325,14 +419,28 @@
   }
   .formula {
     font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    background: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 0.5rem 0.75rem;
-    margin: 0.5rem 0;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--foreground);
+    background: color-mix(in oklab, var(--signal) 4%, transparent);
+    border-left: 2px solid var(--brass);
+    padding: 0.6rem 0.9rem;
+    margin: 0.75rem 0;
     overflow-x: auto;
     white-space: pre;
+  }
+  .spec-sheet h3 {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--signal);
+    margin-top: 1.75rem;
+    margin-bottom: 0.4rem;
+  }
+  .spec-sheet h3:first-child {
+    margin-top: 0;
   }
 }
 
