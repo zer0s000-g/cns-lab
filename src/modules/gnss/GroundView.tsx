@@ -196,7 +196,7 @@ export function GroundView() {
           ctx.lineWidth = 1.5
           ctx.setLineDash([6, 4])
           ctx.beginPath()
-          ctx.arc(sx, sy, rad, 0, Math.PI * 2)
+          ctx.arc(sx, sy, Math.max(0, rad), 0, Math.PI * 2)
           ctx.fill()
           ctx.stroke()
           ctx.setLineDash([])
@@ -269,7 +269,7 @@ export function GroundView() {
   )
 
   const label = useSampled(() => describeGround(engine), 1000)
-  return <Canvas2D draw={draw} label={label} className="aspect-square w-full rounded-lg border" />
+  return <Canvas2D draw={draw} label={label} className="aspect-square w-full rounded-[3px] border border-hud-line" />
 }
 
 function crosshair(ctx: CanvasRenderingContext2D, x: number, y: number) {

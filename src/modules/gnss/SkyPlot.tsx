@@ -173,7 +173,7 @@ export function SkyPlot() {
       ref={ref}
       draw={draw}
       label={label}
-      className="aspect-square w-full rounded-lg border"
+      className="aspect-square w-full rounded-[3px] border border-hud-line"
       onCanvasPointerDown={onPointerDown}
     />
   )

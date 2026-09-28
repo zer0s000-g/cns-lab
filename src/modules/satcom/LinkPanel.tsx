@@ -43,7 +43,7 @@ export function LinkPanel() {
   const tone = s.state === 'connected' ? 'ok' : s.state === 'handover' ? 'warning' : 'alert'
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">Link status</h3>
         <span
@@ -187,7 +187,7 @@ export function RainPanel() {
   const s = useSampled(() => ({ rain: engine.env.heavyRain, fades: engine.bandFades(), alt: engine.routePoint.altitudeFt }), 250, (a, b) => JSON.stringify(a) === JSON.stringify(b))
   const NAME = { L: 'L-band safety link', Ku: 'Ku-band passenger Wi-Fi', Ka: 'Ka-band passenger Wi-Fi' } as const
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="flex min-w-0 flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold">Rain on the path, by frequency band</h3>
         <span className="text-xs text-muted-foreground">

@@ -44,7 +44,7 @@ export function CompareView() {
   }, 200)
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex flex-col gap-3 rounded-md p-4">
       <div>
         <h3 className="text-sm font-semibold">Radar and ADS-B, side by side{stats ? `: ${stats.id}` : ''}</h3>
         <p className="text-xs text-muted-foreground">

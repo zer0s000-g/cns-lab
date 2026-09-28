@@ -74,6 +74,8 @@ legible in the light theme too.
   - `Stage`: WebGL check, performance tiers, bloom, vignette and grain, reduced-motion snap.
   - `CameraRig` (eased shots), `StudioLights`, `StudioFloor`, `PenPlot` (edge-draw reveal).
   - `Callout3D`: a world-anchored DOM label.
+  - `Wire3D`: a glowing line between two moving points, bent in the shader (bearing lines, slant ranges, radials).
+  - Drag to look around: the camera orbits the current shot (double-click resets). On touch only sideways drags turn it, so pages still scroll. There is no wheel zoom.
   - `Diorama`: the 60 NM terrain table from `core/world`, `RadarTower`, `AircraftModel`, `toU`.
 - **shadcn/ui** primitives (`src/components/ui`) are restyled to this file: mono
   uppercase buttons, hairline outlines, brass slider thumb. Use them for anything the

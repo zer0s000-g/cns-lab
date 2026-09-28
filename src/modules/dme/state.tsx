@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import { createStore, useStore, type StoreApi } from 'zustand'
 import { useSimClock, type SimClock } from '@/hooks/useSimClock'
 import { DEFAULT_ENV, DmeEngine, type DmeEnv } from './engine'
+import type { DmeReplay } from './replay'
 
 export interface ReplayState {
   phase: 'idle' | 'replay'
@@ -59,17 +60,20 @@ interface DmeContextValue {
   engine: DmeEngine
   clock: SimClock
   store: StoreApi<DmeState>
+  /** The one-question slow-motion replay, shared by the 2D pulse view and the 3D stage. */
+  replayRef: MutableRefObject<DmeReplay | null>
 }
 
 const Ctx = createContext<DmeContextValue | null>(null)
 
 export function DmeProvider({ children }: { children: ReactNode }) {
   const clock = useSimClock()
+  const replayRef = useRef<DmeReplay | null>(null)
   const [value] = useState(() => {
     const engine = new DmeEngine()
     return { engine, clock, store: createDmeStore(engine) }
   })
-  return <Ctx.Provider value={{ ...value, clock }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ ...value, clock, replayRef }}>{children}</Ctx.Provider>
 }
 
 export function useDme() {

@@ -121,7 +121,7 @@ export function LatencyMeter() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h3 className="text-sm font-semibold">Latency meter</h3>
         <p className="text-xs text-muted-foreground">Send a message and watch the delay add up. Time freezes while the message travels.</p>

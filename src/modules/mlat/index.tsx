@@ -1,15 +1,78 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import { HEIGHT_EXAGGERATION, TABLE_RADIUS_NM } from '@/stage/scale'
+import { formatM } from './accuracy'
 import Deeper from './deeper.mdx'
-import { FAILED_RECEIVER, FAILURE_CLOCK_ERROR_NS, OUTSIDE_AIRCRAFT, SPOOF_OFFSET, SPOOFED_AIRCRAFT } from './engine'
+import { FAILED_RECEIVER, FAILURE_CLOCK_ERROR_NS, OUTSIDE_AIRCRAFT, SPOOF_OFFSET, SPOOFED_AIRCRAFT, statusText } from './engine'
 import { MlatSimulator } from './Simulator'
 import { MlatProvider, useMlat, useMlatState } from './state'
 import { ArrivalVisual, CrossVisual, CurveVisual, DifferenceVisual, GeometryVisual, TransmitVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const MlatHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: what is to scale on the table and what is not. */
+const tableScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · receivers and aircraft larger than life`
+const linkLabel = 'Signals take microseconds · each one is held on screen under a second'
+
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [8, 7, 12], target: [-2.4, 0.8, 0], fov: 34 },
+  simulator: { position: [0, 15, 9.5], target: [0, 0, 0.4], fov: 40 },
+  how: { position: [6, 5, 9], target: [-1.8, 1, 0.4], fov: 38 },
+  try: { position: [-3, 12, 11], target: [-3, 0.4, 0], fov: 38 },
+  wrong: { position: [5, 10, 11], target: [-2.6, 0.4, 0.3], fov: 38 },
+  deeper: { position: [12, 8, 12], target: [-3, 0.4, 0.5], fov: 32 },
+  quiz: { position: [-3, 17, 0.1], target: [-3, 0, 0], fov: 36 },
+}
+
+/** Close-ups for the six "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 The aircraft transmits: close on the aircraft over the airport.
+  { position: [6, 5, 9], target: [-1.8, 1, 0.4], fov: 38 },
+  // 2 Several receivers hear it: wide over the network.
+  { position: [3, 9, 11], target: [-2.2, 0.5, 0.3], fov: 40 },
+  // 3 Only the differences count: low across the receivers.
+  { position: [-9, 4, 9], target: [-2.5, 0.8, 0.3], fov: 38 },
+  // 4 Each difference draws a curve: from above.
+  { position: [-2.8, 14, 4], target: [-2.8, 0.5, 0.3], fov: 40 },
+  // 5 Where the curves cross: close on the crossing.
+  { position: [3, 6, 7], target: [-1.6, 1.2, 0], fov: 36 },
+  // 6 Geometry and clocks: the whole layout from high up.
+  { position: [-3, 16, 6], target: [-3, 0, 0.3], fov: 40 },
+]
+
+function MlatTelemetry() {
+  const { engine } = useMlat()
+  const selectedId = useMlatState((s) => s.selectedId)
+  const r = useSampled(() => {
+    const f = selectedId ? engine.fixes.get(selectedId) : undefined
+    return {
+      used: engine.usedReceivers().length,
+      id: selectedId,
+      heard: f?.stamps.length ?? 0,
+      status: f ? statusText(f.solution.status) : '—',
+      ok: f?.solution.status === 'ok',
+      err: f && Number.isFinite(f.errorM) ? formatM(f.errorM) : '—',
+    }
+  }, 300)
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Receivers" value={r.used} unit="in use" tone="signal" />
+      <TelemetryRow label={`${r.id ?? '—'} heard by`} value={r.heard} />
+      <TelemetryRow label="Position" value={r.status} tone={r.ok ? 'ok' : 'brass'} />
+      <TelemetryRow label="Error" value={r.err} />
+    </div>
+  )
+}
 
 const steps: Step[] = [
   {
@@ -146,10 +209,26 @@ const quiz: QuizQuestion[] = [
 ]
 
 function MlatPage() {
-  const { store } = useMlat()
+  const { store, engine, clock, replayRef } = useMlat()
   const env = useMlatState((s) => s.env)
   const params = useMlatState((s) => s.params)
+  const replaying = useMlatState((s) => s.replay.phase === 'replay')
+  const running = useClock(clock, (c) => c.running)
   const s = store.getState()
+
+  const stage: StageSpec = {
+    scene: (t) => (
+      <MlatHero t={t} engine={engine} replayRef={replayRef} selected={() => store.getState().selectedId} showCurves={() => store.getState().showCurves} />
+    ),
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: '1090 MHz · time difference of arrival',
+    labels: [tableScaleLabel, replaying ? 'Slowed down so you can see it · the world is frozen' : linkLabel],
+    telemetry: <MlatTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: replaying ? 'Signal replay' : 'Sim time' },
+    label:
+      'A tabletop model of a multilateration network: receivers stand on the terrain; each time an aircraft transmits, lines join it to the receivers that time-stamped the signal. Brass curves of equal time difference, drawn at the selected aircraft’s altitude, cross at its position.',
+  }
 
   const experiments: Experiment[] = [
     {
@@ -327,6 +406,7 @@ function MlatPage() {
   return (
     <ModuleLayout
       moduleId="mlat"
+      stage={stage}
       nextId="surface"
       idea={{
         analogy: (

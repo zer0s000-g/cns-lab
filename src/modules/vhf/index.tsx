@@ -1,5 +1,6 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
@@ -11,7 +12,20 @@ import Deeper from './deeper.mdx'
 import { VhfSimulator } from './Simulator'
 import { FREQ_MHZ, MOUNTAIN, SITE, STUCK_DETECT_S } from './engine'
 import { VhfProvider, useVhf, useVhfState } from './state'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import { HERO_D_MAX, HERO_D_MIN, HERO_HEIGHT_X } from './heroScale'
+import { RX_TEXT } from './labels'
 import { ChannelsVisual, GroundSystemVisual, LineOfSightVisual, OneAtATimeVisual, PressToTalkVisual, SquelchVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const VhfHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: what is to scale in the Earth slice and what is not. */
+const sliceLabel = `Earth slice ${HERO_D_MAX - HERO_D_MIN} NM long · heights and curve ×${HERO_HEIGHT_X}`
+const sizeLabel = 'Mast and aircraft larger than life'
+const pulseLabel = 'Pulses show who talks; radio is instant'
 
 const steps: Step[] = [
   {
@@ -146,6 +160,57 @@ const quiz: QuizQuestion[] = [
   },
 ]
 
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [-8, 10, 34], target: [-9, 1.8, 0], fov: 30 },
+  simulator: { position: [-4, 10, 27], target: [-4.6, 1.2, 0], fov: 36 },
+  how: { position: [-11, 8, 32], target: [-10, 2.1, 0], fov: 36 },
+  try: { position: [-13, 9, 40], target: [-15, 2.6, 0], fov: 36 },
+  wrong: { position: [-14, 6, 28], target: [-9.8, 1.9, 0], fov: 36 },
+  deeper: { position: [-6, 12, 38], target: [-9.5, 1.2, 0], fov: 36 },
+  quiz: { position: [-8, 22, 22], target: [-8.5, 0, 0], fov: 36 },
+}
+
+/** One shot per "How it works" step (panels sit on the left, so the subject is framed right of centre). */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Press to talk: the site and your aircraft, joined by the ray.
+  { position: [-11, 8, 32], target: [-10, 2.1, 0], fov: 36 },
+  // 2 Straight lines only: the whole slice, the curve, the horizon and the shadow.
+  { position: [-6, 8, 40], target: [-9.5, 1.2, 0], fov: 36 },
+  // 3 One at a time: the site, CNS202 and you, from lower down.
+  { position: [-14, 6, 28], target: [-9.8, 1.9, 0], fov: 36 },
+  // 4 Squelch: close on your aircraft.
+  { position: [-2.5, 4.5, 9], target: [-3.2, 2.7, 0], fov: 36 },
+  // 5 Channels side by side: you and the neighbour on the next channel.
+  { position: [-1.8, 4.2, 7], target: [-2.6, 2.7, 0.3], fov: 36 },
+  // 6 Behind the controller: the control centre and the radio site.
+  { position: [-9.3, 0.2, 6], target: [-10.1, -1, 0], fov: 34 },
+]
+
+function VhfTelemetry() {
+  const { engine } = useVhf()
+  const r = useSampled(() => {
+    const p = engine.params
+    const v = engine.learnerView()
+    const lvl = engine.levelAt('controller', 'CNS101', p.com1)
+    return {
+      range: radioLineOfSightNm(SITE.antennaFt, p.altitudeFt),
+      floor: engine.contactFloorFt(),
+      level: lvl,
+      contact: engine.learnerInContact(),
+      state: engine.pttActive ? 'Transmitting' : RX_TEXT[v.rx.state].split(':')[0],
+      bad: v.rx.state === 'blocked' || v.rx.state === 'garbled',
+    }
+  }, 250)
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Range here" value={r.range.toFixed(0)} unit="NM" tone="signal" />
+      <TelemetryRow label="Contact below" value={Math.round(r.floor).toLocaleString('en-US')} unit="ft" tone={r.contact ? 'default' : 'alert'} />
+      <TelemetryRow label="Signal" value={Number.isFinite(r.level) ? r.level.toFixed(0) : '—'} unit={Number.isFinite(r.level) ? 'dBm' : undefined} />
+      <TelemetryRow label="Receiver" value={r.state} tone={r.bad ? 'alert' : 'default'} />
+    </div>
+  )
+}
+
 function VhfPage() {
   const { engine, clock } = useVhf()
   const failures = useVhfState((s) => s.failures)
@@ -157,6 +222,19 @@ function VhfPage() {
   const levelSq = linkLevelDbm(GROUND_RADIO, AIRCRAFT_RADIO, slantRangeNm(dSq, 36000, SITE.antennaFt), FREQ_MHZ.main)
   const leak833 = adjacentLeakDbm(engine.levelAt('CNS707', 'CNS101', 'adjacent'), '8.33')
   const play = () => clock.getState().play()
+  const running = useClock(clock, (c) => c.running)
+
+  const stage: StageSpec = {
+    scene: (t) => <VhfHero t={t} engine={engine} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'VHF voice · 118–137 MHz',
+    labels: [sliceLabel, sizeLabel, pulseLabel, ...(failures.interference ? ['CNS707 drawn beside you so you can see it'] : [])],
+    telemetry: <VhfTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: 'Real time' },
+    label:
+      'A slice of the curved Earth along the radio path: a radio mast at one end, your aircraft and another pilot above the sea. Straight radio rays join the antenna to each aircraft; a hatched shadow below the radio horizon shows where there is no line of sight.',
+  }
   const clearFailures = () => {
     for (const k of ['stuckMic', 'mountain', 'txFailure', 'interference'] as const) if (engine.failures[k]) setFailure(k, false)
   }
@@ -349,6 +427,7 @@ function VhfPage() {
   return (
     <ModuleLayout
       moduleId="vhf"
+      stage={stage}
       nextId="hf"
       idea={{
         analogy: (

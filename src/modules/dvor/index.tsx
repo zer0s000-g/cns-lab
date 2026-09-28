@@ -1,15 +1,32 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
-import { MONITOR } from '@/core/vor'
+import { CDI_FULL_SCALE_DEG, MONITOR } from '@/core/vor'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import { fmt3 } from '@/instruments/draw'
+import { HEIGHT_EXAGGERATION, TABLE_RADIUS_NM, toU } from '@/stage/scale'
+import type { Shot } from '@/stage/types'
 import Deeper from './deeper.mdx'
+import { SIGNAL_SLOWDOWN, STATION } from './engine'
 import { DvorSimulator } from './Simulator'
 import { DvorProvider, useDvor, useDvorState } from './state'
 import { CdiVisual, CvorVisual, DvorVisual, LighthouseVisual, LimitsVisual, PhaseVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const DvorHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: what is to scale on the table and what is not. */
+const tableScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · station and aircraft larger than life`
+const dvorSlowLabel = `Antenna switching slowed down ${SIGNAL_SLOWDOWN}×`
+const cvorSlowLabel = `Pattern turn slowed down ${SIGNAL_SLOWDOWN}× · pattern shape exaggerated`
+const buildingLabel = 'Building distance not to scale'
 
 const steps: Step[] = [
   {
@@ -155,11 +172,107 @@ const quiz: QuizQuestion[] = [
   },
 ]
 
+type V3 = [number, number, number]
+/**
+ * A camera shot on `subject` from `offset`, with the subject pushed `shift`
+ * units to the right of the frame (the chapter panels sit on the left).
+ */
+function frame(subject: V3, offset: V3, fov: number, shift = 0): Shot {
+  const len = Math.hypot(offset[0], offset[2]) || 1
+  // Screen-right for a camera looking along -offset (forward x up, flattened).
+  const r: V3 = [offset[2] / len, 0, -offset[0] / len]
+  return {
+    position: [subject[0] + offset[0], subject[1] + offset[1], subject[2] + offset[2]],
+    target: [subject[0] - r[0] * shift, subject[1], subject[2] - r[2] * shift],
+    fov,
+  }
+}
+
+const ST = toU(STATION.pos)
+const STN: V3 = [ST[0], 0.18, ST[2]]
+/** Between the station and where the aircraft starts (18 NM out on radial 250). */
+const MIDDLE: V3 = [-0.9, 0.3, 0.9]
+
+const SHOTS: StageSpec['shots'] = {
+  idea: frame(STN, [2.9, 2.6, -1.2], 36, 0.95),
+  simulator: { position: [-7.4, 11, 3.4], target: [-0.9, 0, 0.9], fov: 38 },
+  how: frame(STN, [3.1, 1.35, -1.3], 34, 0.95),
+  try: frame(MIDDLE, [-3.5, 8, 10.5], 38, 3),
+  wrong: frame([0.5, 0.8, 0.3], [5.5, 3.2, 6.5], 36, 2.2),
+  deeper: frame([0, 0, 0], [16, 10, 16], 30, 4),
+  quiz: { position: [-4, 30, 0.1], target: [-4, 0, 0], fov: 34 },
+}
+
+/** Close-ups for the six "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Two clocks ticking: the station, the radial running away behind it.
+  frame(STN, [3.1, 1.35, -1.3], 34, 0.95),
+  // 2 The delay is your direction: the radial out to the aircraft.
+  frame(MIDDLE, [-1.5, 6.5, 7], 38, 2),
+  // 3 Conventional VOR: from above, the turning pattern.
+  frame(STN, [0.6, 3.2, 2.2], 36, 0.9),
+  // 4 Doppler VOR: close on the ring of antennas.
+  frame(STN, [1.7, 0.9, -0.8], 34, 0.55),
+  // 5 Choose a course: high over the OBS course line.
+  frame([0, 0.2, 0.3], [-1, 9, 8], 38, 2),
+  // 6 Limits: the cone of confusion from the side.
+  frame([0.5, 1.4, 0.33], [5.5, 1.2, 6.5], 36, 2),
+]
+
+function DvorTelemetry() {
+  const { engine } = useDvor()
+  const r = useSampled(() => {
+    const x = engine.last
+    return {
+      radial: x.usable ? x.radialMeasured : null,
+      received: x.received,
+      obs: engine.obsDeg,
+      toFrom: x.cdi.toFrom,
+      dev: x.cdi.deviationDeg,
+      dist: x.distanceNm,
+      status: engine.status,
+    }
+  }, 250)
+  const dots = Math.min(5, Math.abs(r.dev) / (CDI_FULL_SCALE_DEG / 5))
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Radial" value={r.radial == null ? '—' : fmt3(r.radial)} unit={r.radial == null ? undefined : '° MAG'} tone="signal" />
+      <TelemetryRow label="OBS course" value={fmt3(r.obs)} unit="°" tone="brass" />
+      <TelemetryRow
+        label="Needle"
+        value={r.toFrom === 'OFF' ? 'FLAG' : `${r.toFrom} ${dots < 0.05 ? 'centred' : `${dots.toFixed(1)} ${r.dev > 0 ? 'R' : 'L'}`}`}
+        tone={r.toFrom === 'OFF' ? 'alert' : 'default'}
+      />
+      <TelemetryRow label="Distance" value={r.dist.toFixed(1)} unit="NM" />
+      <TelemetryRow
+        label="Station"
+        value={r.status === 'alarm' ? 'Off air' : r.status === 'standby' ? 'Standby' : 'Normal'}
+        tone={r.status === 'alarm' ? 'alert' : r.status === 'standby' ? 'brass' : 'ok'}
+      />
+    </div>
+  )
+}
+
 function DvorPage() {
-  const { store, clock } = useDvor()
+  const { engine, store, clock } = useDvor()
   const env = useDvorState((s) => s.env)
   const overfly = useDvorState((s) => s.overfly)
+  const running = useClock(clock, (c) => c.running)
   const s = store.getState()
+
+  const stage: StageSpec = {
+    scene: (t) => <DvorHero t={t} engine={engine} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'VHF · 108–117.95 MHz',
+    labels: [tableScaleLabel, env.type === 'dvor' ? dvorSlowLabel : cvorSlowLabel, ...(env.building ? [buildingLabel] : [])],
+    telemetry: <DvorTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: 'Sim time' },
+    label:
+      env.type === 'dvor'
+        ? `A tabletop model of the area around the ${STATION.ident} Doppler VOR: a raised round metal deck with a ring of 48 antennas, where a glowing light jumps from antenna to antenna, slowed down. A compass rose around it is aligned to magnetic north. A solid cyan line runs from the station out along the radial the aircraft's receiver measures; a dashed line shows where the aircraft really is, and a brass line shows the selected course. A faint cone above the station marks the cone of confusion.`
+        : `A tabletop model of the area around the ${STATION.ident} conventional VOR: a small antenna house whose radiation pattern, a heart-like shape on the ground, turns clockwise, slowed down. A compass rose around it is aligned to magnetic north. A solid cyan line runs from the station out along the radial the aircraft's receiver measures; a dashed line shows where the aircraft really is, and a brass line shows the selected course. A faint cone above the station marks the cone of confusion.`,
+  }
 
   const experiments: Experiment[] = [
     {
@@ -329,6 +442,7 @@ function DvorPage() {
   return (
     <ModuleLayout
       moduleId="dvor"
+      stage={stage}
       nextId="dme"
       idea={{
         analogy: (

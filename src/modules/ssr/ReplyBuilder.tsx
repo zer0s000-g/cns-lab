@@ -61,7 +61,7 @@ export function ReplyBuilder() {
 
   if (!selectedId || !xpdr || !live) {
     return (
-      <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">Choose an aircraft to see its transponder.</div>
+      <div className="hud-panel rounded-md p-4 text-sm text-muted-foreground">Choose an aircraft to see its transponder.</div>
     )
   }
 
@@ -70,7 +70,7 @@ export function ReplyBuilder() {
   const bitsA = squawkToBits(code)
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex min-w-0 flex-col gap-4 rounded-md p-4">
       <div>
         <h3 className="text-sm font-semibold">The transponder in {selectedId}</h3>
         <p className="text-xs text-muted-foreground">

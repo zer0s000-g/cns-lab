@@ -50,7 +50,7 @@ export function CockpitTraffic() {
       : `${info?.id ?? 'Own ship'}'s traffic display, ${up === 'track' ? 'track up' : 'north up'}, ${rangeNm} nautical mile range. Traffic received: ${info?.names || 'none'}.`
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex min-w-0 flex-col gap-3 rounded-md p-4">
       <div>
         <h3 className="text-sm font-semibold">
           <Term id="ads-b-in">ADS-B In</Term>: the cockpit of {info?.id ?? '—'}

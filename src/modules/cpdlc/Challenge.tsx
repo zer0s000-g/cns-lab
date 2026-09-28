@@ -83,7 +83,7 @@ export function Challenge() {
   const doneCount = (r: ChallengeResult) => r.exchanges.filter((e) => e.endS <= st.elapsed).length
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex min-w-0 flex-col gap-4 rounded-md p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="text-sm font-semibold">Challenge: voice or datalink on a busy frequency?</h3>

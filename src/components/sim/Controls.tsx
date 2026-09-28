@@ -210,9 +210,10 @@ export function AudioCaption({ className }: { className?: string }) {
   return (
     <div aria-live="polite" className={cn('min-h-0', className)}>
       {on && text && (
-        <span className="hud-panel inline-flex max-w-full items-center gap-2 rounded-[3px] px-2.5 py-1.5 text-[12px]">
-          <Volume2 className="size-3.5 shrink-0 text-primary" aria-hidden />
-          <span className="truncate">{text}</span>
+        <span className="hud-panel inline-flex max-w-full items-start gap-2 rounded-[3px] px-2.5 py-1.5 text-[12px] leading-5">
+          <Volume2 className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden />
+          {/* Captions wrap rather than truncate: they stand in for the sound. */}
+          <span className="min-w-0 break-words">{text}</span>
         </span>
       )}
     </div>

@@ -57,11 +57,11 @@ export function MessagePanel() {
     (x, y) => JSON.stringify(x) === JSON.stringify(y),
   )
 
-  if (!data) return <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">Choose an aircraft to see its messages.</div>
+  if (!data) return <div className="hud-panel rounded-md p-4 text-sm text-muted-foreground">Choose an aircraft to see its messages.</div>
   const tr = data.track
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex min-w-0 flex-col gap-3 rounded-md p-4">
       <div>
         <h3 className="text-sm font-semibold">What {data.id} broadcasts</h3>
         <p className="text-xs text-muted-foreground">

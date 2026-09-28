@@ -32,10 +32,12 @@ export function Cockpit({ className }: { className?: string }) {
   )
 
   return (
-    <div className={cn('flex flex-col gap-3 rounded-lg border bg-card p-3', className)}>
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold">In the cockpit</h3>
-        <span className="font-mono text-xs text-muted-foreground tabular-nums">
+    <div className={cn('hud-panel flex flex-col gap-3 rounded-md p-3', className)}>
+      <div className="flex items-baseline justify-between gap-2 border-b border-hud-line pb-2.5">
+        <h3 className="hud-title text-[11px] text-foreground">
+          <span className="hud-label mr-3 text-signal">CDI</span>In the cockpit
+        </h3>
+        <span className="hud-value text-[11px] text-muted-foreground tabular-nums">
           ILS {engine.site.locMHz.toFixed(2)} · {engine.site.ident}
         </span>
       </div>

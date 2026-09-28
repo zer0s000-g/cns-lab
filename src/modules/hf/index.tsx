@@ -1,18 +1,86 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
-import { HF_CHANNELS_MHZ, ionosphereAt, pathMuf, skipZoneNm, suggestChannel } from '@/core/hf'
+import { HF_CHANNELS_MHZ, hfQuality, ionosphereAt, pathMuf, skipZoneNm, suggestChannel } from '@/core/hf'
 import { radioLineOfSightNm } from '@/core/propagation'
 import Deeper from './deeper.mdx'
 import { HfSimulator } from './Simulator'
-import { CRUISE_FT, OTHER_AIRCRAFT } from './engine'
-import { kmText } from './labels'
+import { CRUISE_FT, OTHER_AIRCRAFT, TIMELAPSE_H_PER_S } from './engine'
+import { QUALITY_TEXT, formatHour, kmText } from './labels'
 import { HfProvider, useHf, useHfState } from './state'
 import { BeyondHorizonVisual, BounceVisual, DayNightVisual, IonosphereVisual, SelcalVisual, SkipZoneVisual } from './visuals'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import { HERO_D_MAX, HERO_D_MIN, HERO_HEIGHT_X } from './heroScale'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const HfHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: what is to scale in the Earth slice and what is not. */
+const sliceLabel = `Earth slice ${(HERO_D_MAX - HERO_D_MIN).toLocaleString('en-US')} NM long · heights and curve ×${HERO_HEIGHT_X}`
+const sizeLabel = 'Station and aircraft larger than life · one ray every 3°'
+const skyLabel = 'One ionosphere for the whole path · the Sun shows the time of day'
+
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [-8, 5, 38], target: [-8.5, -0.3, 0], fov: 36 },
+  simulator: { position: [-3.5, 6, 30], target: [-4.3, -0.5, 0], fov: 36 },
+  how: { position: [-8, 5, 38], target: [-8.5, -0.3, 0], fov: 36 },
+  try: { position: [-8, 6, 40], target: [-9.5, 0, 0], fov: 36 },
+  wrong: { position: [-12, 5, 36], target: [-9, -0.3, 0], fov: 36 },
+  deeper: { position: [-4, 10, 40], target: [-8.5, 0, 0], fov: 36 },
+  quiz: { position: [-6, 24, 20], target: [-6.5, -1, 0], fov: 36 },
+}
+
+/** One shot per "How it works" step (panels sit on the left, so the subject is framed right of centre). */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Too far for VHF: the station, the curve and the aircraft beyond the horizon.
+  { position: [-8, 5, 38], target: [-8.5, -0.3, 0], fov: 36 },
+  // 2 A mirror made by the Sun: the layers, from higher up.
+  { position: [-6, 9, 34], target: [-7.5, 0.8, 0], fov: 36 },
+  // 3 Bounce or escape: the fan of rays leaving the station.
+  { position: [-7, 3, 20], target: [-10.5, -1.6, 0], fov: 36 },
+  // 4 Skipping over: the sea near the station, where nothing arrives.
+  { position: [-6, 10, 24], target: [-9, -1.8, 0], fov: 36 },
+  // 5 Day and night: the whole slice with the Sun or Moon.
+  { position: [-6, 6, 42], target: [-9.5, 0.8, 0], fov: 36 },
+  // 6 A doorbell for HF: the aircraft on the path.
+  { position: [-2, 3.5, 12], target: [-4, 0.5, 0], fov: 36 },
+]
+
+function HfTelemetry() {
+  const { engine } = useHf()
+  const r = useSampled(
+    () => {
+      const rx = engine.reception()
+      const skip = engine.skipZone()
+      return {
+        f: engine.freqMHz,
+        hour: engine.params.hour,
+        day: engine.day,
+        muf: engine.muf()?.mufMHz ?? null,
+        q: hfQuality(rx),
+        skip: skip ? `${Math.round(skip.fromNm)}–${Math.round(skip.toNm).toLocaleString('en-US')}` : 'none',
+      }
+    },
+    250,
+    (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  )
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Frequency" value={r.f.toFixed(3)} unit="MHz" tone="signal" />
+      <TelemetryRow label="Local time" value={`${formatHour(r.hour)} ${r.day ? 'day' : 'night'}`} />
+      <TelemetryRow label="MUF" value={r.muf ? r.muf.toFixed(1) : '—'} unit={r.muf ? 'MHz' : undefined} />
+      <TelemetryRow label="CNS101" value={QUALITY_TEXT[r.q]} tone={r.q === 'clear' ? 'ok' : r.q === 'noisy' ? 'brass' : 'alert'} />
+      <TelemetryRow label="Skip zone" value={r.skip} unit={r.skip === 'none' ? undefined : 'NM'} />
+    </div>
+  )
+}
 
 const ch = (mhz: number) => HF_CHANNELS_MHZ.indexOf(mhz)
 const D_LONG = 1350
@@ -176,6 +244,20 @@ function HfPage() {
   const { setParam, setFailure, setSelcalTarget } = useHfState((s) => s)
   const wrong = engine.wrongFrequency()
   const play = () => clock.getState().play()
+  const running = useClock(clock, (c) => c.running)
+  const timelapse = useHfState((s) => s.params.timelapse)
+
+  const stage: StageSpec = {
+    scene: (t) => <HfHero t={t} engine={engine} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'HF voice · 2.8–22 MHz',
+    labels: [sliceLabel, sizeLabel, skyLabel, ...(timelapse ? [`Sped up: 1 hour every ${Math.round(1 / TIMELAPSE_H_PER_S)} s`] : [])],
+    telemetry: <HfTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: timelapse ? 'Time-lapse' : 'Real time' },
+    label:
+      'A slice of the round Earth over the ocean: an HF station on the coast sends a fan of radio rays up to the glowing ionosphere layers. Some bounce back down to the sea and to the aircraft far away, some escape into space, and a skip zone near the station hears nothing.',
+  }
   const base = (hour: number, mhz: number, d: number) => {
     setFailure('flare', false)
     setFailure('storm', false)
@@ -329,6 +411,7 @@ function HfPage() {
   return (
     <ModuleLayout
       moduleId="hf"
+      stage={stage}
       nextId="cpdlc"
       idea={{
         analogy: (

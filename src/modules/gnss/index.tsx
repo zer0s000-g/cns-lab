@@ -1,15 +1,25 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { BarMeter, TelemetryRow } from '@/hud/Telemetry'
+import type { Shot } from '@/stage/types'
 import Deeper from './deeper.mdx'
 import { DEFAULT_ENV, type GnssEnv } from './engine'
+import { formatMetres } from './format'
+import { EARTH_RADIUS_KM_LABEL, R_U } from './heroScale'
 import { GnssSimulator } from './Simulator'
 import { GnssProvider, useGnss, useGnssState } from './state'
 import { BroadcastVisual, ClockVisual, CorrectionsVisual, GeometryVisual, RaimVisual, SpheresVisual, TravelTimeVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const GnssHero = lazy(() => import('./Hero3D'))
 
 const steps: Step[] = [
   {
@@ -177,8 +187,120 @@ const quiz: QuizQuestion[] = [
   },
 ]
 
+
+// ---------------------------------------------------------------------------
+// Stage: camera shots, telemetry and honesty labels
+// ---------------------------------------------------------------------------
+
+/**
+ * A shot that puts `subject` `shift` units right of the centre of the frame,
+ * so it sits clear of the chapter panel on the left. Plain vector maths: no three.js here.
+ */
+function framed(position: [number, number, number], subject: [number, number, number], shift: number, fov: number): Shot {
+  const f = [subject[0] - position[0], subject[1] - position[1], subject[2] - position[2]]
+  // right = forward × up
+  const r = [-f[2], 0, f[0]]
+  const n = Math.hypot(r[0], r[2]) || 1
+  return { position, target: [subject[0] - (r[0] / n) * shift, subject[1], subject[2] - (r[2] / n) * shift], fov }
+}
+
+/** The receiver sits on top of the small Earth; the Earth's centre is the origin. */
+const RX: [number, number, number] = [0, R_U, 0]
+
+const SHOTS: StageSpec['shots'] = {
+  idea: framed([17, 8, 25], [0, 0.8, 0], 5.2, 34),
+  simulator: framed([0, 14.5, 5.5], [0, R_U + 0.7, 0], 0.4, 40),
+  how: framed([-21, 6, 24], [0, 0.6, 0], 3.4, 34),
+  try: framed([-11, 9, 15], RX, 3.4, 38),
+  wrong: framed([-2.6, 2.6, 3.9], [0, R_U + 0.25, 0], 0.85, 40),
+  deeper: framed([26, 5, 9], [0, 1, 0], 6.5, 34),
+  quiz: framed([0, 34, 2], [0, 0, 0], 6, 36),
+}
+
+/** Close-ups for the seven "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Satellites broadcast the time: the whole constellation on its six orbits.
+  framed([-21, 6, 24], [0, 0.6, 0], 3.4, 34),
+  // 2 Travel time: from beside the receiver, looking up the lines of sight.
+  framed([4.2, 2.4, 6.2], [0, R_U + 1.6, 0], 1.4, 44),
+  // 3 Distances meet: three-quarter view of the receiver and the satellites in use.
+  framed([13, 13, 17], RX, 4.2, 38),
+  // 4 The fourth satellite: close on the receiver and its sky dome.
+  framed([2.1, 2.5, 3.3], [0, R_U + 0.35, 0], 0.75, 38),
+  // 5 Geometry: straight down on the sky dome, like the sky plot.
+  framed([0, 13, 0.9], [0, R_U, 0], 2.1, 40),
+  // 6 Errors and corrections: the ionosphere shell and the SBAS satellite overhead.
+  framed([18, 4, 12], [0, 4.6, 0], 4.4, 38),
+  // 7 Checking the satellites: three-quarter view with the lines of sight.
+  framed([9, 7, 11], [0, R_U + 1.2, 0], 2.4, 40),
+]
+
+const SCALE_LABEL = `Earth and orbits to scale (Earth radius ${EARTH_RADIUS_KM_LABEL.toLocaleString('en-US')} km)`
+
+function GnssTelemetry() {
+  const { engine } = useGnss()
+  const v = useSampled(
+    () => {
+      const r = engine.result
+      return {
+        up: engine.sats.filter((s) => s.elDeg > 0).length,
+        tracked: r.nTracked,
+        used: r.usedIds.length,
+        pdop: r.dop?.pdop ?? null,
+        h95: r.kind === 'fix' && r.h95M > 0 ? r.h95M : null,
+        kind: r.kind,
+      }
+    },
+    300,
+    (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  )
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Above horizon" value={v.up} />
+      <TelemetryRow label="Received" value={v.tracked} />
+      <TelemetryRow label="In use" value={v.used} tone={v.used >= 4 ? 'signal' : 'brass'} />
+      <TelemetryRow label="PDOP" value={v.pdop !== null && Number.isFinite(v.pdop) ? v.pdop.toFixed(1) : '—'} />
+      <TelemetryRow label="95% circle" value={v.h95 !== null ? formatMetres(v.h95) : '—'} />
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <span className="hud-label">Fix</span>
+        <BarMeter orientation="horizontal" value={Math.min(1, v.used / 8)} segments={8} label="Satellites in use, out of eight" />
+      </div>
+    </div>
+  )
+}
+
+function useGnssStage(): StageSpec {
+  const { engine, clock, store } = useGnss()
+  const running = useClock(clock, (c) => c.running)
+  const speed = useClock(clock, (c) => c.speed)
+  const env = useGnssState((s) => s.env)
+  const site = useGnssState((s) => s.settings.site)
+  const gbas = useGnssState((s) => s.settings.gbas)
+  const followEarth = useGnssState((s) => s.view.followEarth)
+  const nearby = env.jamming || env.spoofing || gbas || (env.blocked && site === 'ground')
+  return {
+    scene: (t) => <GnssHero t={t} engine={engine} store={store} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'L1 · 1575.42 MHz',
+    labels: [
+      SCALE_LABEL,
+      'Satellites and receiver larger than life',
+      'Simplified coastlines · ionosphere as a shell 350 km up',
+      ...(speed > 1 ? [`Time sped up ×${speed}`] : []),
+      ...(nearby ? ['Buildings, jammer and GBAS station not to scale'] : []),
+      ...(followEarth ? [] : ['View fixed in space: the Earth turns']),
+    ],
+    telemetry: <GnssTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: speed > 1 ? `Sim time ×${speed}` : 'Sim time' },
+    label:
+      'A small Earth on a stand with the GPS satellites on their six orbits around it. The receiver sits on top under a sky dome; cyan lines join it to the satellites in use, satellites it cannot receive are dimmed, and a brass line marks the SBAS satellite when its corrections are in use.',
+  }
+}
+
 function GnssPage() {
   const { store, clock } = useGnss()
+  const stage = useGnssStage()
   const env = useGnssState((s) => s.env)
   const s = store.getState()
 
@@ -418,6 +540,7 @@ function GnssPage() {
   return (
     <ModuleLayout
       moduleId="gnss"
+      stage={stage}
       nextId="vhf"
       idea={{
         analogy: (

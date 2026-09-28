@@ -57,7 +57,7 @@ export function LogonStrip() {
     )
   }
   return (
-    <div className="grid gap-4 rounded-lg border bg-card p-4 md:grid-cols-2">
+    <div className="hud-panel grid gap-4 rounded-md p-4 md:grid-cols-2">
       <div className="flex min-w-0 flex-col gap-2">
         <h3 className="text-sm font-semibold">
           Logging on (<Term id={s.standard === 'fans' ? 'fans-1a' : 'atn-b1'}>{s.standard === 'fans' ? 'FANS 1/A' : 'ATN B1'}</Term>)

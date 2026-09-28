@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { lazy, useMemo } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
@@ -13,6 +13,70 @@ import { EXTRA_DELAY_S, NEXT_CENTRE } from './engine'
 import { CpdlcSimulator } from './Simulator'
 import { CpdlcProvider, useCpdlc, useCpdlcState } from './state'
 import { AddressVisual, HandoverVisual, LogonVisual, MessageVisual, PathVisual, ReplyVisual, TimerVisual } from './visuals'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const CpdlcHero = lazy(() => import('./Hero3D'))
+
+const PANEL_SHOT = { position: [-21, 8, 20], target: [-9.5, 3.6, 0.5], fov: 38 } satisfies StageSpec['shots']['idea']
+
+const SHOTS: StageSpec['shots'] = {
+  idea: PANEL_SHOT,
+  simulator: { position: [-15, 14, 17], target: [-3.4, 2.6, 0], fov: 46 },
+  how: PANEL_SHOT,
+  try: { position: [-22, 12, 23], target: [-9, 4.2, 0], fov: 40 },
+  wrong: { position: [-18, 6, 22], target: [-9.5, 3.2, 0.5], fov: 38 },
+  deeper: { position: [-22, 12, 23], target: [-9, 4.2, 0], fov: 40 },
+  quiz: { position: [-6, 24, 14], target: [-6, 1, 0], fov: 38 },
+}
+
+/** One shot per "How it works" step (panels sit on the left, so the subject is framed right of centre). */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Log on first: the centre and the aircraft.
+  PANEL_SHOT,
+  // 2 Standard messages: close on the aircraft that receives them.
+  { position: [-4, 6.5, 15], target: [0, 2.6, 0.4], fov: 36 },
+  // 3 Every clearance needs an answer: up and back down the same path.
+  { position: [-20, 9, 19], target: [-9, 3.4, 0], fov: 38 },
+  // 4 The message takes a path: the whole chain, satellite included.
+  { position: [-22, 12, 23], target: [-9, 4.2, 0], fov: 40 },
+  // 5 Addressed to one aircraft only: CNS123 and CNS132 side by side.
+  { position: [-4, 6.5, 15], target: [0, 2.6, 0.4], fov: 36 },
+  // 6 Handing over: the two centres and the ground link between them.
+  { position: [-14.5, 5.5, 10], target: [-9.8, 0.9, 0.8], fov: 36 },
+  // 7 When data link is not enough: the radio leg to the aircraft.
+  { position: [-18, 6, 22], target: [-9.5, 3.2, 0.5], fov: 38 },
+]
+
+const CONN: Record<string, string> = { none: 'None', requested: 'Requested', inactive: 'Inactive', active: 'Active', transferred: 'Handed over' }
+
+function CpdlcTelemetry() {
+  const { engine } = useCpdlc()
+  const r = useSampled(
+    () => ({
+      path: engine.pathName,
+      n: engine.transits.filter((x) => !x.lost).length,
+      conn: CONN[engine.xlab] ?? engine.xlab,
+      ok: engine.xlab === 'active',
+      fl: Math.round(engine.levelFl),
+      lost: engine.env.lost,
+      rcp: engine.rcp,
+    }),
+    250,
+    (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  )
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Path" value={r.path} tone={r.lost ? 'alert' : 'signal'} />
+      <TelemetryRow label="On the way" value={r.n} unit={r.n === 1 ? 'msg' : 'msgs'} />
+      <TelemetryRow label="XLAB link" value={r.lost ? 'Down' : r.conn} tone={r.lost ? 'alert' : r.ok ? 'ok' : 'muted'} />
+      <TelemetryRow label="CNS123" value={`FL${r.fl}`} />
+      <TelemetryRow label="Required" value={`RCP ${r.rcp}`} />
+    </div>
+  )
+}
 
 const steps: Step[] = [
   {
@@ -170,6 +234,23 @@ function CpdlcPage() {
   const { engine, store, clock } = useCpdlc()
   const env = useCpdlcState((s) => s.env)
   const s = store.getState()
+  const running = useClock(clock, (c) => c.running)
+  const speed = useClock(clock, (c) => c.speed)
+  const stage: StageSpec = {
+    scene: (t) => <CpdlcHero t={t} engine={engine} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'Data link · FANS 1/A and ATN B1',
+    labels: [
+      'Not to scale · distances shrunk, the satellite drawn far closer than life',
+      'Packets move by each message’s own delivery time · delays are typical, illustrative values',
+      ...(speed > 1 ? [`Sped up ×${speed}`] : []),
+    ],
+    telemetry: <CpdlcTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: speed > 1 ? `Sim time ×${speed}` : 'Sim time' },
+    label:
+      'A miniature coast and ocean: two oceanic control centres and a data link network on land, with a VHF station, an HF station and a satellite dish. Over the sea flies CNS123. Each text message is a small packet travelling the chosen path between the controller and the aircraft.',
+  }
   const go = (speed: number) => {
     clock.getState().setSpeed(speed)
     clock.getState().play()
@@ -318,6 +399,7 @@ function CpdlcPage() {
   return (
     <ModuleLayout
       moduleId="cpdlc"
+      stage={stage}
       nextId="satcom"
       idea={{
         analogy: (

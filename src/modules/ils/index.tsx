@@ -1,16 +1,87 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
-import { glideslopeElevationDeg, GS_COVERAGE } from '@/core/ils'
+import { cdiLateral, cdiVertical, glideslopeElevationDeg, GS_COVERAGE } from '@/core/ils'
+import { useClock } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import { HEIGHT_X, LAT_X, MODEL_X, TABLE_LENGTH_KM } from './heroScale'
 import Deeper from './deeper.mdx'
 import { IlsSimulator } from './Simulator'
 import { IlsProvider, useIls, useIlsState } from './state'
 import { CompareVisual, GlideslopeVisual, HonestVisual, LocalizerVisual, MarkersVisual, MinimumsVisual, NeedlesVisual, TwoBeamsVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const IlsHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: the runway close-up has its own scale, and the tone colours are always explained. */
+const SCALE_LABEL = `Runway close-up · ${TABLE_LENGTH_KM.toFixed(1)} km table · sideways ×${LAT_X} · heights ×${HEIGHT_X} · aircraft and antennas ×${MODEL_X}`
+const TONE_LABEL = 'Cyan, lines: 90 Hz louder · amber, dots: 150 Hz louder'
+const FIELD_LABEL = 'Tint from the real signals · lobe outlines illustrative'
+
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [-15, 5.5, 7], target: [-4.5, 0.6, -1.8], fov: 36 },
+  simulator: { position: [-2, 12, 11], target: [-4.6, 0.8, -0.6], fov: 38 },
+  how: { position: [-15, 5.5, 7], target: [-4.5, 0.6, -1.8], fov: 36 },
+  try: { position: [-6, 9, 13], target: [-9, 1.2, 0], fov: 36 },
+  wrong: { position: [7, 3.2, 6], target: [0.5, 0.4, -0.6], fov: 34 },
+  deeper: { position: [10, 7, 13], target: [-6, 1, 0], fov: 32 },
+  quiz: { position: [-7, 22, 0.1], target: [-7, 0, 0], fov: 38 },
+}
+
+/** Shots for the eight "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Two beams: the runway, both antennas and the approach.
+  { position: [-15, 5.5, 7], target: [-4.5, 0.6, -1.8], fov: 36 },
+  // 2 Two songs, one each side: down on the localizer field.
+  { position: [-5, 12, 7], target: [-9, 0, 0], fov: 38 },
+  // 3 Compare the loudness: low along the course, looking at the seam.
+  { position: [-1, 3, 6], target: [-7, 0.4, 0], fov: 36 },
+  // 4 The glideslope: from the side, the vertical field.
+  { position: [-6.5, 2.2, 11], target: [-9.5, 1.5, 0], fov: 36 },
+  // 5 Two needles: behind the approach, looking at the runway.
+  { position: [-24, 5, 5], target: [-8, 1.4, 0], fov: 36 },
+  // 6 Markers along the way.
+  { position: [-3, 3.2, 7], target: [-6.5, 0.8, 0], fov: 36 },
+  // 7 How low in fog: close on the threshold and the approach lights.
+  { position: [0, 1.6, 3.4], target: [-4.5, 0.3, 0], fov: 36 },
+  // 8 Keeping it honest: the localizer array and its monitor.
+  { position: [6.4, 1.3, 2.6], target: [2.6, 0.1, 0], fov: 36 },
+]
+
+function IlsTelemetry() {
+  const { engine } = useIls()
+  const r = useSampled(
+    () => {
+      const rx = engine.receiver
+      return {
+        d: Math.max(0, engine.distanceToThresholdNm),
+        h: Math.max(0, Math.round(engine.heightAboveRunwayFt / 10) * 10),
+        loc: rx.loc.valid ? cdiLateral(rx.loc.ddm) : null,
+        gs: rx.gs.valid ? cdiVertical(rx.gs.ddm) : null,
+        marker: rx.marker,
+      }
+    },
+    250,
+    (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  )
+  const needle = (v: number | null, pos: string, neg: string) =>
+    v === null ? 'FLAG' : Math.abs(v) < 0.05 ? 'CENTRED' : `${v > 0 ? pos : neg} ${Math.round(Math.min(1, Math.abs(v)) * 100)}%`
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="To the runway" value={r.d.toFixed(1)} unit="NM" tone="signal" />
+      <TelemetryRow label="Height" value={r.h.toLocaleString('en-US')} unit="ft" />
+      <TelemetryRow label="Localizer" value={needle(r.loc, 'FLY R', 'FLY L')} tone={r.loc === null ? 'alert' : 'default'} />
+      <TelemetryRow label="Glideslope" value={needle(r.gs, 'FLY UP', 'FLY DN')} tone={r.gs === null ? 'alert' : 'default'} />
+      <TelemetryRow label="Marker" value={r.marker ? r.marker.toUpperCase() : '—'} tone={r.marker ? 'brass' : 'muted'} />
+    </div>
+  )
+}
 
 const steps: Step[] = [
   {
@@ -154,9 +225,22 @@ const quiz: QuizQuestion[] = [
 ]
 
 function IlsPage() {
-  const { engine, store } = useIls()
+  const { engine, store, clock } = useIls()
   const failures = useIlsState((s) => s.failures)
+  const running = useClock(clock, (c) => c.running)
   const s = store.getState()
+
+  const stage: StageSpec = {
+    scene: (t) => <IlsHero t={t} engine={engine} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: `Localizer ${engine.site.locMHz.toFixed(2)} MHz · glide path ${engine.site.pathDeg}°`,
+    labels: [SCALE_LABEL, TONE_LABEL, FIELD_LABEL],
+    telemetry: <IlsTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: 'Sim time' },
+    label:
+      'A tabletop model of runway 09 and its approach: the localizer array beyond the far end and the glide path mast beside the runway. The ground is tinted by which tone is louder, cyan with lines where 90 Hz is louder and amber with dots where 150 Hz is louder, and a vertical field shows the glide path. The aircraft flies the approach exactly as the simulator says.',
+  }
   const cond = useSampled(() => {
     const e = engine
     const el = glideslopeElevationDeg(e.site, e.aircraft.pos, e.aircraft.altitudeFt)
@@ -330,6 +414,7 @@ function IlsPage() {
   return (
     <ModuleLayout
       moduleId="ils"
+      stage={stage}
       nextId="gnss"
       idea={{
         analogy: (

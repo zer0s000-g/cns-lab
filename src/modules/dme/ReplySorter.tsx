@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { Canvas2D, type DrawFn } from '@/components/sim/Canvas2D'
-import { ControlSwitch } from '@/components/sim/Controls'
+import { LeverSwitch } from '@/hud/Controls'
 import { dmeDistanceFromTimingNm, dmeReplyDelayUs, dmeTiming, replyHistogram } from '@/core/dme'
 import { rangeFromRoundTripNm } from '@/core/propagation'
 import { useSampled } from '@/hooks/useSampled'
@@ -178,16 +178,19 @@ export function ReplySorter() {
   }, 1000)
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex flex-col gap-3 rounded-md p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold">Which answer is mine?</h3>
-          <p className="text-xs text-muted-foreground">
+        <div className="min-w-0 flex-1">
+          <h3 className="flex items-center gap-3">
+            <span className="hud-label text-signal">RX</span>
+            <span className="hud-title text-[11px] text-foreground">Which answer is mine?</span>
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
             The station answers every aircraft on the same frequency. Only the answers to CNS101's own questions come back at the same delay every time.
           </p>
         </div>
         <div className="w-full sm:w-64">
-          <ControlSwitch label="Colour CNS101's real answers" checked={reveal} onChange={setReveal} hint="The DME itself cannot see colours" />
+          <LeverSwitch label="Colour CNS101's real answers" tone="signal" checked={reveal} onChange={setReveal} hint="The DME itself cannot see colours" />
         </div>
       </div>
       <Canvas2D draw={draw} label={label} className="h-80 w-full rounded-md border" />

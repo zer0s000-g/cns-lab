@@ -162,7 +162,7 @@ export function SignalView() {
     : 'Arrival times: waiting for a signal.'
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex flex-col gap-3 rounded-md p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold">When the signal reached each receiver</h3>

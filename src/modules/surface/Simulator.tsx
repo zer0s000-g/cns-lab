@@ -1,30 +1,27 @@
 import { Link } from 'react-router'
 import { ArrowRight, Car, PlaneLanding, Undo2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  ClockControls,
-  ControlChoice,
-  ControlGroup,
-  ControlSlider,
-  ControlSwitch,
-  ControlsPanel,
-  Readout,
-  ReadoutGrid,
-  SimLabel,
-} from '@/components/sim/Controls'
+import { ClockControls, Readout, ReadoutGrid, SimLabel } from '@/components/sim/Controls'
+import { ChapterHead } from '@/components/module/ModuleLayout'
 import { Term } from '@/components/Term'
 import { DEFAULT_SMR, smrAzimuthResolutionM, smrRangeResolutionM, visibleInFog } from '@/core/surface'
 import { METRES_PER_NM } from '@/core/units'
 import { useClock, useSimulationLoop } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
+import { Dial, HudButton, LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
 import { AirportMap } from './AirportMap'
 import { FAILING_RECEIVER, RWY, TOUCHDOWN_X, TOWER_POS } from './layout'
 import { presetOf, useSurface, useSurfaceState, ZOOMS, type PresetId, type ZoomId } from './state'
 import { SurfaceScope } from './SurfaceScope'
 import { TowerView } from './TowerView'
 
+/**
+ * The Simulator chapter: a console laid over the airport diorama. Left, the
+ * controller's display; right, the control deck; below, the airport map (drag
+ * vehicles here) and the view from the tower window.
+ */
 export function SurfaceSimulator() {
   const { engine, clock, store } = useSurface()
 
@@ -35,22 +32,21 @@ export function SurfaceSimulator() {
   })
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <figure className="flex min-w-0 flex-col gap-2">
-          <figcaption className="flex flex-wrap items-baseline justify-between gap-2">
-            <span className="text-sm font-semibold">What is really on the airport</span>
-            <span className="text-xs text-muted-foreground">Drag a vehicle to move it</span>
-          </figcaption>
-          <AirportMap />
-          <MapLegend />
-        </figure>
-        <div className="grid gap-4 md:grid-cols-2">
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">What the controller's display shows</span>
-              <span className="text-xs text-muted-foreground">Click a label to select it</span>
-            </figcaption>
+    <div className="flex flex-col gap-4">
+      <div className="hud-panel rounded-md px-5 py-4 md:w-fit md:max-w-[520px]">
+        <ChapterHead
+          n={2}
+          title="Simulator"
+          lead="The airport behind is what is really there. The display shows what the radar, MLAT and ADS-B can work out."
+        />
+      </div>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,420px)_1fr_minmax(0,340px)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <HudPanel
+            index="SMR"
+            title="Controller's display"
+            bodyClassName="flex flex-col gap-2.5 p-3"
+          >
             <div className="relative">
               <SurfaceScope />
               <div className="pointer-events-none absolute top-2 left-2">
@@ -58,22 +54,38 @@ export function SurfaceSimulator() {
               </div>
             </div>
             <ScopeLegend />
-          </figure>
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">Out of the tower window</span>
-              <span className="text-xs text-muted-foreground">Fog fades it; the display stays clear</span>
-            </figcaption>
-            <TowerView />
-            <p className="text-xs text-muted-foreground">
-              Objects lose contrast with distance in fog. At the <Term id="visibility">visibility</Term> distance they fade into
-              the background. Radio waves pass through fog, so the display is unaffected.
-            </p>
+            <p className="text-[11.5px] leading-4 text-muted-foreground">Click a label to select it.</p>
+          </HudPanel>
+          <HudPanel index="TLM" title="Runway and traffic" bodyClassName="p-3">
             <LiveReadouts />
-          </figure>
+          </HudPanel>
         </div>
+        <div aria-hidden className="hidden md:block" />
+        <SurfaceControls />
       </div>
-      <SurfaceControls />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <HudPanel
+          index="MAP"
+          title="What is really on the airport"
+          actions={<span className="hud-label hidden text-[9.5px] sm:inline">Drag a vehicle to move it</span>}
+          bodyClassName="flex flex-col gap-2.5 p-3"
+        >
+          <AirportMap />
+          <MapLegend />
+        </HudPanel>
+        <HudPanel
+          index="TWR"
+          title="Out of the tower window"
+          actions={<span className="hud-label hidden text-[9.5px] sm:inline">Fog fades it; the display stays clear</span>}
+          bodyClassName="flex flex-col gap-2.5 p-3"
+        >
+          <TowerView />
+          <p className="text-[11.5px] leading-5 text-muted-foreground">
+            Objects lose contrast with distance in fog. At the <Term id="visibility">visibility</Term> distance they fade into
+            the background. Radio waves pass through fog, so the display is unaffected.
+          </p>
+        </HudPanel>
+      </div>
     </div>
   )
 }
@@ -216,16 +228,18 @@ function SurfaceControls() {
   const vehicleId = vehicles.some((v) => v.id === selectedId) ? selectedId! : 'OPS1'
   const rangeRes = smrRangeResolutionM(DEFAULT_SMR)
   const azRes = smrAzimuthResolutionM(DEFAULT_SMR, 1000)
+  const visHint = vis < 400 ? 'Thick fog: low visibility procedures' : vis < 1500 ? 'Fog' : vis < 5000 ? 'Mist' : 'Clear'
+  const shortZoom: Record<ZoomId, string> = { airport: 'Airport', west: 'West A1', apron: 'Apron' }
 
   return (
-    <ControlsPanel className="h-fit xl:sticky xl:top-20">
-      <ControlGroup title="Time">
+    <div className="flex min-w-0 flex-col gap-4">
+      <HudPanel index="CLK" title="Time" bodyClassName="p-3">
         <ClockControls clock={clock} onReset={resetAll} />
-        {!running && <p className="text-xs text-muted-foreground">Paused. Press Play to let the traffic move.</p>}
-      </ControlGroup>
+        {!running && <p className="mt-2 text-xs text-muted-foreground">Paused. Press Play to let the traffic move.</p>}
+      </HudPanel>
 
-      <ControlGroup title="The controller's picture">
-        <ControlChoice
+      <HudPanel index="SUR" title="The controller's picture" bodyClassName="flex flex-col gap-3 p-4">
+        <Segmented
           label="Show"
           value={presetOf(layers) as PresetId}
           onChange={(v) => setPreset(v)}
@@ -236,44 +250,52 @@ function SurfaceControls() {
             { value: 'fused', label: 'Fused' },
           ]}
         />
-        <ControlSwitch label={<Term id="smr">Surface movement radar</Term>} checked={layers.smr} onChange={(v) => setLayer('smr', v)} hint="Sees every object's shape, never its name" />
-        <ControlSwitch label={<Term id="multilateration">Multilateration</Term>} checked={layers.mlat} onChange={(v) => setLayer('mlat', v)} hint="Objects with a transponder, named" />
-        <ControlSwitch label={<Term id="ads-b">ADS-B</Term>} checked={layers.adsb} onChange={(v) => setLayer('adsb', v)} hint="Objects that broadcast their own position" />
-        <ControlSwitch label={<Term id="data-fusion">Fused tracks</Term>} checked={layers.fused} onChange={(v) => setLayer('fused', v)} hint="One labelled track per object" />
-        <ControlChoice
+        <div className="flex flex-col">
+          <LeverSwitch tone="signal" label={<Term id="smr">Surface movement radar</Term>} checked={layers.smr} onChange={(v) => setLayer('smr', v)} hint="Sees every object's shape, never its name" />
+          <LeverSwitch tone="signal" label={<Term id="multilateration">Multilateration</Term>} checked={layers.mlat} onChange={(v) => setLayer('mlat', v)} hint="Objects with a transponder, named" />
+          <LeverSwitch tone="signal" label={<Term id="ads-b">ADS-B</Term>} checked={layers.adsb} onChange={(v) => setLayer('adsb', v)} hint="Objects that broadcast their own position" />
+          <LeverSwitch tone="signal" label={<Term id="data-fusion">Fused tracks</Term>} checked={layers.fused} onChange={(v) => setLayer('fused', v)} hint="One labelled track per object" />
+        </div>
+        <Segmented
           label="Display area"
           value={zoom}
           onChange={(v) => setZoom(v as ZoomId)}
-          options={(Object.keys(ZOOMS) as ZoomId[]).map((z) => ({ value: z, label: ZOOMS[z].label }))}
+          options={(Object.keys(ZOOMS) as ZoomId[]).map((z) => ({ value: z, label: shortZoom[z], ariaLabel: ZOOMS[z].label }))}
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11.5px] leading-4 text-muted-foreground">
           The radar: X-band, 1 turn per second, detail about {rangeRes.toFixed(0)} m × {azRes.toFixed(0)} m at 1 km.
         </p>
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Weather">
-        <ControlSlider
-          label="Visibility"
-          value={Math.log10(vis)}
-          min={Math.log10(50)}
-          max={4}
-          step={0.01}
-          onChange={(v) => setVisibility(Math.round(10 ** v))}
-          format={(v) => formatVis(10 ** v)}
-          hint={vis < 400 ? 'Thick fog: low visibility procedures' : vis < 1500 ? 'Fog' : vis < 5000 ? 'Mist' : 'Clear'}
-        />
-        <ControlSwitch label="Heavy rain" checked={env.heavyRain} onChange={(v) => setEnv('heavyRain', v)} hint="X-band radar is weakened and cluttered by rain" />
-        <ControlSwitch
+      <HudPanel index="WX" title="Weather" bodyClassName="flex flex-col gap-2 p-4">
+        <div className="flex items-center gap-4">
+          <Dial
+            label="Visibility"
+            value={Math.log10(vis)}
+            min={Math.log10(50)}
+            max={4}
+            step={0.01}
+            onChange={(v) => setVisibility(Math.round(10 ** v))}
+            format={(v) => formatVis(10 ** v)}
+          />
+          <p className="flex-1 text-[12px] leading-5 text-muted-foreground">
+            <span className={vis < 400 ? 'text-warning' : 'text-foreground'}>{visHint}.</span> Fog hides the runway from the tower
+            window, not from the display.
+          </p>
+        </div>
+        <LeverSwitch label="Heavy rain" checked={env.heavyRain} onChange={(v) => setEnv('heavyRain', v)} hint="X-band radar is weakened and cluttered by rain" />
+        <LeverSwitch
+          tone="signal"
           label={<Term id="circular-polarisation">Circular polarisation</Term>}
           checked={env.circularPol}
           onChange={(v) => setEnv('circularPol', v)}
           hint="Radar setting that suppresses rain echoes"
         />
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Equipment faults">
-        <ControlSwitch label="VAN2 has no transponder" checked={env.noTransponder} onChange={(v) => setEnv('noTransponder', v)} />
-        <ControlSwitch
+      <HudPanel index="FLT" title="Equipment faults" bodyClassName="px-4 py-2">
+        <LeverSwitch label="VAN2 has no transponder" checked={env.noTransponder} onChange={(v) => setEnv('noTransponder', v)} />
+        <LeverSwitch
           label={
             <span>
               Reflections off the terminal (<Term id="ghost-target">ghosts</Term>)
@@ -282,12 +304,17 @@ function SurfaceControls() {
           checked={env.reflections}
           onChange={(v) => setEnv('reflections', v)}
         />
-        <ControlSwitch label={`MLAT receiver ${FAILING_RECEIVER} failed`} checked={env.mlatFailure} onChange={(v) => setEnv('mlatFailure', v)} />
-      </ControlGroup>
+        <LeverSwitch label={`MLAT receiver ${FAILING_RECEIVER} failed`} checked={env.mlatFailure} onChange={(v) => setEnv('mlatFailure', v)} />
+      </HudPanel>
 
-      <ControlGroup title="Runway incursion" description="Drag a vehicle onto the runway on the airport map, or use the buttons. Select a vehicle and use the arrow keys to nudge it.">
+      <HudPanel index="RWY" title="Runway incursion" bodyClassName="flex flex-col gap-3 p-4">
+        <p className="text-[12px] leading-5 text-muted-foreground">
+          Drag a vehicle onto the runway on the airport map, or use the buttons. Select a vehicle and use the arrow keys to nudge it.
+        </p>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="surface-vehicle">Vehicle</Label>
+          <Label htmlFor="surface-vehicle" className="hud-label">
+            Vehicle
+          </Label>
           <Select value={vehicleId} onValueChange={(v) => select(v)}>
             <SelectTrigger id="surface-vehicle" className="w-full">
               <SelectValue />
@@ -301,25 +328,24 @@ function SurfaceControls() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => engine.driveOntoRunway(vehicleId)}>
+        <div className="flex flex-col gap-2">
+          <HudButton variant="solid" onClick={() => engine.driveOntoRunway(vehicleId)}>
             <Car aria-hidden /> Drive {vehicleId} onto the runway
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => engine.sendVehiclesBack()}>
+          </HudButton>
+          <HudButton onClick={() => engine.sendVehiclesBack()}>
             <Undo2 aria-hidden /> Send vehicles back
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => engine.arrivalNow()}>
+          </HudButton>
+          <HudButton onClick={() => engine.arrivalNow()}>
             <PlaneLanding aria-hidden /> Bring the next arrival in now
-          </Button>
+          </HudButton>
         </div>
-      </ControlGroup>
-
-      <p className="text-xs text-muted-foreground">
-        The fused picture uses multilateration from the previous module.{' '}
-        <Link to="/modules/mlat" className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline">
-          How MLAT works <ArrowRight className="size-3" aria-hidden />
-        </Link>
-      </p>
-    </ControlsPanel>
+        <p className="text-[12px] text-muted-foreground">
+          The fused picture uses multilateration from the previous module.{' '}
+          <Link to="/modules/mlat" className="inline-flex items-center gap-0.5 text-signal hover:underline">
+            How MLAT works <ArrowRight className="size-3" aria-hidden />
+          </Link>
+        </p>
+      </HudPanel>
+    </div>
   )
 }

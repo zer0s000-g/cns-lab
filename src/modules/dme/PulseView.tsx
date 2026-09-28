@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { Play, RotateCcw, Send } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { HudButton } from '@/hud/Controls'
 import { Canvas2D, type DrawFn } from '@/components/sim/Canvas2D'
 import { SimLabel } from '@/components/sim/Controls'
 import { slowMotionFor, slowMotionLabel } from '@/core/clock'
@@ -102,26 +102,29 @@ export function PulseView({ replayRef }: { replayRef: React.RefObject<DmeReplay 
     : 'Slow-motion view waiting.'
 
   return (
-    <div ref={boxRef} className="flex scroll-mt-20 flex-col gap-3 rounded-lg border bg-card p-4">
+    <div ref={boxRef} className="hud-panel flex scroll-mt-20 flex-col gap-3 rounded-md p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold">One question and answer in slow motion</h3>
-          <p className="text-xs text-muted-foreground">Time freezes while we follow one pulse pair out to the station and back.</p>
+          <h3 className="flex items-center gap-3">
+            <span className="hud-label text-signal">SLO</span>
+            <span className="hud-title text-[11px] text-foreground">One question and answer in slow motion</span>
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">Time freezes while we follow one pulse pair out to the station and back, here and on the table behind.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {replay.phase === 'replay' ? (
             <>
-              <Button size="sm" variant="outline" onClick={again}>
+              <HudButton onClick={again}>
                 <RotateCcw aria-hidden /> Replay
-              </Button>
-              <Button size="sm" onClick={back}>
+              </HudButton>
+              <HudButton variant="solid" onClick={back}>
                 <Play aria-hidden /> Back to live
-              </Button>
+              </HudButton>
             </>
           ) : (
-            <Button size="sm" onClick={ask}>
+            <HudButton variant="solid" onClick={ask}>
               <Send aria-hidden /> Ask once in slow motion
-            </Button>
+            </HudButton>
           )}
         </div>
       </div>

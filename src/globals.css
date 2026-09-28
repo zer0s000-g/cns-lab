@@ -120,12 +120,12 @@
   --secondary: hsl(210 40% 96%);
   --secondary-foreground: hsl(222 47% 11%);
   --muted: hsl(210 40% 96%);
-  --muted-foreground: hsl(215 16% 47%);
+  --muted-foreground: hsl(215 16% 42%); /* ≥ 5.1:1 on white and the tinted surfaces */
   --accent: hsl(190 60% 95%);
   --accent-foreground: hsl(192 90% 24%);
   --destructive: hsl(0 72% 51%);
   --success: hsl(142 72% 29%);
-  --warning: hsl(32 95% 38%);
+  --warning: hsl(32 95% 33%); /* 5:1 on white */
   --border: hsl(214 32% 91%);
   --input: hsl(214 32% 84%);
   --ring: hsl(192 90% 31%);

@@ -114,7 +114,7 @@ export function PositionCheck() {
   const raim = useSampled(() => raimSummary(engine), 250, jsonEqual)
   const corr = useSampled(() => correctionsSummary(engine), 250, jsonEqual)
   return (
-    <div className="flex flex-col gap-4 rounded-lg border bg-card p-4">
+    <div className="flex flex-col gap-4">
       <DopMeter />
       <div className="flex flex-col gap-1.5 border-t pt-3">
         <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -266,7 +266,7 @@ export function OtherAids() {
     { name: 'SBAS and GBAS approaches', ...dep('Not available', 'Would guide towards the wrong place') },
   ]
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="flex flex-col gap-3">
       <div>
         <h3 className="text-sm font-semibold">What still works?</h3>
         <p className="text-xs text-muted-foreground">

@@ -1,26 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, type ComponentProps } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight, Volume2, VolumeX } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  AudioCaption,
-  ClockControls,
-  ClockSpeedLabel,
-  ControlChoice,
-  ControlGroup,
-  ControlSlider,
-  ControlSwitch,
-  ControlsPanel,
-  Readout,
-  ReadoutGrid,
-  SimLabel,
-} from '@/components/sim/Controls'
+import { AudioCaption, ClockControls, ClockSpeedLabel, ControlSlider, SimLabel } from '@/components/sim/Controls'
+import { ChapterHead } from '@/components/module/ModuleLayout'
 import { Term } from '@/components/Term'
 import { magneticToTrue, trueToMagnetic } from '@/core/geometry'
 import { morseTimeline, toMorse } from '@/core/morse'
 import { CDI_FULL_SCALE_DEG, isVorChannel, MONITOR, VOR_BAND_MHZ, VOR_IDENT, type VorType } from '@/core/vor'
 import { useClock, useSimulationLoop } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
+import { Dial, HudButton, LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
+import { TelemetryRow } from '@/hud/Telemetry'
 import { CDI } from '@/instruments'
 import { fmt3 } from '@/instruments/draw'
 import { audio, caption } from '@/lib/audio'
@@ -28,7 +19,6 @@ import { ErrorChart } from './ErrorChart'
 import { SIGNAL_SLOWDOWN, STATION, type Autopilot, type Preset } from './engine'
 import { SideView } from './SideView'
 import { SignalView } from './SignalView'
-import { Station3D } from './Station3D'
 import { useDvor, useDvorState } from './state'
 import { VorMap } from './VorMap'
 
@@ -51,104 +41,96 @@ export function DvorSimulator() {
   const turnS = ((1 / 30) * SIGNAL_SLOWDOWN) / speed
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">Seen from above</span>
-              <span className="text-xs text-muted-foreground">Drag the aircraft to move it</span>
-            </figcaption>
+    <div className="flex flex-col gap-4">
+      <div className="hud-panel rounded-md px-5 py-4 md:w-fit md:max-w-[520px]">
+        <ChapterHead
+          n={2}
+          title="Simulator"
+          lead="The table behind shows the station, the aircraft and the radial it is on. The CDI shows only what the receiver works out."
+        />
+      </div>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,420px)_1fr_minmax(0,340px)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <HudPanel index="MAP" title="Seen from above" bodyClassName="p-3">
             <div className="relative">
               <VorMap />
               <div className="pointer-events-none absolute top-2 left-2 flex max-w-[calc(100%-3rem)] flex-wrap gap-1.5">
                 <ClockSpeedLabel clock={clock} />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="mt-2.5 text-[11.5px] leading-5 text-muted-foreground">
               Map with <Term id="true-north">true north</Term> up, {range} NM around the station. The compass rose is the
-              station's: it is aligned to <Term id="magnetic-north">magnetic north</Term>. Solid blue line: the{' '}
-              <Term id="radial">radial</Term> the receiver measures.
+              station's: it is aligned to <Term id="magnetic-north">magnetic north</Term>. Solid line: the{' '}
+              <Term id="radial">radial</Term> the receiver measures. Drag the aircraft to move it.
             </p>
-          </figure>
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">The station</span>
-              <span className="text-xs text-muted-foreground">{type === 'dvor' ? 'Doppler VOR (DVOR)' : 'Conventional VOR (CVOR)'}</span>
-            </figcaption>
-            <div className="relative">
-              <Station3D type={type} className="aspect-square w-full" />
-              <div className="pointer-events-none absolute top-2 left-2 flex max-w-[calc(100%-1rem)] flex-wrap gap-1.5">
-                {running ? (
-                  <SimLabel>Slowed down so you can see it: one turn in {turnS.toFixed(turnS < 10 ? 1 : 0)} s, not 1/30 s</SimLabel>
-                ) : (
-                  <SimLabel icon="none">Paused</SimLabel>
-                )}
-                {type === 'cvor' && <SimLabel icon="none">Pattern shape exaggerated</SimLabel>}
-                <SimLabel icon="none">Distances not to scale</SimLabel>
-              </div>
+          </HudPanel>
+          <HudPanel index="STN" title="The station" actions={<span className="hud-label">{type === 'dvor' ? 'Doppler VOR' : 'Conventional VOR'}</span>} bodyClassName="p-3">
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {running ? (
+                <SimLabel>Slowed down so you can see it: one turn in {turnS.toFixed(turnS < 10 ? 1 : 0)} s, not 1/30 s</SimLabel>
+              ) : (
+                <SimLabel icon="none">Paused</SimLabel>
+              )}
+              {type === 'cvor' && <SimLabel icon="none">Pattern shape exaggerated</SimLabel>}
+              <SimLabel icon="none">Distances not to scale</SimLabel>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11.5px] leading-5 text-muted-foreground">
               {type === 'dvor' ? (
                 <>
-                  The glowing ball jumps around the ring of 48 antennas counter-clockwise (<Term id="commutation">switching</Term>
-                  ). When it moves straight toward you, the <Term id="doppler-effect">Doppler effect</Term> raises the frequency
-                  most. Blue bar: toward the aircraft. Triangle: magnetic north.
+                  On the table behind, the glowing light jumps around the ring of 48 antennas counter-clockwise (
+                  <Term id="commutation">switching</Term>). When it moves straight toward you, the{' '}
+                  <Term id="doppler-effect">Doppler effect</Term> raises the frequency most. Cyan line: the radial toward
+                  the aircraft. Brass triangle: magnetic north.
                 </>
               ) : (
                 <>
-                  The blue shape is the radiation pattern, turning clockwise. When its bulge points at you, the signal is
-                  strongest: that is the variable 30 Hz <Term id="am">AM</Term>. Blue bar: toward the aircraft. Triangle:
-                  magnetic north.
+                  On the table behind, the glowing shape is the radiation pattern, turning clockwise. When its bulge points
+                  at you, the signal is strongest: that is the variable 30 Hz <Term id="am">AM</Term>. Cyan line: the radial
+                  toward the aircraft. Brass triangle: magnetic north.
                 </>
               )}
             </p>
-          </figure>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">What the receiver hears</span>
-              <span className="text-xs text-muted-foreground">
-                <Term id="reference-signal">REF</Term> and <Term id="variable-signal">VAR</Term>
-              </span>
-            </figcaption>
-            <SignalView />
-          </figure>
+          </HudPanel>
           <CdiPanel />
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">Side view</span>
-              <span className="text-xs text-muted-foreground">
-                <Term id="cone-of-confusion">Cone of confusion</Term>
-              </span>
-            </figcaption>
-            <div className="relative">
-              <SideView />
-              <div className="pointer-events-none absolute top-2 right-2">
-                <SimLabel icon="none">Heights stretched</SimLabel>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">Along the aircraft's track. Climb and fly over the station to see the cone.</p>
-          </figure>
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">Course error around the station</span>
-              <span className="text-xs text-muted-foreground">
-                <Term id="scalloping">Scalloping</Term> from a building
-              </span>
-            </figcaption>
-            <ErrorChart />
-            <p className="text-xs text-muted-foreground">
-              Across: the radial. Up and down: how far the reflection can push the needle. Dots: what the needle did as you flew.
-            </p>
-          </figure>
-        </div>
-        <LiveReadouts />
+        <div aria-hidden className="hidden md:block" />
+        <DvorControls />
       </div>
-      <DvorControls />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <HudPanel
+          index="SIG"
+          className="min-w-0"
+          title="What the receiver hears"
+          actions={
+            <span className="hud-label">
+              <Term id="reference-signal">REF</Term> and <Term id="variable-signal">VAR</Term>
+            </span>
+          }
+          bodyClassName="p-3"
+        >
+          <SignalView />
+        </HudPanel>
+        <HudPanel index="ALT" className="min-w-0" title="Side view" actions={<span className="hud-label"><Term id="cone-of-confusion">Cone</Term></span>} bodyClassName="p-3">
+          <div className="relative">
+            <SideView />
+            <div className="pointer-events-none absolute top-2 right-2">
+              <SimLabel icon="none">Heights stretched</SimLabel>
+            </div>
+          </div>
+          <p className="mt-2.5 text-[11.5px] leading-5 text-muted-foreground">
+            Along the aircraft's track. Climb and fly over the station to see the{' '}
+            <Term id="cone-of-confusion">cone of confusion</Term>.
+          </p>
+        </HudPanel>
+        <HudPanel index="ERR" className="min-w-0" title="Course error around the station" bodyClassName="p-3">
+          <ErrorChart />
+          <p className="mt-2.5 text-[11.5px] leading-5 text-muted-foreground">
+            <Term id="scalloping">Scalloping</Term> from a building. Across: the radial. Up and down: how far the reflection can
+            push the needle. Dots: what the needle did as you flew.
+          </p>
+        </HudPanel>
+      </div>
+      <LiveReadouts />
     </div>
   )
 }
@@ -166,26 +148,27 @@ function CdiPanel() {
     return `${c.toFrom === 'TO' ? 'TO: flying this course takes you toward the station.' : 'FROM: flying this course takes you away from the station.'} ${side}`
   }, 250)
   return (
-    <figure className="flex min-w-0 flex-col gap-2">
-      <figcaption className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-semibold">In the cockpit</span>
-        <span className="text-xs text-muted-foreground">
-          <Term id="cdi">CDI</Term> with <Term id="obs">OBS</Term> knob
+    <HudPanel
+      index="CDI"
+      title="In the cockpit"
+      actions={
+        <span className="hud-label">
+          <Term id="cdi">CDI</Term> · <Term id="obs">OBS</Term>
         </span>
-      </figcaption>
-      <div className="flex flex-col items-center gap-2 rounded-lg border bg-card p-3">
-        <CDI
-          title="VOR"
-          size={220}
-          read={() => ({ courseDeg: engine.obsDeg, lateral: engine.last.cdi.lateral, toFrom: engine.last.cdi.toFrom })}
-          onCourseChange={setObs}
-        />
-        <p className="text-center text-xs text-muted-foreground" aria-live="polite">
-          {hint}
-        </p>
-        <p className="sr-only">Selected course {fmt3(obs)}.</p>
-      </div>
-    </figure>
+      }
+      bodyClassName="flex flex-col items-center gap-2 p-3"
+    >
+      <CDI
+        title="VOR"
+        size={220}
+        read={() => ({ courseDeg: engine.obsDeg, lateral: engine.last.cdi.lateral, toFrom: engine.last.cdi.toFrom })}
+        onCourseChange={setObs}
+      />
+      <p className="text-center text-[11.5px] leading-5 text-muted-foreground" aria-live="polite">
+        {hint}
+      </p>
+      <p className="sr-only">Selected course {fmt3(obs)}.</p>
+    </HudPanel>
   )
 }
 
@@ -216,55 +199,67 @@ function LiveReadouts() {
   }, 250)
   const dots = Math.min(5, Math.abs(r.dev) / (CDI_FULL_SCALE_DEG / 5))
   return (
-    <ReadoutGrid>
-      <Readout
-        label="Radial (FROM the station)"
-        value={r.radial == null || !r.usable ? '—' : `${fmt3(r.radial)}°`}
-        hint={r.radial == null ? 'No signal' : r.usable ? 'Magnetic' : 'Unusable over the station'}
-        tone={r.received && !r.usable ? 'warning' : 'default'}
-      />
-      <Readout
-        label="Phase difference"
-        value={r.radial == null ? '—' : `${fmt3(r.radial)}°`}
-        hint={r.received && !r.usable ? 'Garbled over the station' : 'AM lags FM by this much'}
-        tone={r.received && !r.usable ? 'warning' : 'default'}
-      />
-      <Readout label="Selected course (OBS)" value={`${fmt3(r.obs)}°`} />
-      <Readout
-        label="Needle"
-        value={r.toFrom === 'OFF' ? 'OFF' : `${r.toFrom} ${dots < 0.05 ? 'centred' : `${dots.toFixed(1)} ${r.dev > 0 ? 'R' : 'L'}`}`}
-        tone={r.toFrom === 'OFF' ? 'alert' : 'default'}
-        hint={r.toFrom === 'OFF' ? 'Warning flag' : 'Dots: 2° each'}
-      />
-      <Readout label="Distance" value={r.dist.toFixed(1)} unit="NM" hint={`${Math.round(r.alt).toLocaleString('en-US')} ft`} />
-      <Readout
-        label="Angle up from the station"
-        value={r.elev.toFixed(0)}
-        unit="°"
-        tone={r.cone === 'cone' ? 'alert' : r.cone === 'swing' ? 'warning' : 'default'}
-        hint={r.cone === 'cone' ? 'Inside the cone' : r.cone === 'swing' ? 'Needle swinging' : 'Clear of the cone'}
-      />
-      <Readout
-        label="Station"
-        value={r.status === 'alarm' ? 'OFF AIR' : r.status === 'standby' ? 'Standby TX' : 'Normal'}
-        tone={r.status === 'alarm' ? 'alert' : r.status === 'standby' ? 'warning' : 'ok'}
-        hint={`Monitor: ${r.monitor.toFixed(2)}° (alarm at ${MONITOR.bearingAlarmDeg}°)`}
-      />
-      <Readout
-        label="Ident"
-        value={r.ident ? STATION.ident : 'None'}
-        tone={r.ident ? 'ok' : 'alert'}
-        hint={r.ident ? toMorse(STATION.ident) : r.identRemoved && r.received ? 'Maintenance: do not use' : 'No signal'}
-      />
-      {r.building && (
-        <Readout
-          label="Reflection error now"
-          value={r.received ? `${r.site >= 0 ? '+' : '−'}${Math.abs(r.site).toFixed(1)}°` : '—'}
-          tone={Math.abs(r.site) >= 2 ? 'warning' : 'ok'}
-          hint={r.received ? `Correct radial ${fmt3(r.geo)}°` : undefined}
+    <HudPanel index="TLM" title="Receiver telemetry" bodyClassName="px-4 py-2">
+      <div className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3 [&>*]:border-b [&>*]:border-hud-line">
+        <Row
+          label="Radial (FROM the station)"
+          value={r.radial == null || !r.usable ? '—' : `${fmt3(r.radial)}°`}
+          hint={r.radial == null ? 'No signal' : r.usable ? 'Magnetic' : 'Unusable over the station'}
+          tone={r.received && !r.usable ? 'brass' : 'signal'}
         />
-      )}
-    </ReadoutGrid>
+        <Row
+          label="Phase difference"
+          value={r.radial == null ? '—' : `${fmt3(r.radial)}°`}
+          hint={r.received && !r.usable ? 'Garbled over the station' : 'AM lags FM by this much'}
+          tone={r.received && !r.usable ? 'brass' : 'default'}
+        />
+        <Row label="Selected course (OBS)" value={`${fmt3(r.obs)}°`} tone="brass" />
+        <Row
+          label="Needle"
+          value={r.toFrom === 'OFF' ? 'OFF' : `${r.toFrom} ${dots < 0.05 ? 'centred' : `${dots.toFixed(1)} ${r.dev > 0 ? 'R' : 'L'}`}`}
+          tone={r.toFrom === 'OFF' ? 'alert' : 'default'}
+          hint={r.toFrom === 'OFF' ? 'Warning flag' : 'Dots: 2° each'}
+        />
+        <Row label="Distance" value={r.dist.toFixed(1)} unit="NM" hint={`${Math.round(r.alt).toLocaleString('en-US')} ft`} />
+        <Row
+          label="Angle up from the station"
+          value={r.elev.toFixed(0)}
+          unit="°"
+          tone={r.cone === 'cone' ? 'alert' : r.cone === 'swing' ? 'brass' : 'default'}
+          hint={r.cone === 'cone' ? 'Inside the cone' : r.cone === 'swing' ? 'Needle swinging' : 'Clear of the cone'}
+        />
+        <Row
+          label="Station"
+          value={r.status === 'alarm' ? 'OFF AIR' : r.status === 'standby' ? 'Standby TX' : 'Normal'}
+          tone={r.status === 'alarm' ? 'alert' : r.status === 'standby' ? 'brass' : 'ok'}
+          hint={`Monitor: ${r.monitor.toFixed(2)}° (alarm at ${MONITOR.bearingAlarmDeg}°)`}
+        />
+        <Row
+          label="Ident"
+          value={r.ident ? STATION.ident : 'None'}
+          tone={r.ident ? 'ok' : 'alert'}
+          hint={r.ident ? toMorse(STATION.ident) : r.identRemoved && r.received ? 'Maintenance: do not use' : 'No signal'}
+        />
+        {r.building && (
+          <Row
+            label="Reflection error now"
+            value={r.received ? `${r.site >= 0 ? '+' : '−'}${Math.abs(r.site).toFixed(1)}°` : '—'}
+            tone={Math.abs(r.site) >= 2 ? 'brass' : 'ok'}
+            hint={r.received ? `Correct radial ${fmt3(r.geo)}°` : undefined}
+          />
+        )}
+      </div>
+    </HudPanel>
+  )
+}
+
+/** A telemetry row with a short plain-language hint under it. */
+function Row({ hint, ...props }: ComponentProps<typeof TelemetryRow> & { hint?: string }) {
+  return (
+    <div className="py-0.5">
+      <TelemetryRow {...props} className="pb-0.5" />
+      {hint && <p className="pb-1.5 text-[11px] leading-4 text-muted-foreground">{hint}</p>}
+    </div>
   )
 }
 
@@ -315,80 +310,88 @@ function DvorControls() {
   const validChannel = isVorChannel(s.freqMHz)
 
   return (
-    <ControlsPanel className="h-fit xl:sticky xl:top-20">
-      <ControlGroup title="Time">
+    <div className="flex min-w-0 flex-col gap-4">
+      <HudPanel index="CLK" title="Time" bodyClassName="p-3">
         <ClockControls clock={clock} onReset={s.resetAll} />
-        {!running && <p className="text-xs text-muted-foreground">Paused. Press Play to let the aircraft fly.</p>}
-      </ControlGroup>
+        {!running && <p className="mt-2 text-xs text-muted-foreground">Paused. Press Play to let the aircraft fly.</p>}
+      </HudPanel>
 
-      <ControlGroup title="The station">
-        <ControlChoice<VorType>
-          label="Type"
-          value={s.env.type}
-          onChange={(v) => s.setEnv('type', v)}
-          options={[
-            { value: 'cvor', label: 'Conventional (CVOR)' },
-            { value: 'dvor', label: 'Doppler (DVOR)' },
-          ]}
-          hint={
-            s.env.type === 'cvor'
+      <HudPanel index="TX" title="The station" bodyClassName="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-1.5">
+          <Segmented<VorType>
+            label="Type"
+            value={s.env.type}
+            onChange={(v) => s.setEnv('type', v)}
+            options={[
+              { value: 'cvor', label: 'Conventional', ariaLabel: 'Conventional (CVOR)' },
+              { value: 'dvor', label: 'Doppler', ariaLabel: 'Doppler (DVOR)' },
+            ]}
+          />
+          <p className="text-[11.5px] leading-4 text-muted-foreground">
+            {s.env.type === 'cvor'
               ? 'REF: 30 Hz FM on a 9960 Hz subcarrier. VAR: 30 Hz AM from a turning pattern.'
-              : 'REF: 30 Hz AM from the centre antenna. VAR: 30 Hz FM from the Doppler ring.'
-          }
-        />
-        <ControlSlider
-          label={<Term id="frequency">Frequency</Term>}
-          value={s.freqMHz}
-          min={VOR_BAND_MHZ.min}
-          max={VOR_BAND_MHZ.max}
-          step={0.05}
-          onChange={(v) => s.setFreq(Math.round(v * 20) / 20)}
-          format={(v) => `${v.toFixed(2)} MHz`}
-          hint={validChannel ? 'VOR band: 108.00–117.95 MHz' : 'Below 112 MHz the odd tenths belong to ILS localizers, not VORs'}
-        />
+              : 'REF: 30 Hz AM from the centre antenna. VAR: 30 Hz FM from the Doppler ring.'}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-2 gap-y-5">
+          <Dial
+            label={<Term id="frequency">Frequency</Term>}
+            value={s.freqMHz}
+            min={VOR_BAND_MHZ.min}
+            max={VOR_BAND_MHZ.max}
+            step={0.05}
+            onChange={(v) => s.setFreq(Math.round(v * 20) / 20)}
+            format={(v) => `${v.toFixed(2)} MHz`}
+          />
+          <Dial
+            label={<Term id="magnetic-variation">Variation</Term>}
+            value={s.variationDeg}
+            min={-20}
+            max={20}
+            onChange={s.setVariation}
+            format={formatVariation}
+          />
+        </div>
+        <p className={validChannel ? 'text-[11.5px] leading-4 text-muted-foreground' : 'text-[11.5px] leading-4 text-brass'}>
+          {validChannel ? 'VOR band: 108.00–117.95 MHz' : 'Below 112 MHz the odd tenths belong to ILS localizers, not VORs'}. The
+          station is aligned to magnetic north, so radials are magnetic. The map uses true north.
+        </p>
         <div className="flex flex-col gap-2">
-          <Button variant={s.listening ? 'default' : 'outline'} size="sm" onClick={() => s.setListening(!s.listening)} aria-pressed={s.listening} className="w-fit">
+          <HudButton active={s.listening} onClick={() => s.setListening(!s.listening)} className="w-fit">
             {s.listening ? <VolumeX aria-hidden /> : <Volume2 aria-hidden />}
             {s.listening ? 'Stop the ident' : 'Listen to the ident'}
-          </Button>
+          </HudButton>
           <p className="text-xs text-muted-foreground">
-            <Term id="morse-ident">Morse ident</Term> <span className="font-mono font-medium text-foreground">{STATION.ident}</span>{' '}
-            <span className="font-mono">{toMorse(STATION.ident)}</span>, about every {VOR_IDENT.repeatS} s
+            <Term id="morse-ident">Morse ident</Term> <span className="hud-value text-foreground">{STATION.ident}</span>{' '}
+            <span className="hud-value">{toMorse(STATION.ident)}</span>, about every {VOR_IDENT.repeatS} s
           </p>
           <AudioCaption />
         </div>
-        <ControlSlider
-          label={<Term id="magnetic-variation">Magnetic variation</Term>}
-          value={s.variationDeg}
-          min={-20}
-          max={20}
-          onChange={s.setVariation}
-          format={formatVariation}
-          hint="The station is aligned to magnetic north, so radials are magnetic. The map uses true north."
-        />
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Fly the aircraft">
-        <ControlChoice<Autopilot>
-          label="Autopilot"
-          value={s.autopilot}
-          onChange={s.setAutopilot}
-          options={[
-            { value: 'heading', label: 'Heading' },
-            { value: 'track', label: 'Course' },
-            { value: 'orbit', label: 'Circle' },
-            { value: 'direct', label: 'To VOR' },
-          ]}
-          hint={
-            s.autopilot === 'track'
-              ? 'Follows the needle on the OBS course'
-              : s.autopilot === 'orbit'
-                ? 'Flies a clockwise circle around the station'
-                : s.autopilot === 'direct'
-                  ? 'Straight to the station, then straight on'
-                  : undefined
-          }
-        />
+      <HudPanel index="ACF" title="Fly the aircraft" bodyClassName="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-1.5">
+          <Segmented<Autopilot>
+            label="Autopilot"
+            value={s.autopilot}
+            onChange={s.setAutopilot}
+            options={[
+              { value: 'heading', label: 'Heading' },
+              { value: 'track', label: 'Course' },
+              { value: 'orbit', label: 'Circle' },
+              { value: 'direct', label: 'To VOR' },
+            ]}
+          />
+          {s.autopilot !== 'heading' && (
+            <p className="text-[11.5px] leading-4 text-muted-foreground">
+              {s.autopilot === 'track'
+                ? 'Follows the needle on the OBS course'
+                : s.autopilot === 'orbit'
+                  ? 'Flies a clockwise circle around the station'
+                  : 'Straight to the station, then straight on'}
+            </p>
+          )}
+        </div>
         {s.autopilot === 'orbit' && (
           <ControlSlider label="Circle radius" value={s.orbitRadiusNm} min={2} max={20} onChange={s.setOrbitRadius} format={(v) => `${v} NM`} />
         )}
@@ -412,16 +415,16 @@ function DvorControls() {
           format={(v) => `${v.toLocaleString('en-US')} ft`}
         />
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Put the aircraft</span>
+          <span className="hud-label">Put the aircraft</span>
           <div className="flex flex-wrap gap-1.5">
             {PRESETS.map((p) => (
-              <Button key={p.id} variant="outline" size="sm" onClick={() => s.place(p.id)}>
+              <HudButton key={p.id} onClick={() => s.place(p.id)}>
                 {p.label}
-              </Button>
+              </HudButton>
             ))}
           </div>
         </div>
-        <ControlChoice
+        <Segmented
           label="Map range"
           value={String(s.mapRangeNm)}
           onChange={(v) => s.setMapRange(Number(v))}
@@ -431,32 +434,40 @@ function DvorControls() {
             { value: '50', label: '50 NM' },
           ]}
         />
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="When things go wrong">
-        <ControlSwitch label="Building near the station" checked={s.env.building} onChange={(v) => s.setEnv('building', v)} hint="Its reflection bends the course" />
+      <HudPanel index="ENV" title="When things go wrong" bodyClassName="flex flex-col px-4 py-3">
+        <LeverSwitch label="Building near the station" checked={s.env.building} onChange={(v) => s.setEnv('building', v)} hint="Its reflection bends the course" />
         {s.env.building && (
-          <ControlSlider
-            label="Building distance"
-            value={s.env.buildingDistanceM}
-            min={100}
-            max={800}
-            step={10}
-            onChange={(v) => s.setEnv('buildingDistanceM', v)}
-            format={(v) => `${v} m`}
-          />
+          <div className="py-2">
+            <ControlSlider
+              label="Building distance"
+              value={s.env.buildingDistanceM}
+              min={100}
+              max={800}
+              step={10}
+              onChange={(v) => s.setEnv('buildingDistanceM', v)}
+              format={(v) => `${v} m`}
+            />
+          </div>
         )}
-        <ControlSwitch label="Transmitter fault" checked={s.env.fault} onChange={(v) => s.setEnv('fault', v)} hint="The bearing starts to drift; watch the monitor" />
-        <ControlSwitch label="Standby transmitter fitted" checked={s.env.standby} onChange={(v) => s.setEnv('standby', v)} hint={`Takes over about ${MONITOR.changeoverS} s after an alarm`} />
-        <ControlSwitch label="Ident removed (maintenance)" checked={s.env.identRemoved} onChange={(v) => s.setEnv('identRemoved', v)} />
-      </ControlGroup>
+        <LeverSwitch label="Transmitter fault" checked={s.env.fault} onChange={(v) => s.setEnv('fault', v)} hint="The bearing starts to drift; watch the monitor" />
+        <LeverSwitch
+          label="Standby transmitter fitted"
+          tone="signal"
+          checked={s.env.standby}
+          onChange={(v) => s.setEnv('standby', v)}
+          hint={`Takes over about ${MONITOR.changeoverS} s after an alarm`}
+        />
+        <LeverSwitch label="Ident removed (maintenance)" checked={s.env.identRemoved} onChange={(v) => s.setEnv('identRemoved', v)} />
+      </HudPanel>
 
       <p className="text-xs text-muted-foreground">
         A VOR gives direction, not distance.{' '}
-        <Link to="/modules/dme" className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline">
+        <Link to="/modules/dme" className="inline-flex items-center gap-0.5 font-medium text-signal hover:underline">
           DME adds the distance <ArrowRight className="size-3" aria-hidden />
         </Link>
       </p>
-    </ControlsPanel>
+    </div>
   )
 }

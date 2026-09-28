@@ -1,15 +1,87 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
+import { DEFAULT_SMR } from '@/core/surface'
+import { METRES_PER_NM } from '@/core/units'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
 import Deeper from './deeper.mdx'
-import { FAILING_RECEIVER } from './layout'
+import { ARRIVAL_PERIOD_S, TURNAROUND_S } from './engine'
+import { AIRCRAFT_X, HEIGHT_X, TABLE_H_KM, TABLE_W_KM, TOWER_X, VEHICLE_X } from './heroScale'
+import { FAILING_RECEIVER, RWY } from './layout'
 import { SurfaceSimulator } from './Simulator'
 import { SurfaceProvider, useSurface, useSurfaceState } from './state'
 import { FogVisual, FusionVisual, LevelsVisual, NamesVisual, SmrVisual, StopBarVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const SurfaceHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: the airport miniature has its own scale. */
+const SCALE_LABEL = `Airport ${TABLE_W_KM.toFixed(1)} × ${TABLE_H_KM.toFixed(1)} km · heights ×${HEIGHT_X}`
+const SIZE_LABEL = `Models enlarged: aircraft ×${AIRCRAFT_X}, vehicles ×${VEHICLE_X}, tower ×${TOWER_X}`
+const BEAM_LABEL = `Beam drawn wider than ${DEFAULT_SMR.beamWidthDeg}° · real turn speed`
+const TRAFFIC_LABEL = `Traffic compressed: a landing every ${Math.round((ARRIVAL_PERIOD_S / 60) * 10) / 10} min, turnarounds ${TURNAROUND_S} s`
+
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [6, 5.5, 8.5], target: [-2.4, 0, -0.6], fov: 34 },
+  simulator: { position: [-1.4, 13, 7.5], target: [-1.8, 0, -0.9], fov: 36 },
+  how: { position: [9, 5, 9], target: [-2.2, 0, -0.6], fov: 36 },
+  try: { position: [-8, 7, 9], target: [-4, 0, -0.6], fov: 36 },
+  wrong: { position: [5, 6, 8], target: [-2, 0, -1.4], fov: 36 },
+  deeper: { position: [12, 9, 13], target: [-2, 0, -0.5], fov: 30 },
+  quiz: { position: [-2, 20, 0.1], target: [-2, 0, -0.2], fov: 34 },
+}
+
+/** Close-ups for the six "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Seeing the ground: the whole airport, low from the south-east.
+  { position: [9, 5, 9], target: [-2.2, 0, -0.6], fov: 36 },
+  // 2 The radar: close on the tower and its turning antenna.
+  { position: [-1.3, 1.7, 1.3], target: [-3.95, 0.45, -1.5], fov: 34 },
+  // 3 Names: MLAT receivers around the field.
+  { position: [3, 10, 9], target: [-2.5, 0, -0.6], fov: 40 },
+  // 4 Fusion: straight down on the apron.
+  { position: [-2.8, 10, 0.4], target: [-2.8, 0, -1.1], fov: 36 },
+  // 5 Stop bars: low over the A1 holding point.
+  { position: [-3.9, 1.2, 1.5], target: [-6.7, 0.05, -0.4], fov: 34 },
+  // 6 A-SMGCS: wide three-quarter.
+  { position: [10, 8, 12], target: [-2, 0, -0.3], fov: 36 },
+]
+
+function SurfaceTelemetry() {
+  const { engine } = useSurface()
+  const r = useSampled(
+    () => {
+      const e = engine
+      const live = [...e.tracks.values()].filter((t) => e.trackSources(t).length)
+      const arr = e.objects.find((o) => o.phase === 'final')
+      return {
+        az: Math.round(e.smrAz),
+        level: e.alert.level,
+        named: live.filter((t) => t.identity).length,
+        unnamed: live.filter((t) => !t.identity).length,
+        next: arr ? `${((RWY.thresholdX - arr.pos.x) / METRES_PER_NM).toFixed(1)} NM` : '—',
+      }
+    },
+    250,
+    (x, y) => JSON.stringify(x) === JSON.stringify(y),
+  )
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Radar antenna" value={String(r.az).padStart(3, '0')} unit="°" tone="signal" />
+      <TelemetryRow label="Runway 09/27" value={r.level === 'alert' ? 'ALERT' : r.level === 'caution' ? 'CAUTION' : 'CLEAR'} tone={r.level === 'alert' ? 'alert' : r.level === 'caution' ? 'brass' : 'ok'} />
+      <TelemetryRow label="Named tracks" value={r.named} />
+      <TelemetryRow label="Without a name" value={r.unnamed} tone={r.unnamed ? 'brass' : 'default'} />
+      <TelemetryRow label="Next arrival" value={r.next} />
+    </div>
+  )
+}
 
 const steps: Step[] = [
   {
@@ -133,9 +205,22 @@ const quiz: QuizQuestion[] = [
 ]
 
 function SurfacePage() {
-  const { engine, store } = useSurface()
+  const { engine, store, clock } = useSurface()
   const env = useSurfaceState((s) => s.env)
+  const running = useClock(clock, (c) => c.running)
   const s = store.getState()
+
+  const stage: StageSpec = {
+    scene: (t) => <SurfaceHero t={t} engine={engine} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'X-band surface radar · MLAT · ADS-B',
+    labels: [SCALE_LABEL, SIZE_LABEL, BEAM_LABEL, TRAFFIC_LABEL],
+    telemetry: <SurfaceTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: 'Sim time' },
+    label:
+      'A tabletop model of the airport: runway 09/27, taxiway A with its stop bars, the apron and terminal. The surface movement radar turns on the control tower roof, and aircraft and vehicles move exactly as the simulator says, each labelled with the sensors that see it.',
+  }
 
   const experiments: Experiment[] = [
     {
@@ -307,6 +392,7 @@ function SurfacePage() {
   return (
     <ModuleLayout
       moduleId="surface"
+      stage={stage}
       nextId="vhf"
       idea={{
         analogy: (

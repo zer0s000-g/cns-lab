@@ -1,6 +1,7 @@
 import { BellRing, Headphones, Radio, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ControlChoice, ControlSwitch } from '@/components/sim/Controls'
+import { LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
 import { Term } from '@/components/Term'
 import { SELCAL_LETTERS, SELCAL_TONES_HZ, hfQuality } from '@/core/hf'
 import { useSampled } from '@/hooks/useSampled'
@@ -69,17 +70,21 @@ export function SelcalPanel() {
   }
 
   return (
-    <section aria-label="SELCAL" className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
-      <div>
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
-          <BellRing className="size-4 text-primary" aria-hidden />
+    <HudPanel
+      index="SC"
+      title={
+        <span className="inline-flex items-center gap-2">
+          <BellRing className="size-3.5 text-signal" aria-hidden />
           <span>
             <Term id="selcal">SELCAL</Term>: a doorbell for HF
           </span>
-        </h3>
-        <p className="text-xs text-muted-foreground">Pilots keep the noisy HF turned down. The station sends two pairs of tones; only the aircraft with that code chimes.</p>
-      </div>
-      <ControlChoice
+        </span>
+      }
+      bodyClassName="p-0"
+    >
+    <section aria-label="SELCAL" className="flex min-w-0 flex-col gap-4 p-4">
+      <p className="-mb-1 text-xs text-muted-foreground">Pilots keep the noisy HF turned down. The station sends two pairs of tones; only the aircraft with that code chimes.</p>
+      <Segmented
         label="The ground station calls"
         value={target}
         onChange={setTarget}
@@ -99,7 +104,7 @@ export function SelcalPanel() {
         <figcaption className="text-xs text-muted-foreground">The 16 SELCAL tones (no I, N or O). Lit: the pair being sent now.</figcaption>
         <Spectrum read={tones} className="h-32" describe={() => (st.code ? `SELCAL code ${st.code}${st.pair !== null ? `, sending pair ${st.pair + 1}` : ''}.` : 'SELCAL tones, none being sent.')} />
       </figure>
-      <ul className="flex flex-col divide-y rounded-md border" aria-live="polite">
+      <ul className="flex flex-col divide-y divide-hud-line rounded-[4px] border border-hud-line" aria-live="polite">
         {st.rows.map((row) => {
           const lit = !st.sending && row.res?.rang
           return (
@@ -107,7 +112,7 @@ export function SelcalPanel() {
               <span
                 className={cn(
                   'grid size-7 shrink-0 place-items-center rounded-full border text-[10px] font-bold',
-                  lit ? 'border-primary bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                  lit ? 'border-signal bg-signal text-background shadow-[0_0_10px_var(--signal)]' : 'border-hud-line bg-background/40 text-muted-foreground',
                 )}
                 aria-label={lit ? 'SELCAL light on' : 'SELCAL light off'}
               >
@@ -115,18 +120,19 @@ export function SelcalPanel() {
               </span>
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="text-sm font-medium">
-                  {row.id === 'CNS101' ? 'CNS101 (you)' : row.id} · <span className="font-mono">{row.code}</span>
+                  {row.id === 'CNS101' ? 'CNS101 (you)' : row.id} · <span className="hud-value">{row.code}</span>
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {nmText(row.d)} out · {row.mode}
                 </span>
               </div>
-              <span className={cn('shrink-0 text-right text-xs font-medium', row.res?.rang ? 'text-primary' : row.res?.forMe ? 'text-destructive' : 'text-muted-foreground')}>{statusOf(row)}</span>
+              <span className={cn('shrink-0 text-right text-xs font-medium', row.res?.rang ? 'text-signal' : row.res?.forMe ? 'text-destructive' : 'text-muted-foreground')}>{statusOf(row)}</span>
             </li>
           )
         })}
       </ul>
     </section>
+    </HudPanel>
   )
 }
 
@@ -142,20 +148,24 @@ export function ComparePanel({ director }: { director: React.RefObject<HfAudioDi
   }, 200)
   const vhfRange = radioLineOfSightNm(100, CRUISE_FT)
   return (
-    <section aria-label="HF and VHF audio" className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
-      <div>
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
-          <Headphones className="size-4 text-primary" aria-hidden /> HF or VHF: hear the difference
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          HF voice uses <Term id="ssb">single sideband</Term> in a narrow channel, with hiss, fading and static. VHF is clear, but only in line of sight.
-        </p>
-      </div>
-      <div className="rounded-md border bg-muted/40 p-3 text-sm" aria-live="polite">
+    <HudPanel
+      index="AUD"
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Headphones className="size-3.5 text-signal" aria-hidden /> HF or VHF: hear the difference
+        </span>
+      }
+      bodyClassName="p-0"
+    >
+    <section aria-label="HF and VHF audio" className="flex min-w-0 flex-col gap-4 p-4">
+      <p className="-mb-1 text-xs text-muted-foreground">
+        HF voice uses <Term id="ssb">single sideband</Term> in a narrow channel, with hiss, fading and static. VHF is clear, but only in line of sight.
+      </p>
+      <div className="rounded-[4px] border border-hud-line bg-background/40 p-3 text-sm" aria-live="polite">
         <p>
           <span className="font-medium">HF at CNS101 now: </span>
           <span className={cn(q.q === 'clear' ? 'text-success' : q.q === 'noisy' ? 'text-warning' : 'text-destructive', 'font-medium')}>{QUALITY_TEXT[q.q]}</span>
-          {Number.isFinite(q.snr) && <span className="font-mono text-xs tabular-nums text-muted-foreground"> · {q.snr.toFixed(0)} dB above the noise</span>}
+          {Number.isFinite(q.snr) && <span className="hud-value text-xs text-muted-foreground"> · {q.snr.toFixed(0)} dB above the noise</span>}
         </p>
         <p className="text-xs text-muted-foreground">
           {q.mode}. VHF from the coast reaches only about {Math.round(vhfRange)} NM{d > vhfRange ? ', so CNS101 is far out of VHF range.' : '.'}
@@ -169,7 +179,8 @@ export function ComparePanel({ director }: { director: React.RefObject<HfAudioDi
           <Radio aria-hidden /> Hear it on VHF
         </Button>
       </div>
-      <ControlSwitch label="Keep the HF loudspeaker on" checked={listen} onChange={(v) => setParam('listen', v)} hint="What pilots heard for hours before SELCAL." />
+      <LeverSwitch label="Keep the HF loudspeaker on" tone="signal" checked={listen} onChange={(v) => setParam('listen', v)} hint="What pilots heard for hours before SELCAL." />
     </section>
+    </HudPanel>
   )
 }

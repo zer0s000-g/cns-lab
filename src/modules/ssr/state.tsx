@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useRef, useState, type MutableRefObject, type ReactNode } from 'react'
 import { createStore, useStore, type StoreApi } from 'zustand'
 import { useSimClock, type SimClock } from '@/hooks/useSimClock'
+import type { SsrReplay } from './SlowMotion'
 import { DEFAULT_SSR_ENV, DEFAULT_SSR_PARAMS, defaultTransponders, SsrEngine, type SsrEnv, type SsrParams, type Transponder } from './engine'
 
 export type ReplayPhase = 'idle' | 'armed' | 'replay'
@@ -78,17 +79,20 @@ interface SsrContextValue {
   engine: SsrEngine
   clock: SimClock
   store: StoreApi<SsrState>
+  /** The slow-motion interrogation replay, shared by the 2D slow-motion view and the 3D stage. */
+  replayRef: MutableRefObject<SsrReplay | null>
 }
 
 const Ctx = createContext<SsrContextValue | null>(null)
 
 export function SsrProvider({ children }: { children: ReactNode }) {
   const clock = useSimClock()
+  const replayRef = useRef<SsrReplay | null>(null)
   const [value] = useState(() => {
     const engine = new SsrEngine()
     return { engine, store: createSsrStore(engine) }
   })
-  return <Ctx.Provider value={{ ...value, clock }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ ...value, clock, replayRef }}>{children}</Ctx.Provider>
 }
 
 export function useSsr() {

@@ -1,14 +1,54 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { BarMeter, TelemetryRow } from '@/hud/Telemetry'
+import { HEIGHT_EXAGGERATION, TABLE_RADIUS_NM } from '@/stage/scale'
 import Deeper from './deeper.mdx'
 import { SsrSimulator } from './Simulator'
 import { SsrProvider, useSsr, useSsrState } from './state'
 import { AltitudeVisual, AskVisual, LabelVisual, ModeSVisual, RangeVisual, ReplyVisual, SideLobeVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const SsrHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: what is to scale on the table and what is not. */
+const tableScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · radar and aircraft larger than life`
+const flashLabel = 'Replies take microseconds · each answer is held on screen about a second'
+
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [13, 7, 15], target: [0, 1, 0], fov: 32 },
+  simulator: { position: [0, 22, 14], target: [0, 0, 1], fov: 38 },
+  how: { position: [4.8, 3.0, 6.2], target: [-1.2, 1.35, 0.7], fov: 36 },
+  try: { position: [-9, 10, 15], target: [-4, 0.5, 0], fov: 36 },
+  wrong: { position: [12, 11, 14], target: [-3, 0.5, 0], fov: 36 },
+  deeper: { position: [18, 10, 18], target: [-3, 0, 2], fov: 30 },
+  quiz: { position: [-4, 30, 0.1], target: [-4, 0, 0], fov: 34 },
+}
+
+/** Close-ups for the seven "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Ask a question: close on the SSR array on top of the radar head.
+  { position: [4.8, 3.0, 6.2], target: [-1.2, 1.35, 0.7], fov: 36 },
+  // 2 Main beam or side lobe: above and behind the antenna, along the beam.
+  { position: [-3, 7, 8], target: [-2, 1, 0], fov: 40 },
+  // 3 The answer: the antenna and the nearest aircraft.
+  { position: [8, 5, 9], target: [-0.5, 0.8, 1.5], fov: 38 },
+  // 4 Distance and direction: high over the table.
+  { position: [-2, 16, 12], target: [-3, 0, 0], fov: 38 },
+  // 5 Altitude: low, so the heights of the aircraft read.
+  { position: [-14, 3.5, 12], target: [-4, 1.2, 0], fov: 36 },
+  // 6 Mode S: a wide three-quarter view.
+  { position: [13, 9, 14], target: [-3, 0.6, 0], fov: 36 },
+  // 7 On the screen: straight down on the table.
+  { position: [-3, 24, 0.1], target: [-3, 0, 0], fov: 36 },
+]
 
 const steps: Step[] = [
   {
@@ -178,12 +218,49 @@ const quiz: QuizQuestion[] = [
   },
 ]
 
+function SsrTelemetry() {
+  const { engine } = useSsr()
+  const params = useSsrState((s) => s.params)
+  const seen = useSampled(() => {
+    const tracks = [...engine.tracks.values()]
+    const labelled = engine.aircraft.filter((a) => engine.trackFor(a.id)?.plot.secondary).length
+    const falseN = tracks.filter((t) => t.plot.secondary && (!t.plot.sourceId || !engine.getAircraft(t.plot.sourceId))).length
+    return { n: engine.aircraft.length, k: labelled, az: Math.round(engine.antennaAz), falseN }
+  }, 250)
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Antenna" value={String(seen.az).padStart(3, '0')} unit="°" tone="signal" />
+      <TelemetryRow label="Asks" value={params.mode === 's' ? 'Mode S' : 'Mode A/C'} />
+      <TelemetryRow label="Turn" value={params.rotationPeriodS.toFixed(1)} unit="s" />
+      <TelemetryRow label="Labelled" value={`${seen.k}/${seen.n}`} tone="brass" />
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <span className="hud-label">On screen</span>
+        <BarMeter orientation="horizontal" value={seen.n ? seen.k / seen.n : 0} segments={14} label="Share of aircraft with a label on the controller's screen" />
+      </div>
+    </div>
+  )
+}
+
 function SsrPage() {
-  const { engine, store } = useSsr()
+  const { engine, store, clock, replayRef } = useSsr()
   const env = useSsrState((s) => s.env)
   const params = useSsrState((s) => s.params)
   const xpdr = useSsrState((s) => s.xpdr)
+  const replaying = useSsrState((s) => s.replay.phase === 'replay')
+  const running = useClock(clock, (c) => c.running)
   const s = store.getState()
+
+  const stage: StageSpec = {
+    scene: (t) => <SsrHero t={t} engine={engine} replayRef={replayRef} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: 'Asks on 1030 MHz · answers on 1090 MHz',
+    labels: [tableScaleLabel, replaying ? 'Slowed down so you can see it · the world is frozen' : flashLabel],
+    telemetry: <SsrTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: replaying ? 'Interrogation replay' : 'Sim time' },
+    label:
+      'A tabletop model of the airspace: the secondary radar array rides on top of the radar head and sweeps its 1030 MHz question beam over the terrain. Each aircraft flashes brass when its transponder answer becomes a label on the controller’s screen; false targets from side lobes or another radar are ringed where the screen draws them.',
+  }
 
   const experiments: Experiment[] = [
     {
@@ -360,6 +437,7 @@ function SsrPage() {
   return (
     <ModuleLayout
       moduleId="ssr"
+      stage={stage}
       nextId="ads"
       idea={{
         analogy: (

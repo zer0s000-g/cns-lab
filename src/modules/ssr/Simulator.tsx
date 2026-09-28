@@ -1,37 +1,34 @@
-import { useRef } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  ClockControls,
-  ClockSpeedLabel,
-  ControlChoice,
-  ControlGroup,
-  ControlSlider,
-  ControlSwitch,
-  ControlsPanel,
-  Readout,
-  ReadoutGrid,
-  SimLabel,
-} from '@/components/sim/Controls'
+import { ClockControls, ClockSpeedLabel, ControlSlider, SimLabel } from '@/components/sim/Controls'
+import { ChapterHead } from '@/components/module/ModuleLayout'
 import { Term } from '@/components/Term'
 import { bearingDeg, normalize360 } from '@/core/geometry'
 import { formatIcaoAddress, rangeFromReplyUs, replyArrivalUs, SSR_DOWNLINK_MHZ, SSR_UPLINK_MHZ } from '@/core/ssr'
 import { useClock, useSimulationLoop } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
+import { Dial, LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
+import { TelemetryRow } from '@/hud/Telemetry'
 import { RadarScope, type ScopeTrack } from '@/instruments'
-import { SsrAntenna3D } from './Antenna3D'
 import { trackEmphasis, trackLabel, type SsrEngine } from './engine'
 import { PatternView } from './PatternView'
 import { ReplyBuilder } from './ReplyBuilder'
-import { advanceReplay, buildSsrReplay, SlowMotion, type SsrReplay } from './SlowMotion'
+import { advanceReplay, buildSsrReplay, SlowMotion } from './SlowMotion'
 import { SsrTruthMap } from './TruthMap'
 import { useSsr, useSsrState } from './state'
 
+/**
+ * The Simulator chapter: a console laid over the 3D stage. Left, the
+ * controller's screen (or the truth map); right, the control deck; below, the
+ * transponder, the antenna pattern and one interrogation in slow motion. The
+ * stage behind shows what is really out there.
+ */
 export function SsrSimulator() {
-  const { engine, clock, store } = useSsr()
-  const replayRef = useRef<SsrReplay | null>(null)
+  const { engine, clock, store, replayRef } = useSsr()
 
   useSimulationLoop(clock, (dt, realDt) => {
     const s = store.getState()
@@ -68,63 +65,87 @@ export function SsrSimulator() {
   const range = useSsrState((s) => s.scopeRangeNm)
   const params = useSsrState((s) => s.params)
   const select = useSsrState((s) => s.select)
+  const [view, setView] = useState<'scope' | 'map'>('scope')
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">What is really out there</span>
-              <span className="text-xs text-muted-foreground">Drag an aircraft to move it</span>
-            </figcaption>
+    <div className="flex flex-col gap-4">
+      <div className="hud-panel rounded-md px-5 py-4 md:w-fit md:max-w-[520px]">
+        <ChapterHead
+          n={2}
+          title="Simulator"
+          lead="The table behind is what is really out there. The screen shows what the radar hears back: who each aircraft is and how high it flies."
+        />
+      </div>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,420px)_1fr_minmax(0,340px)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <HudPanel
+            index="SCR"
+            title={view === 'scope' ? 'Radar screen' : 'Truth map'}
+            actions={
+              <Segmented
+                value={view}
+                onChange={setView}
+                options={[
+                  { value: 'scope', label: 'Screen' },
+                  { value: 'map', label: 'Map' },
+                ]}
+                className="w-[140px]"
+              />
+            }
+            bodyClassName="p-3"
+          >
             <div className="relative">
-              <SsrTruthMap />
+              {view === 'scope' ? (
+                <RadarScope
+                  maxRangeNm={range}
+                  persistenceS={params.rotationPeriodS * 0.9}
+                  read={() => ({
+                    nowS: engine.timeS,
+                    sweepAzDeg: engine.antennaAz,
+                    beamWidthDeg: engine.beamWidthDeg,
+                    paints: engine.takePaints(),
+                    tracks: scopeTracks(engine, store.getState().selectedId),
+                  })}
+                  describe={() => describeScope(engine)}
+                  onTrackClick={(id) => {
+                    const src = engine.tracks.get(id)?.plot.sourceId
+                    if (src) select(src)
+                  }}
+                />
+              ) : (
+                <SsrTruthMap />
+              )}
               <div className="pointer-events-none absolute top-2 left-2 flex flex-wrap gap-1.5">
                 <ClockSpeedLabel clock={clock} />
+                {view === 'scope' && (
+                  <SimLabel icon="none">
+                    {params.mode === 's' ? 'Mode S' : 'Mode A/C'} · turns every {params.rotationPeriodS.toFixed(1)} s
+                  </SimLabel>
+                )}
               </div>
             </div>
-          </figure>
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">What the controller sees</span>
-              <span className="text-xs text-muted-foreground">{params.mode === 's' ? 'Callsign, flight level' : 'Code, flight level'}</span>
-            </figcaption>
-            <div className="relative">
-              <RadarScope
-                maxRangeNm={range}
-                persistenceS={params.rotationPeriodS * 0.9}
-                read={() => ({
-                  nowS: engine.timeS,
-                  sweepAzDeg: engine.antennaAz,
-                  beamWidthDeg: engine.beamWidthDeg,
-                  paints: engine.takePaints(),
-                  tracks: scopeTracks(engine, store.getState().selectedId),
-                })}
-                describe={() => describeScope(engine)}
-                onTrackClick={(id) => {
-                  const src = engine.tracks.get(id)?.plot.sourceId
-                  if (src) select(src)
-                }}
-              />
-              <div className="pointer-events-none absolute top-2 left-2 flex flex-wrap gap-1.5">
-                <SimLabel icon="none">{params.mode === 's' ? 'Mode S' : 'Mode A/C'} · turns every {params.rotationPeriodS.toFixed(1)} s</SimLabel>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Square: secondary radar reply. Square with a dot: primary echo too. Dot alone: primary echo only, no label. Small arcs are the raw{' '}
-              <Term id="interrogation">replies</Term>.
+            <p className="mt-2.5 text-[11.5px] leading-5 text-muted-foreground">
+              {view === 'scope' ? (
+                <>
+                  What the controller sees. {params.mode === 's' ? 'Labels: callsign, flight level. ' : 'Labels: code, flight level. '}
+                  Square: secondary radar reply. Square with a dot: primary echo too. Dot alone: primary echo only, no label. Small arcs
+                  are the raw <Term id="interrogation">replies</Term>.
+                </>
+              ) : (
+                'What is really out there, with callsigns. Drag an aircraft to move it.'
+              )}
             </p>
-          </figure>
+          </HudPanel>
+          <LiveReadouts />
         </div>
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-          <ReplyBuilder />
-          <PatternView />
-        </div>
-        <SlowMotion replayRef={replayRef} />
-        <LiveReadouts />
+        <div aria-hidden className="hidden md:block" />
+        <SsrControls />
       </div>
-      <SsrControls />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <ReplyBuilder />
+        <PatternView />
+      </div>
+      <SlowMotion replayRef={replayRef} />
     </div>
   )
 }
@@ -160,6 +181,16 @@ function describeScope(engine: SsrEngine): string {
     .join('; ')}.`
 }
 
+/** A telemetry row with an optional plain-language note under it. */
+function Row({ note, ...row }: Parameters<typeof TelemetryRow>[0] & { note?: ReactNode }) {
+  return (
+    <div className="flex flex-col">
+      <TelemetryRow {...row} />
+      {note && <p className="-mt-0.5 pb-1.5 text-[11px] leading-4 text-muted-foreground">{note}</p>}
+    </div>
+  )
+}
+
 function LiveReadouts() {
   const { engine } = useSsr()
   const params = useSsrState((s) => s.params)
@@ -188,42 +219,46 @@ function LiveReadouts() {
     }
   }, 250)
   return (
-    <ReadoutGrid>
-      <Readout label="Question (ground → air)" value={SSR_UPLINK_MHZ} unit="MHz" />
-      <Readout label="Answer (air → ground)" value={SSR_DOWNLINK_MHZ} unit="MHz" />
-      <Readout label="Update interval" value={params.rotationPeriodS.toFixed(1)} unit="s" hint="One look per antenna turn" />
-      <Readout
-        label={params.mode === 's' ? 'Interrogations' : 'Interrogations per second'}
-        value={params.mode === 's' ? 'By address' : params.prfHz}
-        hint={params.mode === 's' ? 'One roll-call per aircraft per turn' : 'Alternating Mode A and Mode C'}
-      />
-      {sel && (
-        <>
-          <Readout label={`${sel.id}: reply time`} value={sel.replyUs.toFixed(1)} unit="µs" hint={`After P3. Range ${sel.range.toFixed(1)} NM`} />
-          <Readout
-            label={`${sel.id}: replies last turn`}
-            value={sel.replies ?? '—'}
-            hint={!sel.on ? 'Transponder off' : params.mode === 's' ? 'Asked by address only' : sel.sideLobe ? `${sel.sideLobe} through side lobes` : 'All in the main beam'}
-            tone={sel.sideLobe ? 'warning' : 'default'}
-          />
-          {params.mode === 'ac' ? (
-            <Readout
-              label={`${sel.id}: silenced by P2`}
-              value={sel.suppressed ?? '—'}
-              hint="Side-lobe questions ignored last turn"
+    <HudPanel index="TLM" title="Radar telemetry" bodyClassName="px-4 py-2">
+      <div className="flex flex-col divide-y divide-hud-line">
+        <Row label="Question (ground → air)" value={SSR_UPLINK_MHZ} unit="MHz" tone="signal" />
+        <Row label="Answer (air → ground)" value={SSR_DOWNLINK_MHZ} unit="MHz" tone="brass" />
+        <Row label="Update interval" value={params.rotationPeriodS.toFixed(1)} unit="s" note="One look per antenna turn" />
+        <Row
+          label={params.mode === 's' ? 'Interrogations' : 'Interrogations per second'}
+          value={params.mode === 's' ? 'By address' : params.prfHz}
+          note={params.mode === 's' ? 'One roll-call per aircraft per turn' : 'Alternating Mode A and Mode C'}
+        />
+        {sel && (
+          <>
+            <Row label={`${sel.id}: reply time`} value={sel.replyUs.toFixed(1)} unit="µs" tone="signal" note={`After P3. Range ${sel.range.toFixed(1)} NM`} />
+            <Row
+              label={`${sel.id}: replies last turn`}
+              value={sel.replies ?? '—'}
+              note={!sel.on ? 'Transponder off' : params.mode === 's' ? 'Asked by address only' : sel.sideLobe ? `${sel.sideLobe} through side lobes` : 'All in the main beam'}
+              tone={sel.sideLobe ? 'brass' : 'default'}
             />
-          ) : (
-            <Readout label={`${sel.id}: Mode S address`} value={sel.address} hint={sel.acquired ? 'Acquired: asked by name' : 'Not acquired yet'} />
-          )}
-          <Readout
-            label={`${sel.id}: on the screen`}
-            value={sel.shownCode ?? '—'}
-            hint={sel.shownAlt != null ? `Flight level ${String(Math.round(sel.shownAlt / 100)).padStart(3, '0')}` : sel.garbled ? `${sel.garbled} garbled replies` : 'Waiting for the beam'}
-            tone={sel.shownCode === '????' ? 'warning' : sel.shownCode === 'no label' ? 'muted' : 'default'}
-          />
-        </>
-      )}
-    </ReadoutGrid>
+            {params.mode === 'ac' ? (
+              <Row label={`${sel.id}: silenced by P2`} value={sel.suppressed ?? '—'} note="Side-lobe questions ignored last turn" />
+            ) : (
+              <Row label={`${sel.id}: Mode S address`} value={sel.address} note={sel.acquired ? 'Acquired: asked by name' : 'Not acquired yet'} />
+            )}
+            <Row
+              label={`${sel.id}: on the screen`}
+              value={sel.shownCode ?? '—'}
+              note={
+                sel.shownAlt != null
+                  ? `Flight level ${String(Math.round(sel.shownAlt / 100)).padStart(3, '0')}`
+                  : sel.garbled
+                    ? `${sel.garbled} garbled replies`
+                    : 'Waiting for the beam'
+              }
+              tone={sel.shownCode === '????' ? 'brass' : sel.shownCode === 'no label' ? 'muted' : 'ok'}
+            />
+          </>
+        )}
+      </div>
+    </HudPanel>
   )
 }
 
@@ -243,48 +278,48 @@ function SsrControls() {
   }, 200)
 
   return (
-    <ControlsPanel className="h-fit xl:sticky xl:top-20">
-      <ControlGroup title="Time">
+    <div className="flex min-w-0 flex-col gap-4">
+      <HudPanel index="CLK" title="Time" bodyClassName="p-3">
         <ClockControls clock={clock} onReset={resetAll} />
-        {!running && <p className="text-xs text-muted-foreground">Paused. Press Play to let the aircraft fly and the antenna turn.</p>}
-      </ControlGroup>
+        {!running && <p className="mt-2 text-xs text-muted-foreground">Paused. Press Play to let the aircraft fly and the antenna turn.</p>}
+      </HudPanel>
 
-      <ControlGroup title="The antenna">
-        <SsrAntenna3D className="h-40" />
-      </ControlGroup>
-
-      <ControlGroup title="Radar settings">
-        <ControlChoice
-          label="How the radar asks"
-          value={params.mode}
-          onChange={(v) => setParam('mode', v)}
-          options={[
-            { value: 'ac', label: 'Mode A/C: everyone' },
-            { value: 's', label: 'Mode S: by address' },
-          ]}
-          hint={params.mode === 'ac' ? 'Every transponder in the beam answers each question.' : 'Each aircraft is called by its 24-bit address, one at a time.'}
-        />
-        <ControlSlider
-          label="Antenna turn time (update interval)"
-          value={params.rotationPeriodS}
-          min={4}
-          max={12}
-          step={0.1}
-          onChange={(v) => setParam('rotationPeriodS', v)}
-          format={(v) => `${v.toFixed(1)} s`}
-        />
-        <ControlSlider
-          label="Interrogations per second"
-          value={params.prfHz}
-          min={100}
-          max={450}
-          step={10}
-          disabled={params.mode === 's'}
-          onChange={(v) => setParam('prfHz', v)}
-          format={(v) => `${v}`}
-          hint={params.mode === 's' ? 'Mode S sends a question only when the beam reaches each aircraft.' : undefined}
-        />
-        <ControlChoice
+      <HudPanel index="INT" title="Interrogator" bodyClassName="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-1.5">
+          <Segmented
+            label="How the radar asks"
+            value={params.mode}
+            onChange={(v) => setParam('mode', v)}
+            options={[
+              { value: 'ac', label: 'Mode A/C', ariaLabel: 'Mode A/C: everyone' },
+              { value: 's', label: 'Mode S', ariaLabel: 'Mode S: by address' },
+            ]}
+          />
+          <p className="text-[11.5px] leading-4 text-muted-foreground">
+            {params.mode === 'ac' ? 'Everyone: every transponder in the beam answers each question.' : 'By address: each aircraft is called by its 24-bit address, one at a time.'}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-2 gap-y-4">
+          <Dial
+            label="Antenna turn time"
+            value={params.rotationPeriodS}
+            min={4}
+            max={12}
+            step={0.1}
+            onChange={(v) => setParam('rotationPeriodS', v)}
+            format={(v) => `${v.toFixed(1)} s`}
+          />
+          {params.mode === 'ac' ? (
+            <Dial label="Interrogations per second" value={params.prfHz} min={100} max={450} step={10} onChange={(v) => setParam('prfHz', v)} format={(v) => `${v} /s`} />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-1.5 text-center">
+              <span className="hud-label">Interrogations</span>
+              <span className="hud-value text-[12px] text-foreground">By address</span>
+              <span className="text-[11px] leading-4 text-muted-foreground">Mode S sends a question only when the beam reaches each aircraft.</span>
+            </div>
+          )}
+        </div>
+        <Segmented
           label="Screen range"
           value={String(range)}
           onChange={(v) => setScopeRange(Number(v))}
@@ -294,23 +329,32 @@ function SsrControls() {
             { value: '120', label: '120 NM' },
           ]}
         />
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Out in the world">
-        <ControlSwitch label="Two aircraft close together" hint="CNS303 and CNS606 in trail, 1 NM apart" checked={env.garblePair} onChange={(v) => setEnv('garblePair', v)} />
-        <ControlSwitch label={<Term id="fruit">Another radar nearby (FRUIT)</Term>} checked={env.fruit} onChange={(v) => setEnv('fruit', v)} />
-        <ControlSwitch label={<Term id="defruiter">Defruiter</Term>} hint="Keeps replies that repeat at the same range" checked={env.defruiter} onChange={(v) => setEnv('defruiter', v)} />
-        <ControlSwitch
+      <HudPanel index="ENV" title="Out in the world" bodyClassName="px-4 py-2">
+        <LeverSwitch label="Two aircraft close together" hint="CNS303 and CNS606 in trail, 1 NM apart" checked={env.garblePair} onChange={(v) => setEnv('garblePair', v)} />
+        <LeverSwitch label={<Term id="fruit">Another radar nearby (FRUIT)</Term>} checked={env.fruit} onChange={(v) => setEnv('fruit', v)} />
+        <LeverSwitch
+          label={<Term id="defruiter">Defruiter</Term>}
+          hint="Keeps replies that repeat at the same range"
+          tone="signal"
+          checked={env.defruiter}
+          onChange={(v) => setEnv('defruiter', v)}
+        />
+        <LeverSwitch
           label={<Term id="side-lobe-suppression">Control antenna (P2)</Term>}
           hint="Off: side lobes are no longer suppressed"
+          tone="signal"
           checked={!env.noP2}
           onChange={(v) => setEnv('noP2', !v)}
         />
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Fly an aircraft">
+      <HudPanel index="ACF" title="Fly an aircraft" bodyClassName="flex flex-col gap-4 p-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="ssr-aircraft">Aircraft</Label>
+          <Label htmlFor="ssr-aircraft" className="hud-label">
+            Aircraft
+          </Label>
           <Select value={selectedId ?? undefined} onValueChange={(v) => select(v)}>
             <SelectTrigger id="ssr-aircraft" className="w-full">
               <SelectValue placeholder="Choose an aircraft" />
@@ -326,9 +370,10 @@ function SsrControls() {
         </div>
         {sel && selectedId && (
           <>
-            <ControlSwitch
+            <LeverSwitch
               label={<Term id="transponder">Transponder</Term>}
               hint={xpdr[selectedId]?.on === false ? 'Off: no replies, only the primary echo' : 'On: answers interrogations'}
+              tone="signal"
               checked={xpdr[selectedId]?.on !== false}
               onChange={(v) => setXpdr(selectedId, { on: v })}
             />
@@ -354,14 +399,13 @@ function SsrControls() {
             />
           </>
         )}
-      </ControlGroup>
-
-      <p className="text-xs text-muted-foreground">
-        Secondary radar needs the aircraft to answer.{' '}
-        <Link to="/modules/ads" className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline">
-          See how ADS-B lets the aircraft broadcast by itself <ArrowRight className="size-3" aria-hidden />
-        </Link>
-      </p>
-    </ControlsPanel>
+        <p className="text-[12px] text-muted-foreground">
+          Secondary radar needs the aircraft to answer.{' '}
+          <Link to="/modules/ads" className="inline-flex items-center gap-0.5 text-signal hover:underline">
+            See how ADS-B lets the aircraft broadcast by itself <ArrowRight className="size-3" aria-hidden />
+          </Link>
+        </p>
+      </HudPanel>
+    </div>
   )
 }

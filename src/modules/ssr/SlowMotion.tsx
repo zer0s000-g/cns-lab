@@ -275,7 +275,7 @@ export function SlowMotion({ replayRef }: { replayRef: React.RefObject<SsrReplay
   const describe = status ? status.steps.join(' ') : 'Slow-motion view waiting.'
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex flex-col gap-3 rounded-md p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold">One question and its answer, in slow motion</h3>

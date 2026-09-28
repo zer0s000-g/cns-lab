@@ -150,7 +150,7 @@ export function PatternView() {
   const describe = `Antenna pattern, pointing at ${Math.round(engine.antennaAz)} degrees. ${rows.map((r) => `${r.id}: ${HEAR_TEXT[r.st]}`).join('. ')}.`
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-4">
+    <div className="hud-panel flex min-w-0 flex-col gap-3 rounded-md p-4">
       <div>
         <h3 className="text-sm font-semibold">Main beam, side lobes and P2</h3>
         <p className="text-xs text-muted-foreground">

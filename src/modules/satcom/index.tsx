@@ -1,19 +1,27 @@
-import { useMemo } from 'react'
+import { lazy, useMemo } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
-import { geoMaxLatitudeDeg, GEO_MASK_DEG } from '@/core/satcom'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import type { Shot } from '@/stage/types'
+import { geoMaxLatitudeDeg, GEO_MASK_DEG, L_BAND_GHZ } from '@/core/satcom'
 import Deeper from './deeper.mdx'
 import { HANDOVER_GAP_S, HEAVY_RAIN_MM_H, RAIN_HEIGHT_KM } from './engine'
 import { atlanticFacts, delayFacts, polarGapFacts, turnFacts } from './facts'
-import { formatMs } from './format'
+import { fmtLat, fmtLon, formatMs, STATE_TEXT } from './format'
+import { R_U } from './heroScale'
 import { SatcomSimulator } from './Simulator'
 import { SatcomProvider, useSatcom, useSatcomState } from './state'
 import { BankVisual, DelayVisual, GeoVisual, LeoVisual, RainVisual, UpDownVisual, UsesVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const SatcomHero = lazy(() => import('./Hero3D'))
 
 const TURN_SETUP_NM = 600
 
@@ -220,8 +228,118 @@ function TurnNotice() {
   )
 }
 
+
+// ---------------------------------------------------------------------------
+// Stage: camera shots, telemetry and honesty labels
+// ---------------------------------------------------------------------------
+
+/**
+ * A shot that puts `subject` `shift` units right of the centre of the frame,
+ * clear of the chapter panel on the left. Plain vector maths: no three.js here.
+ */
+function framed(position: [number, number, number], subject: [number, number, number], shift: number, fov: number): Shot {
+  const f = [subject[0] - position[0], subject[2] - position[2]]
+  const n = Math.hypot(f[0], f[1]) || 1
+  // right = forward × up, in the ground plane
+  const r = [-f[1] / n, f[0] / n]
+  return { position, target: [subject[0] - r[0] * shift, subject[1], subject[2] - r[1] * shift], fov }
+}
+
+/** While following, the aircraft's longitude faces +z; mid-latitude flights sit about here. */
+const AC: [number, number, number] = [0, R_U * 0.72, R_U * 0.66]
+
+const ORBIT_SHOT = framed([3, 7.5, 22], [0, 0.4, 0], 0.6, 38)
+const NEAR_SHOT = framed([1.6, 2.9, 5.2], [0, AC[1] * 0.85, AC[2] * 0.6], 0.2, 40)
+
+const SHOTS: StageSpec['shots'] = {
+  idea: framed([7, 7.5, 26], [0, 0.4, 0], 5.2, 36),
+  simulator: ORBIT_SHOT,
+  how: framed([3.8, 3.9, 8.4], AC, 1.05, 40),
+  try: framed([-6, 8, 17], [0, 0.6, 0], 3.6, 38),
+  wrong: framed([2.2, 6.2, 5.4], [0, R_U * 0.9, 0.3], 1.1, 40),
+  deeper: framed([19, 4, 14], [0, 0.2, 0], 5.2, 36),
+  quiz: framed([0, 30, 2.5], [0, 0, 0], 5.5, 36),
+}
+
+/** Close-ups for the seven "How it works" steps. */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Up to space and back down: the aircraft, its link and a ground station.
+  framed([3.8, 3.9, 8.4], AC, 1.05, 40),
+  // 2 GEO: the whole ring from above.
+  framed([4, 14, 20], [0, 0, 0], 4.2, 38),
+  // 3 LEO: close to the Earth, where the low satellites pass.
+  framed([3, 2.6, 4.8], [0, AC[1], AC[2]], 1.1, 40),
+  // 4 Every trip takes time: the full link path up and down.
+  framed([10, 5, 18], [0, 0.5, 1.5], 3.6, 38),
+  // 5 The antenna on the roof: close on the aircraft.
+  framed([0.9, 1.9, 2.6], [0, AC[1] * 1.02, AC[2] * 1.02], 0.28, 34),
+  // 6 Rain: low over the route.
+  framed([1.6, 1.6, 3.2], [0, AC[1], AC[2]], 0.5, 38),
+  // 7 What travels over the link: the link from further out.
+  framed([-8, 6, 16], [0, 0.5, 0.5], 3.2, 38),
+]
+
+function SatcomTelemetry() {
+  const { engine } = useSatcom()
+  const v = useSampled(
+    () => {
+      const e = engine
+      const s = e.link.sat ?? e.link.target
+      const path = e.livePath
+      return {
+        state: e.link.state,
+        sat: s != null ? e.satName(s) : '—',
+        el: s != null ? e.looks[s]?.elevationDeg : NaN,
+        delay: path && e.link.state === 'connected' ? path.propagationS : null,
+        lat: e.routePoint.pos.lat,
+        lon: e.routePoint.pos.lon,
+      }
+    },
+    300,
+    (a, b) => JSON.stringify(a) === JSON.stringify(b),
+  )
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Link" value={STATE_TEXT[v.state]} tone={v.state === 'connected' ? 'signal' : v.state === 'handover' ? 'brass' : 'alert'} />
+      <TelemetryRow label="Satellite" value={v.sat} />
+      <TelemetryRow label="Elevation" value={Number.isFinite(v.el) ? v.el.toFixed(0) : '—'} unit="°" />
+      <TelemetryRow label="One way" value={v.delay !== null ? formatMs(v.delay) : '—'} />
+      <TelemetryRow label="Position" value={`${fmtLat(v.lat)} ${fmtLon(v.lon)}`} />
+    </div>
+  )
+}
+
+function useSatcomStage(): StageSpec {
+  const { engine, clock, store } = useSatcom()
+  const running = useClock(clock, (c) => c.running)
+  const speed = useClock(clock, (c) => c.speed)
+  const constellation = useSatcomState((s) => s.constellation)
+  const routeId = useSatcomState((s) => s.routeId)
+  const view = useSatcomState((s) => s.view)
+  const heavyRain = useSatcomState((s) => s.env.heavyRain)
+  const st = useSampled(() => ({ replay: engine.replay != null && !engine.replay.done, arrived: engine.arrived }), 200, (a, b) => a.replay === b.replay && a.arrived === b.arrived)
+  return {
+    scene: (t) => <SatcomHero t={t} engine={engine} store={store} constellation={constellation} routeId={routeId} />,
+    shots: { ...SHOTS, simulator: view === 'near' ? NEAR_SHOT : ORBIT_SHOT },
+    howShots: HOW_SHOTS,
+    kicker: `L-band · about ${L_BAND_GHZ} GHz`,
+    labels: [
+      'Earth and orbits to scale',
+      'Satellites, aircraft and ground stations far larger than life',
+      'Simplified coastlines',
+      ...(heavyRain ? ['Rain drawn thicker than life'] : []),
+      ...(st.replay ? ['Slowed down so you can see it · the world is frozen'] : speed > 1 ? [`Time sped up ×${speed}`] : []),
+      ...(st.arrived && !running ? ['Arrived · move the flight slider or reset to fly again'] : []),
+    ],
+    telemetry: <SatcomTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: st.replay ? 'Message replay' : speed > 1 ? `Flight time ×${speed}` : 'Flight time' },
+    label: `A small Earth on a stand with ${constellation === 'geo' ? 'four geostationary satellites on the ring above the equator' : 'a constellation of 66 low-orbit satellites'}. An aircraft flies ${routeId === 'polar' ? 'over the North Pole' : 'across the Atlantic'}; a cyan line joins it through the satellite in use to the ground station, and a red dashed line shows a link that is blocked or switching.`,
+  }
+}
+
 function SatcomPage() {
   const { store, clock } = useSatcom()
+  const stage = useSatcomStage()
   const env = useSatcomState((s) => s.env)
   const routeId = useSatcomState((s) => s.routeId)
   const s = store.getState()
@@ -369,6 +487,7 @@ function SatcomPage() {
   return (
     <ModuleLayout
       moduleId="satcom"
+      stage={stage}
       nextId="sandbox"
       idea={{
         analogy: (

@@ -1,26 +1,19 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight, RotateCcw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  ClockControls,
-  ClockSpeedLabel,
-  ControlChoice,
-  ControlGroup,
-  ControlSlider,
-  ControlSwitch,
-  ControlsPanel,
-  Readout,
-  ReadoutGrid,
-  SimLabel,
-} from '@/components/sim/Controls'
+import { ClockControls, ClockSpeedLabel, ControlSlider, SimLabel } from '@/components/sim/Controls'
+import { ChapterHead } from '@/components/module/ModuleLayout'
 import { Term } from '@/components/Term'
 import { realToSignalUs, slowMotionFor } from '@/core/clock'
 import { C_M_PER_NS } from '@/core/mlat'
 import { METRES_PER_NM } from '@/core/units'
 import { useClock, useSimulationLoop } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
+import { Dial, HudButton, LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
+import { TelemetryRow } from '@/hud/Telemetry'
 import { BANDS_M, bandLabel, formatM } from './accuracy'
 import { CloseUp } from './CloseUp'
 import { CLOCK_RECEIVER, disagreementLimitM, FAILED_RECEIVER, mismatchThresholdM, SPOOFED_AIRCRAFT, statusText } from './engine'
@@ -28,6 +21,11 @@ import { NetworkMap } from './NetworkMap'
 import { REPLAY_REAL_S, SignalView } from './SignalView'
 import { useMlat, useMlatState } from './state'
 
+/**
+ * The Simulator chapter: a console laid over the 3D stage. Left, the receiver
+ * network map; right, the control deck; below, the close-up and the arrival
+ * times. The stage behind shows the receivers on the terrain and the curves.
+ */
 export function MlatSimulator() {
   const { engine, clock, store, replayRef } = useMlat()
 
@@ -53,38 +51,51 @@ export function MlatSimulator() {
   const replay = useMlatState((s) => s.replay)
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">The receiver network</span>
-              <span className="text-xs text-muted-foreground">Drag receivers and aircraft</span>
-            </figcaption>
+    <div className="flex flex-col gap-4">
+      <div className="hud-panel rounded-md px-5 py-4 md:w-fit md:max-w-[520px]">
+        <ChapterHead
+          n={2}
+          title="Simulator"
+          lead="The table behind shows the receivers on the ground and the curves of equal time difference. Where the curves cross is the aircraft."
+        />
+      </div>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,420px)_1fr_minmax(0,340px)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <HudPanel index="NET" title="The receiver network" bodyClassName="p-3">
             <div className="relative">
               <NetworkMap />
               <div className="pointer-events-none absolute top-2 left-2 flex flex-wrap gap-1.5">
                 {replay.phase === 'replay' ? <SimLabel>Time frozen while the signal travels</SimLabel> : <ClockSpeedLabel clock={clock} />}
               </div>
             </div>
+            <p className="mt-2.5 mb-2 text-[11.5px] leading-5 text-muted-foreground">Drag receivers and aircraft.</p>
             <MapLegend />
-          </figure>
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-semibold">Close-up around the aircraft</span>
-              <span className="text-xs text-muted-foreground">Where the curves cross</span>
-            </figcaption>
-            <CloseUp />
-            <p className="text-xs text-muted-foreground">
-              The aircraft is always in the middle. Each curve is one pair of receivers. Blue dots are the last fixes; the dashed
-              ellipse holds 95% of fixes when the only error is timing noise.
-            </p>
-          </figure>
+          </HudPanel>
+          <LiveReadouts />
         </div>
-        <SignalView />
-        <LiveReadouts />
+        <div aria-hidden className="hidden md:block" />
+        <MlatControls />
       </div>
-      <MlatControls />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+        <HudPanel index="ZOOM" title="Close-up around the aircraft" bodyClassName="p-3">
+          <CloseUp />
+          <p className="mt-2.5 text-[11.5px] leading-5 text-muted-foreground">
+            Where the curves cross. The aircraft is always in the middle. Each curve is one pair of receivers. Blue dots are the last
+            fixes; the dashed ellipse holds 95% of fixes when the only error is timing noise.
+          </p>
+        </HudPanel>
+        <SignalView />
+      </div>
+    </div>
+  )
+}
+
+/** A telemetry row with an optional plain-language note under it. */
+function Row({ note, ...row }: Parameters<typeof TelemetryRow>[0] & { note?: ReactNode }) {
+  return (
+    <div className="flex flex-col">
+      <TelemetryRow {...row} />
+      {note && <p className="-mt-0.5 pb-1.5 text-[11px] leading-4 text-muted-foreground">{note}</p>}
     </div>
   )
 }
@@ -180,29 +191,45 @@ function LiveReadouts() {
     }
   }, 300)
   const rangeNoise = C_M_PER_NS * params.timingNoiseNs
-  if (!r) return <ReadoutGrid><Readout label="Waiting" value="—" hint="The first signal arrives within a second" /></ReadoutGrid>
-  const statusTone = r.status === 'ok' ? 'ok' : r.status === 'ambiguous' ? 'warning' : 'alert'
+  if (!r)
+    return (
+      <HudPanel index="TLM" title="MLAT telemetry" bodyClassName="px-4 py-2">
+        <Row label="Waiting" value="—" note="The first signal arrives within a second" />
+      </HudPanel>
+    )
+  const statusTone = r.status === 'ok' ? 'ok' : r.status === 'ambiguous' ? 'brass' : 'alert'
   return (
-    <ReadoutGrid>
-      <Readout label={`${r.id}: receivers that heard it`} value={r.used} hint={`Needs ${params.useAltitude ? 3 : 4} or more`} tone={r.used < (params.useAltitude ? 3 : 4) ? 'alert' : 'default'} />
-      <Readout label="Position" value={statusText(r.status)} tone={statusTone} hint={r.dims === 2 ? 'Across the ground, height from the altitude report' : 'Across the ground and height'} />
-      <Readout label="MLAT error right now" value={Number.isFinite(r.err) ? formatM(r.err) : '—'} tone={Number.isFinite(r.err) && Number.isFinite(r.expected) && r.err > 4 * r.expected + 20 ? 'warning' : 'default'} hint="Distance from the real aircraft" />
-      <Readout label="Expected error here" value={Number.isFinite(r.expected) ? formatM(r.expected) : '—'} hint={Number.isFinite(r.hdop) ? `Geometry factor ${r.hdop < 100 ? r.hdop.toFixed(1) : '> 100'} × ${rangeNoise.toFixed(1)} m` : 'Geometry gives no position'} />
-      <Readout
-        label="Receivers disagree by"
-        value={r.redundancy > 0 && Number.isFinite(r.resid) ? formatM(r.resid) : '—'}
-        hint={r.redundancy > 0 ? (r.resid > r.residLimit ? 'More than timing noise explains: one is wrong' : 'No more than timing noise explains') : 'No spare receiver to cross-check'}
-        tone={r.redundancy > 0 && r.resid > r.residLimit ? 'warning' : 'default'}
-      />
-      {r.dims === 3 && <Readout label="Height error" value={Number.isFinite(r.hErr) ? formatM(Math.abs(r.hErr)) : '—'} hint="Ground receivers see height poorly" />}
-      <Readout
-        label="ADS-B report vs MLAT"
-        value={Number.isFinite(r.mismatch) ? (r.mismatch >= 1000 ? `${(r.mismatch / METRES_PER_NM).toFixed(1)} NM` : formatM(r.mismatch)) : '—'}
-        tone={r.flag ? 'alert' : 'ok'}
-        hint={r.flag ? 'Report does not match: not validated' : 'Report confirmed by MLAT'}
-      />
-      {r.collinear && <Readout label="Geometry" value="In a line" tone="warning" hint="Mirror image fits too" />}
-    </ReadoutGrid>
+    <HudPanel index="TLM" title="MLAT telemetry" bodyClassName="px-4 py-2">
+      <div className="flex flex-col divide-y divide-hud-line">
+        <Row label={`${r.id}: receivers that heard it`} value={r.used} note={`Needs ${params.useAltitude ? 3 : 4} or more`} tone={r.used < (params.useAltitude ? 3 : 4) ? 'alert' : 'signal'} />
+        <Row label="Position" value={statusText(r.status)} tone={statusTone} note={r.dims === 2 ? 'Across the ground, height from the altitude report' : 'Across the ground and height'} />
+        <Row
+          label="MLAT error right now"
+          value={Number.isFinite(r.err) ? formatM(r.err) : '—'}
+          tone={Number.isFinite(r.err) && Number.isFinite(r.expected) && r.err > 4 * r.expected + 20 ? 'brass' : 'default'}
+          note="Distance from the real aircraft"
+        />
+        <Row
+          label="Expected error here"
+          value={Number.isFinite(r.expected) ? formatM(r.expected) : '—'}
+          note={Number.isFinite(r.hdop) ? `Geometry factor ${r.hdop < 100 ? r.hdop.toFixed(1) : '> 100'} × ${rangeNoise.toFixed(1)} m` : 'Geometry gives no position'}
+        />
+        <Row
+          label="Receivers disagree by"
+          value={r.redundancy > 0 && Number.isFinite(r.resid) ? formatM(r.resid) : '—'}
+          note={r.redundancy > 0 ? (r.resid > r.residLimit ? 'More than timing noise explains: one is wrong' : 'No more than timing noise explains') : 'No spare receiver to cross-check'}
+          tone={r.redundancy > 0 && r.resid > r.residLimit ? 'brass' : 'default'}
+        />
+        {r.dims === 3 && <Row label="Height error" value={Number.isFinite(r.hErr) ? formatM(Math.abs(r.hErr)) : '—'} note="Ground receivers see height poorly" />}
+        <Row
+          label="ADS-B report vs MLAT"
+          value={Number.isFinite(r.mismatch) ? (r.mismatch >= 1000 ? `${(r.mismatch / METRES_PER_NM).toFixed(1)} NM` : formatM(r.mismatch)) : '—'}
+          tone={r.flag ? 'alert' : 'ok'}
+          note={r.flag ? 'Report does not match: not validated' : 'Report confirmed by MLAT'}
+        />
+        {r.collinear && <Row label="Geometry" value="In a line" tone="brass" note="Mirror image fits too" />}
+      </div>
+    </HudPanel>
   )
 }
 
@@ -222,31 +249,35 @@ function MlatControls() {
   }, 250)
 
   return (
-    <ControlsPanel className="h-fit xl:sticky xl:top-20">
-      <ControlGroup title="Time">
+    <div className="flex min-w-0 flex-col gap-4">
+      <HudPanel index="CLK" title="Time" bodyClassName="p-3">
         <ClockControls clock={clock} onReset={resetAll} />
-        {!running && <p className="text-xs text-muted-foreground">Paused. Press Play to let the aircraft fly.</p>}
-      </ControlGroup>
+        {!running && <p className="mt-2 text-xs text-muted-foreground">Paused. Press Play to let the aircraft fly.</p>}
+      </HudPanel>
 
-      <ControlGroup title="Receivers" description="Switch receivers on or off. Drag them on the map, or focus one and use the arrow keys.">
-        {receivers.map((r) => (
-          <ControlSwitch
-            key={r.id}
-            label={`${r.id} ${r.name}`}
-            checked={r.inUse}
-            onChange={(v) => setReceiverInUse(r.id, v)}
-            hint={
-              env.receiverFailed && r.id === FAILED_RECEIVER
-                ? 'Failed: sends no time stamps'
-                : r.id === CLOCK_RECEIVER && params.clockErrorNs !== 0
-                  ? `Clock is off by ${params.clockErrorNs} ns`
-                  : r.id === 'R6' && !r.inUse
-                    ? 'Spare: switch on to add it'
-                    : undefined
-            }
-          />
-        ))}
-        <ControlChoice
+      <HudPanel index="RX" title="Receivers" bodyClassName="flex flex-col gap-3 px-4 py-3">
+        <p className="text-[11.5px] leading-4 text-muted-foreground">Switch receivers on or off. Drag them on the map, or focus one and use the arrow keys.</p>
+        <div>
+          {receivers.map((r) => (
+            <LeverSwitch
+              key={r.id}
+              label={`${r.id} ${r.name}`}
+              tone="signal"
+              checked={r.inUse}
+              onChange={(v) => setReceiverInUse(r.id, v)}
+              hint={
+                env.receiverFailed && r.id === FAILED_RECEIVER
+                  ? 'Failed: sends no time stamps'
+                  : r.id === CLOCK_RECEIVER && params.clockErrorNs !== 0
+                    ? `Clock is off by ${params.clockErrorNs} ns`
+                    : r.id === 'R6' && !r.inUse
+                      ? 'Spare: switch on to add it'
+                      : undefined
+              }
+            />
+          ))}
+        </div>
+        <Segmented
           label="Layout"
           value={env.badGeometry ? 'line' : 'spread'}
           onChange={(v) => setEnv('badGeometry', v === 'line')}
@@ -255,48 +286,54 @@ function MlatControls() {
             { value: 'line', label: 'All in a line' },
           ]}
         />
-        <Button variant="outline" size="sm" onClick={resetReceivers} className="self-start">
+        <HudButton onClick={resetReceivers} className="self-start">
           <RotateCcw aria-hidden /> Put receivers back
-        </Button>
-      </ControlGroup>
+        </HudButton>
+      </HudPanel>
 
-      <ControlGroup title="How the position is worked out">
-        <ControlSwitch
+      <HudPanel index="SOL" title="How the position is worked out" bodyClassName="flex flex-col gap-4 p-4">
+        <LeverSwitch
           label="Use the altitude the aircraft reports"
           hint={params.useAltitude ? 'Only the position across the ground is solved: 3 receivers are enough' : 'Height is solved too: needs 4 receivers, and height from the ground is poor'}
+          tone="signal"
           checked={params.useAltitude}
           onChange={(v) => setParam('useAltitude', v)}
         />
-        <ControlSlider
-          label="Receiver timing noise"
-          value={params.timingNoiseNs}
-          min={1}
-          max={50}
-          step={1}
-          onChange={(v) => setParam('timingNoiseNs', v)}
-          format={(v) => `${v} ns ≈ ${(v * C_M_PER_NS).toFixed(1)} m`}
-          hint="Random error of each time stamp"
-        />
-        <ControlSlider
-          label={`Clock error at ${CLOCK_RECEIVER}`}
-          value={params.clockErrorNs}
-          min={-1000}
-          max={1000}
-          step={10}
-          onChange={(v) => setParam('clockErrorNs', v)}
-          format={(v) => `${v > 0 ? '+' : ''}${v} ns ≈ ${Math.round(Math.abs(v) * C_M_PER_NS)} m`}
-          hint={<><Term id="time-synchronisation">Synchronisation</Term> fault at one receiver</>}
-        />
-      </ControlGroup>
+        <div className="grid grid-cols-2 gap-x-2">
+          <Dial
+            label="Receiver timing noise"
+            value={params.timingNoiseNs}
+            min={1}
+            max={50}
+            step={1}
+            onChange={(v) => setParam('timingNoiseNs', v)}
+            format={(v) => `${v} ns ≈ ${(v * C_M_PER_NS).toFixed(1)} m`}
+          />
+          <Dial
+            label={`Clock error at ${CLOCK_RECEIVER}`}
+            value={params.clockErrorNs}
+            min={-1000}
+            max={1000}
+            step={10}
+            onChange={(v) => setParam('clockErrorNs', v)}
+            format={(v) => `${v > 0 ? '+' : ''}${v} ns ≈ ${Math.round(Math.abs(v) * C_M_PER_NS)} m`}
+          />
+        </div>
+        <p className="text-[11.5px] leading-4 text-muted-foreground">
+          Timing noise: random error of each time stamp. Clock error: a <Term id="time-synchronisation">synchronisation</Term> fault at one receiver.
+        </p>
+      </HudPanel>
 
-      <ControlGroup title="Show on the map">
-        <ControlSwitch label="Accuracy map" checked={showHeatmap} onChange={setShowHeatmap} hint="For the selected aircraft's altitude" />
-        <ControlSwitch label={<Term id="hyperbola">Curves (hyperbolas)</Term>} checked={showCurves} onChange={setShowCurves} hint="For the selected aircraft" />
-      </ControlGroup>
+      <HudPanel index="MAP" title="Show on the map" bodyClassName="px-4 py-2">
+        <LeverSwitch label="Accuracy map" tone="signal" checked={showHeatmap} onChange={setShowHeatmap} hint="For the selected aircraft's altitude" />
+        <LeverSwitch label={<Term id="hyperbola">Curves (hyperbolas)</Term>} tone="signal" checked={showCurves} onChange={setShowCurves} hint="For the selected aircraft, on the map and on the table" />
+      </HudPanel>
 
-      <ControlGroup title="Aircraft">
+      <HudPanel index="ACF" title="Aircraft" bodyClassName="flex flex-col gap-4 p-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="mlat-aircraft">Follow</Label>
+          <Label htmlFor="mlat-aircraft" className="hud-label">
+            Follow
+          </Label>
           <Select value={selectedId ?? undefined} onValueChange={(v) => select(v)}>
             <SelectTrigger id="mlat-aircraft" className="w-full">
               <SelectValue placeholder="Choose an aircraft" />
@@ -321,20 +358,19 @@ function MlatControls() {
             format={(v) => `${v.toLocaleString('en-US')} ft`}
           />
         )}
-        <ControlSwitch
+        <LeverSwitch
           label={`${SPOOFED_AIRCRAFT} sends a false ADS-B position`}
           hint={<Term id="adsb-spoofing">Spoofing</Term>}
           checked={env.spoof}
           onChange={(v) => setEnv('spoof', v)}
         />
-      </ControlGroup>
-
-      <p className="text-xs text-muted-foreground">
-        MLAT also watches the airport surface.{' '}
-        <Link to="/modules/surface" className="inline-flex items-center gap-0.5 font-medium text-primary hover:underline">
-          See it in the surface movement module <ArrowRight className="size-3" aria-hidden />
-        </Link>
-      </p>
-    </ControlsPanel>
+        <p className="text-[12px] text-muted-foreground">
+          MLAT also watches the airport surface.{' '}
+          <Link to="/modules/surface" className="inline-flex items-center gap-0.5 text-signal hover:underline">
+            See it in the surface movement module <ArrowRight className="size-3" aria-hidden />
+          </Link>
+        </p>
+      </HudPanel>
+    </div>
   )
 }

@@ -9,7 +9,7 @@ import { JAMMER, RADAR_SITE, SPOOFER } from './engine'
 import { useAds, useAdsState } from './state'
 
 /** Visual speed of the broadcast rings on the map (NM per second of simulation time). Radio is really instant at this scale. */
-const RING_NM_PER_S = 5
+export const RING_NM_PER_S = 5
 
 export function AdsMap() {
   const { engine } = useAds()

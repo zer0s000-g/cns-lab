@@ -1,33 +1,25 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { PlaneLanding, RotateCcw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
-import {
-  AudioCaption,
-  ClockControls,
-  ClockSpeedLabel,
-  ControlChoice,
-  ControlGroup,
-  ControlSlider,
-  ControlSwitch,
-  ControlsPanel,
-  Readout,
-  ReadoutGrid,
-  SimLabel,
-} from '@/components/sim/Controls'
+import { AudioCaption, ClockControls, ClockSpeedLabel, ControlSwitch, Readout, ReadoutGrid, SimLabel } from '@/components/sim/Controls'
+import { ChapterHead } from '@/components/module/ModuleLayout'
 import { Term } from '@/components/Term'
 import { ILS_CATEGORIES, LOC_IDENT_TONE_HZ } from '@/core/ils'
 import { MARKER_TONE_HZ, markerKeying, morseTimeline, toMorse, type MarkerKind } from '@/core/morse'
 import { useClock, useSimulationLoop } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
+import { Dial, HudButton, LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
 import { audio, caption, type SoundHandle } from '@/lib/audio'
 import { cn } from '@/lib/utils'
-import { Approach3D } from './Approach3D'
 import { Cockpit } from './Cockpit'
 import { CLEAR_VISIBILITY_M, type Weather } from './engine'
 import { SideView } from './SideView'
 import { TopView } from './TopView'
 import { useIls, useIlsState } from './state'
+
+// The pilot's-eye view needs three.js: load it after the page, like the stage.
+const Approach3D = lazy(() => import('./Approach3D').then((m) => ({ default: m.Approach3D })))
 
 const MARKER_TEXT: Record<MarkerKind, string> = {
   outer: 'Outer marker: 400 Hz, two dashes a second, blue light',
@@ -72,32 +64,36 @@ export function IlsSimulator() {
   useEffect(() => () => markerSound.current.handle?.stop(), [])
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="flex min-w-0 flex-col gap-4">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_250px] lg:grid-rows-[auto_1fr]">
-          <ApproachFigure />
-          <Cockpit className="h-fit lg:col-start-2 lg:row-span-2 lg:row-start-1" />
-          <LiveReadouts />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-sm font-semibold">Seen from above: the localizer</span>
-              <span className="text-xs text-muted-foreground">Left and right</span>
-            </figcaption>
-            <TopView />
-          </figure>
-          <figure className="flex min-w-0 flex-col gap-2">
-            <figcaption className="flex flex-wrap items-baseline justify-between gap-x-2">
-              <span className="text-sm font-semibold">Seen from the side: the glideslope</span>
-              <span className="text-xs text-muted-foreground">Up and down</span>
-            </figcaption>
-            <SideView />
-          </figure>
-        </div>
-        <LobeLegend />
+    <div className="flex flex-col gap-4">
+      <div className="hud-panel rounded-md px-5 py-4 md:w-fit md:max-w-[520px]">
+        <ChapterHead
+          n={2}
+          title="Simulator"
+          lead="The table behind shows the beams the aircraft is flying in. The console shows what the pilot sees and hears."
+        />
       </div>
-      <IlsControls />
+      <div className="grid gap-4 md:grid-cols-[minmax(0,420px)_1fr_minmax(0,340px)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <HudPanel index="WIN" title="The approach" bodyClassName="p-3">
+            <ApproachFigure />
+          </HudPanel>
+          <Cockpit />
+        </div>
+        <div aria-hidden className="hidden md:block" />
+        <IlsControls />
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <HudPanel index="LOC" title="Seen from above: the localizer" className="min-w-0" actions={<span className="hud-label hidden text-[9.5px] sm:inline">Left and right</span>} bodyClassName="p-3">
+          <TopView />
+        </HudPanel>
+        <HudPanel index="GS" title="Seen from the side: the glideslope" className="min-w-0" actions={<span className="hud-label hidden text-[9.5px] sm:inline">Up and down</span>} bodyClassName="p-3">
+          <SideView />
+        </HudPanel>
+      </div>
+      <HudPanel index="TLM" title="Approach telemetry" bodyClassName="flex flex-col gap-4 p-4">
+        <LiveReadouts />
+        <LobeLegend />
+      </HudPanel>
     </div>
   )
 }
@@ -144,9 +140,9 @@ function ApproachFigure() {
   return (
     <figure className="flex min-w-0 flex-col gap-2">
       <figcaption className="flex flex-wrap items-baseline justify-between gap-x-2">
-        <span className="text-sm font-semibold">The approach</span>
+        <span className="sr-only">The approach</span>
         <span className="hidden text-xs text-muted-foreground sm:inline">
-          Click here, then <Kbd>←</Kbd> <Kbd>→</Kbd> steer · <Kbd>↑</Kbd> <Kbd>↓</Kbd> climb or descend
+          Click the view, then <Kbd>←</Kbd> <Kbd>→</Kbd> steer · <Kbd>↑</Kbd> <Kbd>↓</Kbd> climb or descend
         </span>
       </figcaption>
       <div
@@ -156,7 +152,9 @@ function ApproachFigure() {
         onKeyDown={onKey}
         className="relative rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
-        <Approach3D className="aspect-video w-full" label={label} />
+        <Suspense fallback={<div role="img" aria-label={label} className="aspect-video w-full rounded-[3px] bg-stage-bg" />}>
+          <Approach3D className="aspect-video w-full" label={label} />
+        </Suspense>
         <div className="pointer-events-none absolute top-2 left-2 flex flex-wrap gap-1.5">
           <SimLabel icon="none">
             {cat ? `${cat.label} fog · RVR ${cat.fogRvrM} m${thickFog ? ' · worse than allowed' : ''}` : 'Clear day'}
@@ -196,7 +194,7 @@ function ApproachFigure() {
 /** Key for the top and side views: colour, pattern and words for each tone, and the lines. */
 function LobeLegend() {
   return (
-    <div className="-mt-1 flex flex-col gap-2 text-xs text-muted-foreground">
+    <div className="flex flex-col gap-2 text-xs text-muted-foreground">
       <div className="flex flex-wrap gap-x-5 gap-y-2">
         <span className="inline-flex items-center gap-2">
           <Swatch tone="90" />
@@ -290,60 +288,58 @@ function IlsControls() {
   const cat = st.weather === 'clear' ? null : ILS_CATEGORIES[st.weather]
 
   return (
-    <ControlsPanel className="h-fit xl:sticky xl:top-20">
-      <ControlGroup title="Time">
+    <div className="flex min-w-0 flex-col gap-4">
+      <HudPanel index="CLK" title="Time" bodyClassName="p-3">
         <ClockControls clock={clock} onReset={st.resetAll} />
-        {!running && <p className="text-xs text-muted-foreground">Paused. Press Play to fly.</p>}
-      </ControlGroup>
+        {!running && <p className="mt-2 text-xs text-muted-foreground">Paused. Press Play to fly.</p>}
+      </HudPanel>
 
-      <ControlGroup title="Fly the approach">
-        <ControlSwitch
+      <HudPanel index="FLY" title="Fly the approach" bodyClassName="flex flex-col gap-4 p-4">
+        <LeverSwitch
+          tone="signal"
           label={<Term id="autoland">Autopilot follows the needles</Term>}
           checked={st.guidance}
           onChange={st.setGuidance}
           hint="Moving a control below hands the aircraft to you"
         />
-        <ControlSlider
-          label="Steer: heading"
-          value={pilot.hdg}
-          min={0}
-          max={359}
-          onChange={(v) => st.setTargetHeading(v)}
-          format={(v) => `${String(v).padStart(3, '0')}°`}
-          hint="Turns at up to 3° per second"
-        />
-        <ControlSlider
-          label="Climb or descend"
-          value={pilot.vs}
-          min={-1800}
-          max={1500}
-          step={100}
-          onChange={(v) => st.setSelectedVs(v)}
-          format={(v) => `${v > 0 ? '+' : ''}${v} ft/min`}
-          hint="About −740 ft/min follows a 3° path at 140 kt"
-        />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-          <Button variant="outline" size="sm" onClick={() => st.resetApproach(10)}>
-            <RotateCcw aria-hidden /> Stable approach from 10 NM
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => st.resetApproach(4)}>
-            <PlaneLanding aria-hidden /> Stable approach from 4 NM
-          </Button>
+        <div className="grid grid-cols-2 gap-x-2 gap-y-2">
+          <Dial
+            label="Steer: heading"
+            value={pilot.hdg}
+            min={0}
+            max={359}
+            onChange={(v) => st.setTargetHeading(v)}
+            format={(v) => `${String(Math.round(v)).padStart(3, '0')}°`}
+          />
+          <Dial
+            label="Climb or descend"
+            value={pilot.vs}
+            min={-1800}
+            max={1500}
+            step={100}
+            onChange={(v) => st.setSelectedVs(v)}
+            format={(v) => `${v > 0 ? '+' : ''}${v} ft/min`}
+          />
+          <p className="text-center text-[11px] leading-4 text-muted-foreground">Turns at up to 3° per second</p>
+          <p className="text-center text-[11px] leading-4 text-muted-foreground">About −740 ft/min follows a 3° path at 140 kt</p>
         </div>
-      </ControlGroup>
+        <div className="flex flex-col gap-2">
+          <HudButton onClick={() => st.resetApproach(10)}>
+            <RotateCcw aria-hidden /> Stable approach from 10 NM
+          </HudButton>
+          <HudButton onClick={() => st.resetApproach(4)}>
+            <PlaneLanding aria-hidden /> Stable approach from 4 NM
+          </HudButton>
+        </div>
+      </HudPanel>
 
-      <ControlGroup title="Weather and minimums">
-        <ControlChoice
-          label={<Term id="ils-category">Approach category</Term>}
-          value={st.weather}
-          onChange={st.setWeather}
-          options={WEATHER_OPTIONS}
-          hint={
-            cat
-              ? `${cat.label}: decision height ${cat.dhFt === null ? 'none' : `${cat.dhFt} ft`}, RVR at least ${cat.minRvrM} m. Fog here: ${cat.fogRvrM} m.`
-              : 'Clear day. Minimums shown for CAT I (200 ft).'
-          }
-        />
+      <HudPanel index="WX" title="Weather and minimums" bodyClassName="flex flex-col gap-3 p-4">
+        <Segmented label={<Term id="ils-category">Approach category</Term>} value={st.weather} onChange={st.setWeather} options={WEATHER_OPTIONS} />
+        <p className="text-[11.5px] leading-4 text-muted-foreground">
+          {cat
+            ? `${cat.label}: decision height ${cat.dhFt === null ? 'none' : `${cat.dhFt} ft`}, RVR at least ${cat.minRvrM} m. Fog here: ${cat.fogRvrM} m.`
+            : 'Clear day. Minimums shown for CAT I (200 ft).'}
+        </p>
         <ControlSwitch
           label="Fog worse than the minimums allow"
           checked={st.thickFog}
@@ -351,11 +347,11 @@ function IlsControls() {
           disabled={st.weather === 'clear'}
           hint="At the decision height nothing is in sight: go around"
         />
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Views and sound">
-        <ControlChoice
-          label="3D view"
+      <HudPanel index="VIEW" title="Views and sound" bodyClassName="flex flex-col gap-2 p-4">
+        <Segmented
+          label="Approach view"
           value={st.view}
           onChange={st.setView}
           options={[
@@ -363,16 +359,16 @@ function IlsControls() {
             { value: 'outside', label: 'Outside' },
           ]}
         />
-        <ControlSwitch label="Show the ideal path (dots)" checked={st.showPath} onChange={st.setShowPath} />
-        <ControlSwitch label={<Term id="marker-beacon">Marker beacon tones</Term>} checked={st.markerSound} onChange={st.setMarkerSound} />
-        <ControlSwitch label="Localizer Morse ident" checked={st.identSound} onChange={st.setIdentSound} hint="ICNS at 1020 Hz" />
+        <LeverSwitch tone="signal" label="Show the ideal path (dots)" checked={st.showPath} onChange={st.setShowPath} />
+        <LeverSwitch tone="signal" label={<Term id="marker-beacon">Marker beacon tones</Term>} checked={st.markerSound} onChange={st.setMarkerSound} />
+        <LeverSwitch tone="signal" label="Localizer Morse ident" checked={st.identSound} onChange={st.setIdentSound} hint="ICNS at 1020 Hz" />
         <AudioCaption />
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Problems">
-        <ControlSwitch label={<Term id="critical-area">Truck in the critical area</Term>} checked={st.failures.truck} onChange={(v) => st.setFailure('truck', v)} />
-        <ControlSwitch label={<Term id="ils-monitor">Localizer fault (monitor switches it off)</Term>} checked={st.failures.locFault} onChange={(v) => st.setFailure('locFault', v)} />
-      </ControlGroup>
-    </ControlsPanel>
+      <HudPanel index="FLT" title="Problems" bodyClassName="px-4 py-2">
+        <LeverSwitch label={<Term id="critical-area">Truck in the critical area</Term>} checked={st.failures.truck} onChange={(v) => st.setFailure('truck', v)} />
+        <LeverSwitch label={<Term id="ils-monitor">Localizer fault (monitor switches it off)</Term>} checked={st.failures.locFault} onChange={(v) => st.setFailure('locFault', v)} />
+      </HudPanel>
+    </div>
   )
 }

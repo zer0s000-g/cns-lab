@@ -3,7 +3,9 @@ import { ArrowRightLeft, MessageSquareText, Mic, Radio, Siren, TriangleAlert } f
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
-import { ControlChoice, ControlSlider, ControlSwitch } from '@/components/sim/Controls'
+import { ControlSlider } from '@/components/sim/Controls'
+import { LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
 import { Term } from '@/components/Term'
 import { RECEIVER_NOISE_DBM, squelchOpenedByNoise } from '@/core/vhf'
 import { useSampled } from '@/hooks/useSampled'
@@ -78,30 +80,35 @@ export function CockpitRadio() {
   const tone = st.state === 'blocked' || st.state === 'garbled' || st.openMic ? 'text-destructive' : st.state === 'clear' || st.state === 'noisy' ? 'text-success' : 'text-muted-foreground'
 
   return (
-    <section aria-label="Your radio" className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
-            <Radio className="size-4 text-primary" aria-hidden /> Your radio (CNS101)
-          </h3>
-          <p className="text-xs text-muted-foreground">You are the pilot. Press and hold to talk, release to listen.</p>
-        </div>
-        <Badge variant={st.contact ? 'secondary' : 'destructive'}>{st.contact ? 'In range' : 'Out of range'}</Badge>
-      </div>
+    <HudPanel
+      index="COM"
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Radio className="size-3.5 text-signal" aria-hidden /> Your radio
+        </span>
+      }
+      actions={<Badge variant={st.contact ? 'secondary' : 'destructive'}>{st.contact ? 'In range' : 'Out of range'}</Badge>}
+      bodyClassName="p-0"
+    >
+    <section aria-label="Your radio" className="flex min-w-0 flex-col gap-4 p-4">
+      <p className="-mb-1 text-xs text-muted-foreground">You are the pilot of CNS101. Press and hold to talk, release to listen.</p>
 
-      <ControlChoice
-        label="Radio 1 frequency"
-        value={params.com1}
-        onChange={(v) => setParam('com1', v)}
-        options={FREQS.map((f) => ({ value: f, label: <span className="font-mono tabular-nums">{FREQ_MHZ[f].toFixed(3)}</span>, ariaLabel: `${FREQ_MHZ[f].toFixed(3)} megahertz, ${FREQ_LABEL[f]}` }))}
-        hint={`${FREQ_LABEL[params.com1]}${params.com1 === 'guard' ? ': for emergencies only' : ''}`}
-      />
-      <ControlSwitch
+      <div className="flex flex-col gap-1.5">
+        <Segmented
+          label="Radio 1 frequency"
+          value={params.com1}
+          onChange={(v) => setParam('com1', v)}
+          options={FREQS.map((f) => ({ value: f, label: FREQ_MHZ[f].toFixed(3), ariaLabel: `${FREQ_MHZ[f].toFixed(3)} megahertz, ${FREQ_LABEL[f]}` }))}
+        />
+        <p className="text-[11.5px] leading-4 text-muted-foreground">{`${FREQ_LABEL[params.com1]}${params.com1 === 'guard' ? ': for emergencies only' : ''}`}</p>
+      </div>
+      <LeverSwitch
         label={
           <>
             Radio 2 listens to <Term id="guard-frequency">121.5 guard</Term>
           </>
         }
+        tone="signal"
         checked={params.guardWatch}
         onChange={(v) => setParam('guardWatch', v)}
       />
@@ -119,13 +126,13 @@ export function CockpitRadio() {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2 text-xs">
           <span className="text-muted-foreground">Signal from the radio site</span>
-          <span className="font-mono tabular-nums">{Number.isFinite(st.level) ? `${st.level.toFixed(0)} dBm` : 'none (no line of sight)'}</span>
+          <span className="hud-value">{Number.isFinite(st.level) ? `${st.level.toFixed(0)} dBm` : 'none (no line of sight)'}</span>
         </div>
         <LevelBar levelDbm={st.level} squelchDbm={params.squelchDbm} />
         <p className="text-xs text-muted-foreground">Dark line: your squelch. Thin line: receiver noise.</p>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-md border bg-muted/40 p-3" aria-live="polite">
+      <div className="flex flex-col gap-2 rounded-[4px] border border-hud-line bg-background/40 p-3" aria-live="polite">
         <p className={cn('text-sm font-medium', tone)}>
           {st.ptt ? 'Transmitting: your receiver is muted' : st.openMic ? `Blocked by an open microphone (${st.who})` : RX_TEXT[st.state]}
           {!st.ptt && !st.openMic && st.who && (st.state === 'clear' || st.state === 'noisy') ? `: ${st.who}` : ''}
@@ -174,11 +181,11 @@ export function CockpitRadio() {
       </p>
 
       {st.cpdlc && (
-        <div className="flex items-start gap-2 rounded-md border border-primary/40 bg-accent/60 p-3 text-sm" role="status">
-          <MessageSquareText className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+        <div className="flex items-start gap-2 rounded-[4px] border border-signal/50 bg-background/40 p-3 text-sm" role="status">
+          <MessageSquareText className="mt-0.5 size-4 shrink-0 text-signal" aria-hidden />
           <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-xs font-semibold tracking-wide text-accent-foreground uppercase">Text message from ATC (CPDLC)</span>
-            <span className="font-mono text-sm">{st.cpdlc}</span>
+            <span className="hud-label text-signal">Text message from ATC (CPDLC)</span>
+            <span className="hud-value text-sm">{st.cpdlc}</span>
             {params.com1 !== 'backup' && (
               <Button size="sm" className="w-fit" onClick={() => setParam('com1', 'backup')}>
                 <ArrowRightLeft aria-hidden /> Tune radio 1 to 124.350
@@ -188,6 +195,7 @@ export function CockpitRadio() {
         </div>
       )}
     </section>
+    </HudPanel>
   )
 }
 
@@ -211,18 +219,22 @@ export function VccsPanel() {
   const key = (f: ControllerFreq, kind: 'rx' | 'tx', on: boolean) => setVccs({ ...vccs, [kind]: { ...vccs[kind], [f]: on } })
 
   return (
-    <section aria-label="Controller's voice switch" className="flex min-w-0 flex-col gap-4 rounded-lg border bg-card p-4">
-      <div>
-        <h3 className="text-sm font-semibold">
+    <HudPanel
+      index="VCS"
+      title={
+        <>
           Controller's <Term id="vccs">voice switch (VCCS)</Term>
-        </h3>
-        <p className="text-xs text-muted-foreground">On the ground. The simulated controller uses it; you can press the keys too.</p>
-      </div>
-      <div className="flex flex-col divide-y rounded-md border">
+        </>
+      }
+      bodyClassName="p-0"
+    >
+    <section aria-label="Controller's voice switch" className="flex min-w-0 flex-col gap-4 p-4">
+      <p className="-mb-1 text-xs text-muted-foreground">On the ground. The simulated controller uses it; you can press the keys too.</p>
+      <div className="flex flex-col divide-y divide-hud-line rounded-[4px] border border-hud-line">
         {FREQS.map((f) => (
           <div key={f} className="flex min-h-12 items-center gap-2 px-3 py-2">
             <div className="flex min-w-0 flex-1 flex-col">
-              <span className="font-mono text-sm tabular-nums">{FREQ_MHZ[f].toFixed(3)}</span>
+              <span className="hud-value text-sm">{FREQ_MHZ[f].toFixed(3)}</span>
               <span className="truncate text-xs text-muted-foreground">
                 {busy.sector === f ? 'In use: ' : ''}
                 {FREQ_LABEL[f]}
@@ -240,16 +252,20 @@ export function VccsPanel() {
           </div>
         ))}
       </div>
-      <ControlChoice
-        label={<Term id="standby-transmitter">Transmitter</Term>}
-        value={vccs.transmitter}
-        onChange={(v) => setVccs({ ...vccs, transmitter: v })}
-        options={[
-          { value: 'main', label: <span className="inline-flex items-center gap-1">Main {mainFailed && <TriangleAlert className="size-3.5 text-destructive" aria-label="failed" />}</span> },
-          { value: 'standby', label: 'Standby' },
-        ]}
-        hint={onAirFailed ? 'MAIN TRANSMITTER FAILED: nothing the controller says goes on the air. Change to standby.' : mainFailed ? 'Main has failed; the standby transmitter is carrying the voice.' : 'Two transmitters at the site: a spare is always ready.'}
-      />
+      <div className="flex flex-col gap-1.5">
+        <Segmented
+          label={<Term id="standby-transmitter">Transmitter</Term>}
+          value={vccs.transmitter}
+          onChange={(v) => setVccs({ ...vccs, transmitter: v })}
+          options={[
+            { value: 'main', label: <span className="inline-flex items-center gap-1">Main {mainFailed && <TriangleAlert className="size-3.5 text-destructive" aria-label="failed" />}</span> },
+            { value: 'standby', label: 'Standby' },
+          ]}
+        />
+        <p className={cn('text-[11.5px] leading-4', onAirFailed ? 'text-destructive' : 'text-muted-foreground')}>
+          {onAirFailed ? 'MAIN TRANSMITTER FAILED: nothing the controller says goes on the air. Change to standby.' : mainFailed ? 'Main has failed; the standby transmitter is carrying the voice.' : 'Two transmitters at the site: a spare is always ready.'}
+        </p>
+      </div>
       {onAirFailed && (
         <p className="-mt-2 flex items-center gap-1.5 text-xs font-medium text-destructive" role="alert">
           <TriangleAlert className="size-3.5" aria-hidden /> Main transmitter alarm
@@ -265,5 +281,6 @@ export function VccsPanel() {
       </div>
       {busy.talking && <p className="-mt-2 text-xs text-muted-foreground">Controller is talking{onAirFailed ? ' into a failed transmitter' : ''}.</p>}
     </section>
+    </HudPanel>
   )
 }

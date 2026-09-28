@@ -218,13 +218,16 @@ export function ModuleLayout(props: ModuleLayoutProps) {
             )}
             {st.telemetry && active !== 'simulator' && <div className="hidden w-56 lg:block">{st.telemetry}</div>}
           </div>
+          <p className={cn('hud-label absolute right-10 bottom-24 hidden text-[9.5px] text-foreground/45 transition-opacity duration-500 md:block', active === 'simulator' && 'opacity-0')}>
+            Drag to look around · double-click to reset
+          </p>
           {st.labels && st.labels.length > 0 && (
             <p className="hud-label absolute right-5 bottom-4 left-5 text-[8.5px] leading-3.5 text-foreground/60 md:hidden">{st.labels.join(' · ')}</p>
           )}
         </div>
       </div>
 
-      <div className="relative z-10 md:-mt-[calc(100svh-3.5rem)]">
+      <div className="pointer-events-none relative z-10 md:-mt-[calc(100svh-3.5rem)]">
         <Chapter id="idea" className="md:items-end md:pb-40">
           <div className="w-full max-w-[560px]">{chapters.idea}</div>
         </Chapter>

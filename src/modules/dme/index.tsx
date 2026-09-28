@@ -1,17 +1,29 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
 import type { Step } from '@/components/module/Stepper'
 import { Term } from '@/components/Term'
-import { DME_TRANSPONDER } from '@/core/dme'
+import { DME_BAND_MHZ, DME_TRANSPONDER } from '@/core/dme'
+import { useClock } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import { HEIGHT_EXAGGERATION, TABLE_RADIUS_NM, toU } from '@/stage/scale'
+import type { Shot } from '@/stage/types'
 import Deeper from './deeper.mdx'
-import { DEFAULT_ENV } from './engine'
+import { DEFAULT_ENV, DEFAULT_OWN, STATION } from './engine'
 import { DmeSimulator } from './Simulator'
 import { DmeProvider, useDme, useDmeState } from './state'
 import { AnswerVisual, AskVisual, ManyVisual, MathVisual, SlantVisual, SpeedVisual, WaitVisual } from './visuals'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const DmeHero = lazy(() => import('./Hero3D'))
+
+/** Honesty labels: what is to scale on the table and what is not. */
+const tableScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · station and aircraft larger than life`
+const replayLabel = 'Slowed down so you can see it · the world is frozen'
 
 const steps: Step[] = [
   {
@@ -150,11 +162,103 @@ const quiz: QuizQuestion[] = [
   },
 ]
 
+type V3 = [number, number, number]
+/**
+ * A camera shot on `subject` from `offset`, with the subject pushed `shift`
+ * units to the right of the frame (the chapter panels sit on the left).
+ */
+function frame(subject: V3, offset: V3, fov: number, shift = 0): Shot {
+  const len = Math.hypot(offset[0], offset[2]) || 1
+  // Screen-right for a camera looking along -offset (forward x up, flattened).
+  const r: V3 = [offset[2] / len, 0, -offset[0] / len]
+  return {
+    position: [subject[0] + offset[0], subject[1] + offset[1], subject[2] + offset[2]],
+    target: [subject[0] - r[0] * shift, subject[1], subject[2] - r[2] * shift],
+    fov,
+  }
+}
+
+const ST = toU(STATION.pos)
+const STN: V3 = [ST[0], 0.22, ST[2]]
+const START = toU(DEFAULT_OWN.pos, DEFAULT_OWN.altitudeFt)
+/** Halfway along the slant line at the start of the route. */
+const MIDDLE: V3 = [(ST[0] + START[0]) / 2, START[1] / 2, (ST[2] + START[2]) / 2]
+
+const SHOTS: StageSpec['shots'] = {
+  idea: frame(STN, [-2.6, 1.6, -2.4], 34, 0.6),
+  // From behind CNS101's shoulder: the slant line runs up the frame to the station.
+  simulator: frame(MIDDLE, [-4, 7, 7], 36, 0),
+  how: frame(MIDDLE, [8.6, 4.2, 8.6], 36, 2.6),
+  try: frame(MIDDLE, [9.6, 6, 9.6], 36, 3.6),
+  wrong: frame(MIDDLE, [9.6, 7, 9.6], 36, 3.2),
+  deeper: frame([0, 0, 0], [16, 10, 16], 30, 4),
+  quiz: { position: [-4, 30, 0.1], target: [-4, 0, 0], fov: 34 },
+}
+
+/**
+ * Close-ups for the seven "How it works" steps. Side-on shots from the
+ * south-east see the slant-range triangle square on (the route runs south-west
+ * to north-east), pushed right of the chapter panel.
+ */
+const HOW_SHOTS: StageSpec['howShots'] = [
+  // 1 Ask the question: side-on to the slant line.
+  frame(MIDDLE, [8.6, 4.2, 8.6], 36, 2.6),
+  // 2 The station waits: close on the transponder.
+  frame(STN, [1.5, 0.9, 1.4], 32, 0.5),
+  // 3 The answer comes back: the same line, a little lower.
+  frame(MIDDLE, [9, 3, 7.2], 36, 2.6),
+  // 4 Time into distance: the whole line.
+  frame(MIDDLE, [9, 5, 9], 36, 2.8),
+  // 5 A diagonal distance: low and side-on, the triangle.
+  frame(MIDDLE, [9, 1.8, 9], 36, 2.8),
+  // 6 Groundspeed from distance: high over the route.
+  frame([0, 0.3, 0], [6, 10, 6], 38, 2.4),
+  // 7 Sharing one station: wide, all the traffic.
+  frame([0, 0.5, 0], [9, 12, 9], 38, 3),
+]
+
+function DmeTelemetry() {
+  const { engine } = useDme()
+  const v = useSampled(() => {
+    const r = engine.reading()
+    return {
+      shown: r.distanceNm,
+      status: r.status,
+      slant: engine.ownSlantNm,
+      ground: engine.ownGroundNm,
+      height: engine.ownHeightFt,
+      eff: engine.heard ? engine.ownEfficiency : 0,
+    }
+  }, 250)
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="DME shows" value={v.shown === null ? '—' : v.shown.toFixed(1)} unit={v.shown === null ? String(v.status) : 'NM'} tone={v.status === 'LOCK' ? 'signal' : 'muted'} />
+      <TelemetryRow label="Slant range" value={v.slant.toFixed(1)} unit="NM" />
+      <TelemetryRow label="Ground distance" value={v.ground.toFixed(1)} unit="NM" />
+      <TelemetryRow label="Height" value={Math.round(v.height / 100) * 100} unit="ft" />
+      <TelemetryRow label="Our answers" value={`${Math.round(v.eff * 100)}%`} tone={v.eff < 0.5 ? 'alert' : 'default'} />
+    </div>
+  )
+}
+
 function DmePage() {
-  const { engine, store } = useDme()
+  const { engine, store, clock, replayRef } = useDme()
   const env = useDmeState((s) => s.env)
   const s = store.getState()
   const heard = useSampled(() => engine.heard, 300)
+  const running = useClock(clock, (c) => c.running)
+  const replaying = useDmeState((st) => st.replay.phase === 'replay')
+
+  const stage: StageSpec = {
+    scene: (t) => <DmeHero t={t} engine={engine} replayRef={replayRef} />,
+    shots: SHOTS,
+    howShots: HOW_SHOTS,
+    kicker: `UHF · ${DME_BAND_MHZ.min}–${DME_BAND_MHZ.max} MHz`,
+    labels: [tableScaleLabel, ...(replaying ? [replayLabel] : [])],
+    telemetry: <DmeTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: replaying ? 'Pulse replay' : 'Sim time' },
+    label: `A tabletop model of the airspace around the ${STATION.ident} DME ground transponder beside the runway. CNS101 flies above the terrain; a solid cyan line runs straight from the aircraft to the station antenna: the slant range the DME measures. A dashed line on the ground under it is the shorter ground distance. Small darts are the other aircraft sharing the station, bright when it answers them. In slow motion, two question pulses travel along the slant line to the station, it waits, and two answer pulses travel back; the world is frozen while they do.`,
+  }
 
   const experiments: Experiment[] = [
     {
@@ -298,6 +402,7 @@ function DmePage() {
   return (
     <ModuleLayout
       moduleId="dme"
+      stage={stage}
       nextId="ils"
       idea={{
         analogy: (
