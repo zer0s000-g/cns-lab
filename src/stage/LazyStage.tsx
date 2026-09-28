@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ComponentProps } from 'react'
+import { Suspense, lazy, useEffect, useState, type ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 import { StageBoundary } from './StageBoundary'
 import type { Stage as StageComponent } from './Stage'
@@ -12,7 +12,36 @@ const StageImpl = lazy(() => import('./Stage').then((m) => ({ default: m.Stage }
 
 export type StageProps = ComponentProps<typeof StageComponent>
 
+/**
+ * Resolves once the page has loaded and the browser is idle, so the 3D chunk
+ * (about 280 kB) never competes with the text, fonts and simulator code the
+ * page needs first.
+ */
+function useWhenIdle() {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    let idle = 0
+    const go = () => {
+      const ric = window.requestIdleCallback
+      if (ric) idle = ric(() => !cancelled && setReady(true), { timeout: 1500 })
+      else idle = window.setTimeout(() => !cancelled && setReady(true), 200)
+    }
+    if (document.readyState === 'complete') go()
+    else window.addEventListener('load', go, { once: true })
+    return () => {
+      cancelled = true
+      window.removeEventListener('load', go)
+      if (window.cancelIdleCallback) window.cancelIdleCallback(idle)
+      else window.clearTimeout(idle)
+    }
+  }, [])
+  return ready
+}
+
 export function LazyStage(props: StageProps) {
+  const ready = useWhenIdle()
+  if (!ready) return <StagePoster className={props.className} label={props.label} />
   return (
     <StageBoundary fallback={<StagePoster className={props.className} label={props.label} message="3D view unavailable on this device" />}>
       <Suspense fallback={<StagePoster className={props.className} label={props.label} />}>

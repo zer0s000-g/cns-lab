@@ -122,7 +122,57 @@ Every stage shows what is not to scale, for example "Table 120 NM across · heig
 radar and aircraft larger than life" or "Not to scale · airport drawn 10× larger · time ×20".
 Slow-motion replays show "Slowed down so you can see it" and freeze the world.
 
-## 7. Verification
+## 7. Performance and assets
 
-Take screenshots at 1440, 768 and 390 px, in dark and light, before calling any UI
-change done. Also run `npm test`, `npx tsc -b` and `npm run build`.
+**Lightest asset first.**
+- Everything visual is CSS, inline SVG or geometry built in code.
+- There are no image, model or HDR files in the app. The only raster files are the app
+  icons and the 80 kB social card.
+- 3D is lit with `Lightformer`s and uses small `CanvasTexture`s only.
+
+**Code splitting.**
+- Every page is its own chunk.
+- three.js, drei and postprocessing (about 280 kB gzip) live in their own chunk. `LazyStage`
+  loads it only after the page has loaded and the browser is idle, and shows a same-size
+  `StagePoster` until then.
+- Each 3D scene (`Hero3D.tsx`) is lazy. Constants used by page text live in three-free
+  files (`src/stage/scale.ts`, `src/stage/types.ts`, `src/pages/home/worldSites.ts`).
+
+**Route pages.** `scripts/postbuild.mjs` writes one HTML file per route with its title,
+description and `modulepreload` hints for that route's code. Deep links therefore load
+in parallel and return a normal 200.
+
+**Budget.** `scripts/budget.mjs` runs after every build and in CI. It fails the build if the
+first-load JS (gzip) goes over 250 kB or the CSS over 50 kB. Current figures: about 182 kB
+JS and 24 kB CSS.
+
+**Measured targets** (390 px, slow 4G, 4× CPU):
+
+| Metric | Target | Measured today |
+|---|---|---|
+| LCP | < 2.5 s | 1.6–2.5 s |
+| CLS | < 0.1 | ≤ 0.014 |
+
+The lazy-page fallback fills the viewport, so the footer never jumps.
+
+**Runtime.**
+- Device pixel ratio is between 1 and 2, with `PerformanceMonitor` quality tiers.
+- The stage stops rendering while off screen.
+- Frame loops mutate refs and never set React state per frame. Text readouts are sampled
+  at about 10 Hz.
+
+**Offline.** `public/sw.js` fetches pages network-first and serves hashed assets cache-first,
+cached on use. A page opened once online keeps working offline.
+
+**Failure handling.**
+- A route error screen covers crashes, a stale chunk after a deploy (with a reload button)
+  and offline.
+- `StageBoundary` keeps the page and its 2D simulator working when WebGL fails.
+
+## 8. Verification
+
+Before calling any UI change done:
+- Take screenshots at 1440, 768 and 390 px, in dark and light.
+- Run `npm test`, `npx tsc -b` and `npm run build` (which includes the budget).
+- For layout or loading changes, check the axe audit (zero violations) and LCP/CLS on a
+  throttled mobile profile.

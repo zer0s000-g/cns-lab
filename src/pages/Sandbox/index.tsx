@@ -1,5 +1,10 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
-import { ModuleLayout } from '@/components/module/ModuleLayout'
+import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
+import { useClock } from '@/hooks/useSimClock'
+import { useSampled } from '@/hooks/useSampled'
+import { TelemetryRow } from '@/hud/Telemetry'
+import { HEIGHT_EXAGGERATION, TABLE_RADIUS_NM } from '@/stage/scale'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
 import type { QuizQuestion } from '@/components/module/Quiz'
@@ -11,6 +16,40 @@ import { SandboxSimulator } from './Simulator'
 import { SandboxProvider, useSandbox, useSandboxState } from './state'
 import { FusionVisual, JourneyVisual, RedundancyVisual, SafetyNetVisual, TrackVisual } from './visuals'
 import type { ScenarioId } from './engine'
+import { SYSTEMS } from './systems'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const SandboxHero = lazy(() => import('./Hero3D'))
+
+const SHOTS: StageSpec['shots'] = {
+  idea: { position: [12, 10, 16], target: [-2.6, 0.6, 0.4], fov: 36 },
+  simulator: { position: [0, 22, 14], target: [0, 0, 1], fov: 38 },
+  how: { position: [6, 5.5, 9], target: [-2.2, 0.6, 0], fov: 38 },
+  try: { position: [-9, 10, 15], target: [-4, 0.5, 0], fov: 36 },
+  wrong: { position: [-14, 9, 8], target: [-6, 0.5, -1], fov: 36 },
+  deeper: { position: [18, 10, 18], target: [-3, 0, 2], fov: 30 },
+  quiz: { position: [-4, 30, 0.1], target: [-4, 0, 0], fov: 34 },
+}
+
+function SandboxTelemetry() {
+  const { engine } = useSandbox()
+  const t = useSampled(
+    () => ({
+      n: engine.aircraft.length,
+      alerts: engine.alerts.length,
+      down: SYSTEMS.filter((x) => !engine.systemUp(x.id)).length,
+    }),
+    400,
+    (a, b) => a.n === b.n && a.alerts === b.alerts && a.down === b.down,
+  )
+  return (
+    <div className="hud-panel flex flex-col rounded-md px-3.5 py-2.5">
+      <TelemetryRow label="Aircraft" value={t.n} />
+      <TelemetryRow label="Safety-net alerts" value={t.alerts} tone={t.alerts ? 'alert' : 'default'} />
+      <TelemetryRow label="Systems off" value={`${t.down}/${SYSTEMS.length}`} tone={t.down ? 'brass' : 'default'} />
+    </div>
+  )
+}
 
 const steps: Step[] = [
   {
@@ -120,9 +159,24 @@ const quiz: QuizQuestion[] = [
 const SCENARIO_ORDER: Exclude<ScenarioId, 'normal'>[] = ['radarOutage', 'gnssJam', 'vhfFail', 'mountain']
 
 function SandboxPage() {
-  const { engine, store } = useSandbox()
+  const { engine, store, clock } = useSandbox()
   const scenario = useSandboxState((s) => s.scenario)
+  const running = useClock(clock, (c) => c.running)
+  const speed = useClock(clock, (c) => c.speed)
   const s = store.getState()
+
+  const stage: StageSpec = {
+    scene: (t) => <SandboxHero t={t} engine={engine} />,
+    shots: SHOTS,
+    labels: [
+      `Terminal area · table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10}`,
+      'Masts and aircraft larger than life · the ocean crossing is off the table',
+      `Time ×${speed}`,
+    ],
+    telemetry: <SandboxTelemetry />,
+    clock: { getTimeS: () => engine.timeS, running, sub: 'Journey time' },
+    label: 'A tabletop model of the terminal area: the approach and en-route radars turning, ADS-B, WAM, VOR/DME and VHF sites with status lamps, and the aircraft of the sandbox with safety-net alerts ringed in red.',
+  }
 
   const experiments: Experiment[] = [
     {
@@ -237,6 +291,7 @@ function SandboxPage() {
   return (
     <ModuleLayout
       moduleId="sandbox"
+      stage={stage}
       idea={{
         analogy: (
           <p>

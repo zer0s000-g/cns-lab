@@ -133,6 +133,7 @@ export function Stage({
   fallback,
   drift = true,
   onCreated,
+  interactive = false,
 }: {
   children: (t: ThemeTokens, quality: Quality) => ReactNode
   shot: Shot
@@ -141,6 +142,8 @@ export function Stage({
   fallback?: ReactNode
   drift?: boolean
   onCreated?: () => void
+  /** The scene holds clickable labels: expose it as a labelled group instead of an image. */
+  interactive?: boolean
 }) {
   const t = useThemeTokens()
   const reduced = useReducedMotion()
@@ -160,7 +163,7 @@ export function Stage({
     return () => io.disconnect()
   }, [])
   return (
-    <div ref={root} role="img" aria-label={label} className={cn('relative overflow-hidden bg-stage-bg', className)}>
+    <div ref={root} role={interactive ? 'group' : 'img'} aria-roledescription={interactive ? '3D view' : undefined} aria-label={label} className={cn('relative overflow-hidden bg-stage-bg', className)}>
       {ok === false ? (
         <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted-foreground">{fallback ?? '3D view needs WebGL.'}</div>
       ) : ok ? (

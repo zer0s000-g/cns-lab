@@ -33,7 +33,7 @@ export function TitleBlock({
     <div className={cn('flex flex-col gap-1.5', className)}>
       {kicker && (
         <p className="hud-label flex items-center gap-2">
-          <span className="inline-block size-1.5 bg-destructive" aria-hidden />
+          <span className="inline-block size-1.5 bg-brass" aria-hidden />
           {kicker}
         </p>
       )}

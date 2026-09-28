@@ -28,6 +28,9 @@ jobs:
       - run: npx tsc -b
       - run: npx vite build --base=/${{ github.event.repository.name }}/
       - run: node scripts/postbuild.mjs
+      - run: node scripts/budget.mjs
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

@@ -37,7 +37,7 @@ function Shell() {
   const location = useLocation()
   const module = match?.params.id ? MODULE_BY_ID.get(match.params.id) : sandbox ? MODULE_BY_ID.get('sandbox') : undefined
   useEffect(() => {
-    document.title = module ? `${module.short} · CNS Lab` : 'CNS Lab — How air traffic management equipment works'
+    document.title = module ? `${module.name} · CNS Lab` : 'CNS Lab — How air traffic management equipment works'
   }, [module, location.pathname])
   return (
     <TooltipProvider delayDuration={300}>

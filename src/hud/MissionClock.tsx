@@ -21,7 +21,7 @@ export function MissionClock({ getTimeS, sub, running, className }: { getTimeS: 
           <span
             key={i}
             aria-hidden
-            className={cn('inline-block h-[3px] w-3', i === Math.floor(t) % 4 && running ? 'bg-destructive' : 'bg-foreground/20')}
+            className={cn('inline-block h-[3px] w-3', i === Math.floor(t) % 4 && running ? 'bg-signal' : 'bg-foreground/20')}
           />
         ))}
       </span>

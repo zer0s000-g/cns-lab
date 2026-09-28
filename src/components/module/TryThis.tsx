@@ -73,7 +73,7 @@ export function TryThis({ experiments, onSetup }: { experiments: Experiment[]; o
         <div
           className={cn(
             'prose-lab rounded-[4px] border-l-2 px-4 py-3 text-foreground/90 transition-opacity',
-            shown[e.id] ? 'border-signal bg-signal/[0.05] opacity-100' : 'border-hud-line opacity-60',
+            shown[e.id] ? 'border-signal bg-signal/[0.05]' : 'border-hud-line border-dashed',
           )}
         >
           {shown[e.id] ? e.notice : <p className="hud-label">Make a guess first, then reveal what you should notice.</p>}

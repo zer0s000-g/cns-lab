@@ -32,5 +32,11 @@ dark themes; 390/768/1440 px). The live style guide is /instruments. Colours com
 from the CSS variables in src/globals.css; canvases read them with useThemeTokens(),
 three.js with col(t, 'token'). The UI kit lives in src/hud and src/stage.
 
+## Deploy
+Push finished work straight to `main`; GitHub Actions builds and deploys GitHub Pages.
+Do not wait for or verify the Pages deployment after pushing (no `gh run watch`,
+no checking the live site). Local checks before the push (tests, typecheck, build with
+budget, screenshots) still apply.
+
 ## Commands
 npm run dev | npm run test | npm run build | npm run typecheck

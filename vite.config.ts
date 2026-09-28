@@ -17,7 +17,8 @@ export default defineConfig({
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
   // three.js (~900 kB) is split into its own chunk and only loaded by the 3D modules.
-  build: { chunkSizeWarningLimit: 1000 },
+  // The manifest lets scripts/postbuild.mjs write per-route HTML with preload hints.
+  build: { chunkSizeWarningLimit: 1000, manifest: true },
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
     environment: 'node',

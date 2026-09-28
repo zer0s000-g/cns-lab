@@ -43,6 +43,7 @@ export default function Home() {
       <section aria-labelledby="hero-title" className="relative md:h-[calc(100svh-3.5rem)] md:min-h-[640px]">
         <div className="relative h-[52svh] md:absolute md:inset-0 md:h-auto">
           <LazyStage
+            interactive
             className="dark absolute inset-0"
             shot={shot}
             label="A tabletop model of an airspace with an airport, radars, radio beacons, satellites and aircraft. Each system is labelled and links to its module."

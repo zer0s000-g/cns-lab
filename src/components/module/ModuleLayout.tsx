@@ -206,20 +206,20 @@ export function ModuleLayout(props: ModuleLayoutProps) {
             <p className="hud-title text-[12px] text-foreground/90 md:text-[14px]">{meta.name}</p>
           </div>
           <MissionClock className="absolute top-6 right-7 md:top-8 md:right-10" getTimeS={st.clock.getTimeS} running={st.clock.running} sub={st.clock.sub} />
-          {st.labels && st.labels.length > 0 && (
-            <div className="absolute top-[5.6rem] right-7 hidden max-w-[300px] flex-col items-end gap-1 text-right md:top-[6.4rem] md:right-10 md:flex">
-              {st.labels.map((l) => (
-                <span key={l} className="hud-label text-[9.5px] leading-4 text-foreground/55">
-                  {l}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="absolute top-[6.4rem] right-10 hidden w-[300px] flex-col items-end gap-4 md:flex">
+            {st.labels && st.labels.length > 0 && (
+              <div className="flex flex-col items-end gap-1 text-right">
+                {st.labels.map((l) => (
+                  <span key={l} className="hud-label text-[9.5px] leading-4 text-foreground/55">
+                    {l}
+                  </span>
+                ))}
+              </div>
+            )}
+            {st.telemetry && active !== 'simulator' && <div className="hidden w-56 lg:block">{st.telemetry}</div>}
+          </div>
           {st.labels && st.labels.length > 0 && (
             <p className="hud-label absolute right-5 bottom-4 left-5 text-[8.5px] leading-3.5 text-foreground/60 md:hidden">{st.labels.join(' · ')}</p>
-          )}
-          {st.telemetry && active !== 'simulator' && (
-            <div className="absolute top-44 right-7 hidden w-56 md:right-10 lg:block">{st.telemetry}</div>
           )}
         </div>
       </div>

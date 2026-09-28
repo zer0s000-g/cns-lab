@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { PageHeader } from '@/components/PageHeader'
 import { PillarBadge, PILLAR_ICON } from '@/components/PillarBadge'
 import { FREQUENCY_BANDS, formatHz } from '@/content/frequencies'
 import { MODULE_BY_ID, pillarName } from '@/modules/registry'
@@ -20,27 +21,26 @@ const ITU = [
 /** Position (0..100%) of a frequency on the log axis. */
 const pos = (hz: number) => ((Math.log10(Math.max(MIN, Math.min(MAX, hz))) - Math.log10(MIN)) / (Math.log10(MAX) - Math.log10(MIN))) * 100
 
+/** Pillar colours match the home map: navigation cyan, communication brass, surveillance white. Always shown with a label. */
 const PILLAR_BAR: Record<string, string> = {
-  communication: 'bg-chart-4',
-  navigation: 'bg-chart-3',
-  surveillance: 'bg-chart-1',
+  communication: 'bg-brass',
+  navigation: 'bg-signal shadow-[0_0_8px_-2px_var(--signal)]',
+  surveillance: 'bg-foreground/75',
 }
 
 /** Where every CNS system sits in the radio spectrum. */
 export default function Frequencies() {
   const sorted = [...FREQUENCY_BANDS].sort((a, b) => a.fromHz - b.fromHz)
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 md:px-6 md:py-12">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Frequency chart</h1>
-        <p className="text-[15px] text-muted-foreground">
-          Where every system in CNS Lab lives in the radio spectrum. Low frequencies (left) hug the ground and bend around
-          the Earth; high frequencies (right) travel in straight lines and carry fine detail.
-        </p>
-      </header>
+    <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-4 py-10 md:px-10 md:py-16">
+      <PageHeader
+        kicker="Reference · radio spectrum"
+        title="Frequency chart"
+        sub="Where every system in CNS Lab lives in the radio spectrum. Low frequencies (left) hug the ground and bend around the Earth; high frequencies (right) travel in straight lines and carry fine detail."
+      />
 
-      <figure className="flex flex-col gap-3 rounded-lg border bg-card p-4">
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground" aria-hidden>
+      <figure className="hud-panel flex flex-col gap-3 rounded-md p-4 md:p-5">
+        <div className="hud-label flex flex-wrap gap-4" aria-hidden>
           {(['surveillance', 'navigation', 'communication'] as const).map((p) => {
             const Icon = PILLAR_ICON[p]
             return (
@@ -61,7 +61,7 @@ export default function Frequencies() {
               return (
                 <span
                   key={b.label}
-                  className="absolute top-0 flex h-full items-center justify-center border-l text-[11px] font-semibold text-muted-foreground"
+                  className="hud-label absolute top-0 flex h-full items-center justify-center border-l border-hud-line text-[10px]"
                   style={{ left: `${Math.max(0, l)}%`, width: `${r - Math.max(0, l)}%` }}
                 >
                   {b.label}
@@ -107,14 +107,14 @@ export default function Frequencies() {
             ))}
           </div>
         </div>
-        <figcaption className="text-xs text-muted-foreground">Logarithmic scale: each dashed line is ten times the frequency of the one before.</figcaption>
+        <figcaption className="text-[12px] text-muted-foreground">Logarithmic scale: each dashed line is ten times the frequency of the one before.</figcaption>
       </figure>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="hud-panel overflow-x-auto rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 bg-background">System</TableHead>
+              <TableHead className="sticky left-0 bg-card">System</TableHead>
               <TableHead>Pillar</TableHead>
               <TableHead className="text-right">From</TableHead>
               <TableHead className="text-right">To</TableHead>
@@ -126,9 +126,9 @@ export default function Frequencies() {
               const m = b.moduleId ? MODULE_BY_ID.get(b.moduleId) : undefined
               return (
                 <TableRow key={b.id}>
-                  <TableCell className="sticky left-0 bg-background font-medium">
+                  <TableCell className="sticky left-0 bg-card font-medium">
                     {m ? (
-                      <Link to={m.path} className="text-primary hover:underline">
+                      <Link to={m.path} className="text-foreground hover:text-signal hover:underline">
                         {b.system}
                       </Link>
                     ) : (

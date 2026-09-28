@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/postbuild.mjs",
+    "build": "tsc -b && vite build && node scripts/postbuild.mjs && node scripts/budget.mjs",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "oxlint",
     "preview": "vite preview",
-    "expert-review": "node scripts/expert-review.mjs"
+    "expert-review": "node scripts/expert-review.mjs",
+    "budget": "node scripts/budget.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter-tight": "^5.3.0",

@@ -108,34 +108,34 @@
 :root {
   --radius: 0.375rem; /* 6px panels; md ≈ 4.5px controls: crisp, instrument-like */
 
-  /* Enterprise core (light) */
+  /* Flight Deck core (light) */
   --background: hsl(0 0% 100%);
   --foreground: hsl(222 47% 11%);
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(222 47% 11%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(222 47% 11%);
-  --primary: hsl(221 83% 53%);
+  --primary: hsl(192 90% 31%); /* signal cyan, darkened for 5:1 with white text */
   --primary-foreground: hsl(0 0% 100%);
   --secondary: hsl(210 40% 96%);
   --secondary-foreground: hsl(222 47% 11%);
   --muted: hsl(210 40% 96%);
   --muted-foreground: hsl(215 16% 47%);
-  --accent: hsl(214 95% 96%);
-  --accent-foreground: hsl(224 76% 40%);
+  --accent: hsl(190 60% 95%);
+  --accent-foreground: hsl(192 90% 24%);
   --destructive: hsl(0 72% 51%);
   --success: hsl(142 72% 29%);
   --warning: hsl(32 95% 38%);
   --border: hsl(214 32% 91%);
   --input: hsl(214 32% 84%);
-  --ring: hsl(221 83% 53%);
+  --ring: hsl(192 90% 31%);
 
-  /* Blue monochrome data series */
-  --chart-1: hsl(221 83% 53%);
-  --chart-2: hsl(213 94% 68%);
-  --chart-3: hsl(224 76% 40%);
-  --chart-4: hsl(199 89% 48%);
-  --chart-5: hsl(215 20% 65%);
+  /* Data series: signal, brass, then quieter hues */
+  --chart-1: hsl(192 90% 31%);
+  --chart-2: hsl(32 75% 38%);
+  --chart-3: hsl(205 70% 40%);
+  --chart-4: hsl(170 60% 30%);
+  --chart-5: hsl(214 12% 45%);
 
   /* Maps and diagrams (follow the theme) */
   --sim-bg: hsl(210 40% 98%);
@@ -147,10 +147,10 @@
   --sim-grid-strong: hsl(215 20% 72%);
   --sim-ink: hsl(222 47% 11%);
   --sim-muted: hsl(215 16% 42%);
-  --sim-signal: hsl(221 83% 53%);
-  --sim-signal-2: hsl(199 89% 40%);
+  --sim-signal: hsl(192 90% 31%);
+  --sim-signal-2: hsl(32 75% 38%);
   --sim-neutral: hsl(215 20% 55%);
-  --sim-coverage: hsl(221 83% 53% / 0.12);
+  --sim-coverage: hsl(192 90% 31% / 0.12);
   --sim-shadow-zone: hsl(222 47% 11% / 0.08);
   --sim-warning: hsl(32 95% 44%);
   --sim-alert: hsl(0 72% 51%);
@@ -159,28 +159,28 @@
   --sim-fog: hsl(210 20% 92%);
 
   /* Instrument screens and radar scopes are dark in both themes, like the real thing */
-  --scope-bg: hsl(224 50% 7%);
-  --scope-grid: hsl(210 40% 96% / 0.16);
-  --scope-grid-strong: hsl(210 40% 96% / 0.32);
-  --scope-trace: hsl(199 95% 62%);
-  --scope-trace-2: hsl(0 0% 94%);
-  --scope-blip: hsl(199 95% 72%);
-  --scope-text: hsl(210 40% 96%);
-  --scope-dim: hsl(215 20% 66%);
-  --scope-clutter: hsl(215 20% 60%);
-  --scope-warning: hsl(38 92% 58%);
-  --scope-alert: hsl(0 84% 64%);
-  --instrument-face: hsl(222 30% 9%);
-  --instrument-bezel: hsl(220 13% 24%);
-  --instrument-marking: hsl(0 0% 96%);
-  --instrument-dim: hsl(215 16% 62%);
-  --instrument-needle: hsl(0 0% 100%);
-  --instrument-accent: hsl(199 95% 62%);
-  --instrument-flag: hsl(0 84% 60%);
+  --scope-bg: hsl(220 30% 3.5%);
+  --scope-grid: hsl(188 60% 80% / 0.12);
+  --scope-grid-strong: hsl(188 60% 80% / 0.26);
+  --scope-trace: hsl(188 95% 60%);
+  --scope-trace-2: hsl(36 80% 62%);
+  --scope-blip: hsl(186 100% 76%);
+  --scope-text: hsl(190 30% 92%);
+  --scope-dim: hsl(200 14% 58%);
+  --scope-clutter: hsl(200 12% 52%);
+  --scope-warning: hsl(38 92% 60%);
+  --scope-alert: hsl(356 90% 64%);
+  --instrument-face: hsl(220 18% 5%);
+  --instrument-bezel: hsl(218 10% 17%);
+  --instrument-marking: hsl(40 20% 94%);
+  --instrument-dim: hsl(214 10% 58%);
+  --instrument-needle: hsl(40 30% 96%);
+  --instrument-accent: hsl(188 95% 60%);
+  --instrument-flag: hsl(356 88% 60%);
 
   /* ILS lobes: always paired with a label and a hatch pattern */
-  --lobe-90: hsl(221 83% 53%);
-  --lobe-150: hsl(215 16% 47%);
+  --lobe-90: hsl(192 90% 31%);
+  --lobe-150: hsl(32 75% 38%);
 
   /* Marker beacon lamps (real cockpit colours), always labelled O / M / I */
   --marker-outer: hsl(217 91% 60%);
@@ -188,8 +188,8 @@
   --marker-inner: hsl(0 0% 100%);
 
   /* Flight Deck accents (light variant) */
-  --brass: hsl(32 70% 40%);
-  --signal: hsl(192 90% 36%);
+  --brass: hsl(32 75% 35%); /* 5.2:1 on white */
+  --signal: hsl(192 90% 31%); /* 5.0:1 on white */
   --hud-line: hsl(215 25% 20% / 0.22);
   --hud-panel: hsl(0 0% 100% / 0.82);
   /* The 3D stage is a night scene in both themes, like a lit studio. */

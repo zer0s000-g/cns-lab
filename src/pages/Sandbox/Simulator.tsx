@@ -3,8 +3,10 @@ import { ArrowUpRight, Plane, RadioTower, RotateCcw, Swords } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { ClockControls, ClockSpeedLabel, ControlChoice, ControlGroup, ControlSwitch, ControlsPanel, SimLabel } from '@/components/sim/Controls'
+import { ClockControls, ClockSpeedLabel, SimLabel } from '@/components/sim/Controls'
+import { ChapterHead } from '@/components/module/ModuleLayout'
+import { LeverSwitch, Segmented } from '@/hud/Controls'
+import { HudPanel } from '@/hud/HudFrame'
 import { PILLAR_ICON } from '@/components/PillarBadge'
 import { useSimulationLoop } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
@@ -34,36 +36,21 @@ export function SandboxSimulator() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 rounded-lg border bg-card p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-semibold">What goes wrong?</p>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            spacing={0}
-            value={scenario}
-            onValueChange={(v) => v && setScenario(v as ScenarioId)}
-            aria-label="Choose a scenario"
-            className="flex-wrap"
-          >
-            {SCENARIOS.map((s) => (
-              <ToggleGroupItem key={s.id} value={s.id} className="px-3 text-xs">
-                {s.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
+      <div className="hud-panel flex flex-col gap-4 rounded-md px-5 py-4">
+        <ChapterHead n={2} title="Simulator" lead="One shared world: every system sees only what its physics allows. Break things and watch the controller’s picture." />
+        <Segmented
+          label="What goes wrong?"
+          value={scenario}
+          onChange={(v) => setScenario(v)}
+          options={SCENARIOS.map((x) => ({ value: x.id, label: x.label }))}
+        />
         <ScenarioExplainer />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <figure className="flex min-w-0 flex-col gap-2">
-              <figcaption className="flex items-baseline justify-between gap-2">
-                <span className="text-sm font-semibold">The airspace and its systems</span>
-                <span className="text-xs text-muted-foreground">Click a station to learn about it</span>
-              </figcaption>
+            <HudPanel index="MAP" title="The airspace and its systems" actions={<span className="hud-label hidden text-[9.5px] lg:inline">Click a station</span>} bodyClassName="p-3">
               <div className="relative">
                 <AirspaceMap />
                 <div className="pointer-events-none absolute top-2 left-2 flex flex-wrap gap-1.5">
@@ -71,39 +58,24 @@ export function SandboxSimulator() {
                   <CoverageLabel />
                 </div>
               </div>
-            </figure>
-            <figure className="flex min-w-0 flex-col gap-2">
-              <figcaption className="flex items-baseline justify-between gap-2">
-                <span className="text-sm font-semibold">The controller’s screen</span>
-                <span className="text-xs text-muted-foreground">Fused tracks. Click one to see its sources</span>
-              </figcaption>
+            </HudPanel>
+            <HudPanel index="ATC" title="The controller’s screen" actions={<span className="hud-label hidden text-[9.5px] lg:inline">Click a track</span>} bodyClassName="flex flex-col gap-2.5 p-3">
               <ControllerDisplay />
               <SymbolLegend />
-            </figure>
+            </HudPanel>
           </div>
-          <section className="flex flex-col gap-2" aria-labelledby="timeline-title">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 id="timeline-title" className="text-sm font-semibold">
-                CNS700’s journey: which systems it can use
-              </h3>
-              <span className="text-xs text-muted-foreground">Bars show availability with the current failures. The red line is now.</span>
-            </div>
+          <HudPanel index="JNY" title="CNS700’s journey: which systems it can use" bodyClassName="flex flex-col gap-2 p-3">
+            <p className="text-[12px] text-muted-foreground">Bars show availability with the current failures. The red line is now.</p>
             <Timeline />
-          </section>
+          </HudPanel>
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            <section className="rounded-lg border bg-card p-4" aria-labelledby="sources-title">
-              <h3 id="sources-title" className="mb-3 text-sm font-semibold">
-                Sources of the selected track
-              </h3>
+            <HudPanel index="SRC" title="Sources of the selected track" bodyClassName="p-4">
               <SourcesPanel />
-            </section>
-            <section className="flex flex-col gap-3 rounded-lg border bg-card p-4" aria-labelledby="alerts-title">
-              <h3 id="alerts-title" className="text-sm font-semibold">
-                Safety nets
-              </h3>
+            </HudPanel>
+            <HudPanel index="NET" title="Safety nets" bodyClassName="flex flex-col gap-3 p-4">
               <AlertsPanel />
               <EventLog />
-            </section>
+            </HudPanel>
           </div>
         </div>
         <SandboxControls />
@@ -124,17 +96,17 @@ function ScenarioExplainer() {
     )
   const t = SCENARIO_TEXT[scenario]
   return (
-    <div className="grid gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 text-[13.5px] leading-6 text-foreground/85 md:grid-cols-2 xl:grid-cols-4">
       <div>
-        <p className="text-xs font-semibold text-destructive uppercase">What fails</p>
+        <p className="hud-label text-destructive">What fails</p>
         <p className="mt-1">{t.fails}</p>
       </div>
       <div>
-        <p className="text-xs font-semibold text-success uppercase">What still works</p>
+        <p className="hud-label text-success">What still works</p>
         <p className="mt-1">{t.works}</p>
       </div>
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase">The controller</p>
+        <p className="hud-label">The controller</p>
         <p className="mt-1">{t.controller}</p>
         {scenario === 'vhfFail' && (
           <Button size="sm" className="mt-2" onClick={selectVhfStandby} disabled={vhfStandby}>
@@ -143,7 +115,7 @@ function ScenarioExplainer() {
         )}
       </div>
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase">The pilot</p>
+        <p className="hud-label">The pilot</p>
         <p className="mt-1">{t.pilot}</p>
       </div>
     </div>
@@ -188,7 +160,7 @@ function EventLog() {
   if (!log.length) return null
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">Log</p>
+      <p className="hud-label mb-1.5">Log</p>
       <ol className="flex flex-col gap-1 font-mono text-xs text-muted-foreground" aria-live="polite">
         {log.map((l, i) => (
           <li key={`${i}-${l}`} className={cn(i === 0 && 'text-foreground')}>
@@ -216,21 +188,19 @@ function SandboxControls() {
   const { setView, setFollow, setCoverage, setCoverageAlt, setSystem, resetAll, select } = store.getState()
 
   return (
-    <ControlsPanel className="h-fit xl:sticky xl:top-20">
-      <ControlGroup title="Time" description="The whole journey takes about two hours: speed it up.">
+    <div className="flex min-w-0 flex-col gap-4">
+      <HudPanel index="CLK" title="Time" bodyClassName="flex flex-col gap-2 p-3">
         <ClockControls clock={clock} onReset={resetAll} />
-      </ControlGroup>
+        <p className="text-[12px] text-muted-foreground">The whole journey takes about two hours: speed it up.</p>
+      </HudPanel>
 
-      <ControlGroup title="View">
-        <ControlChoice
-          label="Show"
-          value={view}
-          onChange={(v) => setView(v as ViewId)}
-          options={(Object.keys(VIEWS) as ViewId[]).map((k) => ({ value: k, label: VIEWS[k].label }))}
-        />
-        <ControlSwitch label="Follow CNS700" checked={follow} onChange={setFollow} />
+      <HudPanel index="VEW" title="View" bodyClassName="flex flex-col gap-4 p-4">
+        <Segmented label="Show" value={view} onChange={(v) => setView(v)} options={(Object.keys(VIEWS) as ViewId[]).map((k) => ({ value: k, label: VIEWS[k].label }))} />
+        <LeverSwitch label="Follow CNS700" tone="signal" checked={follow} onChange={setFollow} />
         <div className="flex flex-col gap-2">
-          <Label htmlFor="sb-cov">Coverage overlay</Label>
+          <Label htmlFor="sb-cov" className="hud-label">
+            Coverage overlay
+          </Label>
           <Select value={coverage ?? 'none'} onValueChange={(v) => setCoverage(v === 'none' ? null : (v as SystemId))}>
             <SelectTrigger id="sb-cov" className="w-full">
               <SelectValue />
@@ -246,7 +216,7 @@ function SandboxControls() {
           </Select>
         </div>
         {coverage && (
-          <ControlChoice
+          <Segmented
             label="At altitude"
             value={String(coverageAlt)}
             onChange={(v) => setCoverageAlt(Number(v))}
@@ -258,49 +228,49 @@ function SandboxControls() {
             ]}
           />
         )}
-      </ControlGroup>
+      </HudPanel>
 
-      <ControlGroup title="Traffic">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              engine.spawnConflict()
-              select('CNS9A')
-              setView('terminal')
-            }}
-          >
-            <Swords aria-hidden /> Two aircraft on a collision course
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              engine.reset()
-              select('CNS700')
-            }}
-          >
-            <RotateCcw aria-hidden /> Restart the journey
-          </Button>
-        </div>
-      </ControlGroup>
+      <HudPanel index="TFC" title="Traffic" bodyClassName="flex flex-wrap gap-2 p-4">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            engine.spawnConflict()
+            select('CNS9A')
+            setView('terminal')
+          }}
+        >
+          <Swords aria-hidden /> Two aircraft on a collision course
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            engine.reset()
+            select('CNS700')
+          }}
+        >
+          <RotateCcw aria-hidden /> Restart the journey
+        </Button>
+      </HudPanel>
 
-      <ControlGroup title="Systems" description="Switch systems off one by one and watch the controller’s screen.">
+      <HudPanel index="SYS" title="Systems" bodyClassName="flex flex-col gap-4 px-4 py-3">
+        <p className="text-[12px] text-muted-foreground">Switch systems off one by one and watch the controller’s screen.</p>
         {(['surveillance', 'navigation', 'communication'] as const).map((p) => {
           const Icon = PILLAR_ICON[p]
           return (
-            <div key={p} className="flex flex-col gap-2">
-              <p className="flex items-center gap-1.5 text-xs font-semibold">
+            <div key={p} className="flex flex-col">
+              <p className="hud-label mb-1 flex items-center gap-1.5 border-b border-hud-line pb-1.5">
                 <Icon className="size-3.5" aria-hidden /> {pillarName(p)}
               </p>
               {SYSTEMS.filter((s) => s.pillar === p).map((s) => (
-                <ControlSwitch
+                <LeverSwitch
                   key={s.id}
+                  tone="signal"
                   label={
                     <span className="inline-flex items-center gap-1">
                       {s.short}
-                      <Link to={MODULE_BY_ID.get(s.moduleId)!.path} className="text-muted-foreground hover:text-primary" aria-label={`Open the ${s.short} module`}>
+                      <Link to={MODULE_BY_ID.get(s.moduleId)!.path} className="text-muted-foreground hover:text-signal" aria-label={`Open the ${s.short} module`}>
                         <ArrowUpRight className="size-3.5" aria-hidden />
                       </Link>
                     </span>
@@ -313,11 +283,11 @@ function SandboxControls() {
             </div>
           )
         })}
-      </ControlGroup>
+      </HudPanel>
 
-      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Plane className="size-4" aria-hidden /> Aircraft positions come from one shared simulation; each system only sees what its physics allows.
+      <p className="flex items-center gap-2 px-1 text-[12px] text-muted-foreground">
+        <Plane className="size-4 shrink-0" aria-hidden /> Aircraft positions come from one shared simulation; each system only sees what its physics allows.
       </p>
-    </ControlsPanel>
+    </div>
   )
 }

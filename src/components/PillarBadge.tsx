@@ -14,7 +14,14 @@ export const PILLAR_ICON: Record<Pillar, LucideIcon> = {
 export function PillarBadge({ pillar, className }: { pillar: Pillar; className?: string }) {
   const Icon = PILLAR_ICON[pillar]
   return (
-    <Badge variant="outline" className={cn('gap-1 border-primary/30 bg-accent text-accent-foreground', className)}>
+    <Badge
+      variant="outline"
+      className={cn(
+        'gap-1 border-hud-line bg-transparent',
+        pillar === 'navigation' ? 'text-signal' : pillar === 'communication' ? 'text-brass' : 'text-foreground/80',
+        className,
+      )}
+    >
       <Icon aria-hidden />
       {pillarName(pillar)}
     </Badge>
