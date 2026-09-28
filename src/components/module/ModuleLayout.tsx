@@ -172,16 +172,29 @@ export function ModuleLayout(props: ModuleLayoutProps) {
 function useActiveSection(): string {
   const [active, setActive] = useState<string>('idea')
   useEffect(() => {
-    const els = SECTIONS.map((s) => document.getElementById(s.id)).filter((e): e is HTMLElement => Boolean(e))
-    const io = new IntersectionObserver(
-      (entries) => {
-        const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-        if (vis[0]) setActive(vis[0].target.id)
-      },
-      { rootMargin: '-80px 0px -60% 0px' },
-    )
-    els.forEach((e) => io.observe(e))
-    return () => io.disconnect()
+    let raf = 0
+    const update = () => {
+      raf = 0
+      let current: string = SECTIONS[0].id
+      for (const sec of SECTIONS) {
+        const el = document.getElementById(sec.id)
+        if (el && el.getBoundingClientRect().top <= 140) current = sec.id
+      }
+      // At the very bottom of the page, the last section is the active one.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = SECTIONS[SECTIONS.length - 1].id
+      setActive(current)
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      cancelAnimationFrame(raf)
+    }
   }, [])
   return active
 }

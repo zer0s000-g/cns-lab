@@ -36,7 +36,7 @@ export function SiteHeader({ module }: { module?: ModuleMeta }) {
           </div>
         )}
 
-        <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Main">
+        <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Main">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
@@ -55,7 +55,7 @@ export function SiteHeader({ module }: { module?: ModuleMeta }) {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 md:ml-0">
+        <div className="ml-auto flex items-center gap-1 lg:ml-0">
           <ThemeToggle />
           <MobileNav />
         </div>
@@ -68,7 +68,7 @@ function MobileNav() {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+        <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
           <Menu className="size-5" aria-hidden />
         </Button>
       </SheetTrigger>

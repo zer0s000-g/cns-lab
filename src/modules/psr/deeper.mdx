@@ -1,0 +1,50 @@
+### Distance from time
+
+Radio waves travel at the speed of light, *c* ≈ 299,792 km/s. The echo makes the trip twice, so
+
+<Formula>{`R = c × t / 2`}</Formula>
+
+One nautical mile there and back takes about **12.36 µs**. An echo after 494 µs therefore comes from about 40 NM.
+
+### Maximum unambiguous range
+
+The radar must hear the echo of one pulse before it sends the next. With a pulse repetition frequency (PRF):
+
+<Formula>{`R_max = c / (2 × PRF)        e.g. PRF 1,000 per second → about 81 NM`}</Formula>
+
+An echo from beyond R_max arrives after the next pulse has left. The radar measures its time from the wrong pulse and draws it at R − R_max: a **second-trace echo**. Real radars fight this by varying the time between pulses ("PRF stagger"), so second-trace echoes jump around and can be removed.
+
+### How far can it see?
+
+The radar equation says the received echo power falls with the **fourth power** of distance (the signal spreads out on the way there and again on the way back):
+
+<Formula>{`P_received ∝ P_transmit × G² × λ² × σ / R⁴
+so  R_max ∝ (P_transmit × σ)^(1/4)`}</Formula>
+
+Doubling the range needs **16 times** the power. *G* is the antenna gain (a narrower beam has more gain), λ the wavelength and σ the **radar cross section**: how big a target looks to the radar, in m². A small aircraft is around 1 m², an airliner tens of m², a bird about 0.01 m².
+
+Each time the beam passes an aircraft, several pulses hit it (*n* = PRF × turn time × beam width / 360°). The radar adds them up, which helps weak targets. In this simulator: 2 m² is detected 90% of the time at 60 NM with the default settings. This calibration is a teaching choice, not a specification.
+
+### Detail and resolution
+
+<Formula>{`Range resolution    ΔR ≈ c × τ / 2       (1 µs pulse → about 150 m)
+Azimuth resolution  ≈ R × beam width   (1.4° at 30 NM → about 0.7 NM)`}</Formula>
+
+Two aircraft closer than this merge into one blip.
+
+### Typical ATC radars
+
+| Radar | Band | Frequency | Turns every | Typical range |
+|---|---|---|---|---|
+| Approach (terminal) | S-band | about 2.7–2.9 GHz | 4–5 s | 60–80 NM |
+| En-route | L-band | about 1.2–1.4 GHz | 10–12 s | 200+ NM |
+
+<Note title="Honest simplifications">
+The simulator uses a simplified detection curve instead of full radar statistics, draws slant range on the screen (like a real radar), ignores rain attenuation, and gives the antenna a fixed elevation coverage up to 40°. Directly above the radar is a "cone of silence" where it cannot see.
+</Note>
+
+### MTI: moving target indication
+
+MTI compares each echo with the echo from the previous pulse. Anything that has not moved (ground, buildings, wind-farm towers) cancels out. Things with **radial speed** remain. The catches: an aircraft flying across the beam (no radial speed) can briefly vanish, rain moving with the wind is only partly removed, and spinning wind-turbine blades are not removed at all.
+
+{/* TODO(expert-review): RCS values, MTI notch width, elevation coverage and detection calibration used in the PSR simulator. */}

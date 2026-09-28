@@ -59,6 +59,12 @@
   --color-sim-signal: var(--sim-signal);
   --color-sim-signal-2: var(--sim-signal-2);
   --color-sim-neutral: var(--sim-neutral);
+  --color-sim-grid-strong: var(--sim-grid-strong);
+  --color-sim-terrain: var(--sim-terrain);
+  --color-sim-terrain-high: var(--sim-terrain-high);
+  --color-sim-coverage: var(--sim-coverage);
+  --color-sim-sky: var(--sim-sky);
+  --color-sim-fog: var(--sim-fog);
   --color-sim-land: var(--sim-land);
   --color-sim-water: var(--sim-water);
   --color-sim-warning: var(--sim-warning);

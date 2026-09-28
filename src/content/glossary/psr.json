@@ -1,0 +1,22 @@
+[
+  { "id": "psr", "term": "Primary surveillance radar (PSR)", "definition": "A radar that finds aircraft by bouncing radio pulses off them. It needs no help from the aircraft, but it only sees a position." },
+  { "id": "echo", "term": "Echo", "definition": "The small part of a radar pulse that bounces off an object and comes back to the antenna." },
+  { "id": "prf", "term": "PRF (pulse repetition frequency)", "definition": "How many pulses the radar sends every second. More pulses mean more hits on each aircraft but a shorter distance before echoes get mixed up." },
+  { "id": "max-unambiguous-range", "term": "Maximum unambiguous range", "definition": "The farthest distance an echo can come from and still arrive before the next pulse is sent. Beyond it, echoes are drawn at the wrong distance." },
+  { "id": "second-trace", "term": "Second-trace echo", "definition": "An echo from very far away that arrives after the next pulse has left, so the radar draws it much closer than it really is." },
+  { "id": "beam-width", "term": "Beam width", "definition": "How wide the radar's beam is, in degrees. A narrow beam gives sharper direction and more range; a wide beam blurs nearby aircraft together." },
+  { "id": "rotation-period", "term": "Antenna turn time (update interval)", "definition": "How long the radar antenna takes to turn once. The screen gets a new position for each aircraft once per turn." },
+  { "id": "clutter", "term": "Clutter", "definition": "Unwanted echoes from the ground, buildings, rain, birds or wind farms that can hide real aircraft." },
+  { "id": "ground-clutter", "term": "Ground clutter", "definition": "Echoes from hills, trees and buildings. They are strongest near the radar and on hillsides facing it." },
+  { "id": "weather-clutter", "term": "Weather clutter", "definition": "Echoes from rain drops. Heavy rain shows up on a primary radar screen as a pale patch." },
+  { "id": "mti", "term": "MTI (moving target indication)", "definition": "A filter that compares echoes from one pulse to the next and removes the ones that do not move, such as hills and buildings." },
+  { "id": "radial-speed", "term": "Radial speed", "definition": "How fast something moves directly toward or away from the radar. An aircraft flying in a circle around the radar has no radial speed." },
+  { "id": "rcs", "term": "Radar cross section (RCS)", "definition": "How big an object looks to a radar, in square metres. It depends on shape and material, not just size: a small aircraft is about 1 m², an airliner tens of m²." },
+  { "id": "radar-equation", "term": "Radar equation", "definition": "The rule that links transmitter power, antenna, target size and distance to the strength of the echo. The echo weakens with the fourth power of distance." },
+  { "id": "a-scope", "term": "A-scope", "definition": "An early radar display that draws echo strength against time along one direction. Each bump is an echo; its time gives its distance." },
+  { "id": "cone-of-silence", "term": "Cone of silence", "definition": "The space directly above a radar where its beam does not reach, so aircraft overhead are not seen." },
+  { "id": "range-resolution", "term": "Range resolution", "definition": "How close together in distance two aircraft can be before the radar sees them as one blip. Shorter pulses give finer resolution." },
+  { "id": "s-band", "term": "S-band", "definition": "Radio frequencies around 2 to 4 GHz. Airport approach radars use about 2.7 to 2.9 GHz." },
+  { "id": "l-band", "term": "L-band", "definition": "Radio frequencies around 1 to 2 GHz. Long-range en-route radars, SATCOM and GNSS use parts of this band." },
+  { "id": "update-rate", "term": "Update rate", "definition": "How often a surveillance system gives a new position for each aircraft." }
+]

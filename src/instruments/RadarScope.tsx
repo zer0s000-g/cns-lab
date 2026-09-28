@@ -263,7 +263,10 @@ function drawPaint(
   const r = Math.hypot(p.x, p.y)
   const az = (Math.atan2(p.x, p.y) * 180) / Math.PI
   const w = p.widthDeg ?? 1.5
-  const depth = Math.max(p.depthNm ?? 0.3, 2.2 / pxPerNm)
+  // Targets are drawn at least ~4 px deep and ~5 px wide so a learner can see them;
+  // real phosphor blips also bloom a little beyond the true resolution cell.
+  const isTarget = p.kind === 'target' || p.kind === 'false'
+  const depth = Math.max(p.depthNm ?? 0.3, (isTarget ? 4 : 2.2) / pxPerNm)
   const r0 = Math.max(0, (r - depth / 2) * pxPerNm)
   const r1 = (r + depth / 2) * pxPerNm
   ctx.fillStyle = withAlpha(color, p.kind === 'weather' ? alpha * 0.55 : alpha)
@@ -271,7 +274,7 @@ function drawPaint(
   const a0 = toRad(az - w / 2 - 90)
   const a1 = toRad(az + w / 2 - 90)
   // Make very narrow arcs at least ~2 px wide so they stay visible.
-  const minHalf = r1 > 0 ? Math.min(Math.PI, 1.1 / Math.max(r1, 1)) : 0
+  const minHalf = r1 > 0 ? Math.min(Math.PI, (isTarget ? 2.6 : 1.1) / Math.max(r1, 1)) : 0
   const mid = (a0 + a1) / 2
   const half = Math.max((a1 - a0) / 2, minHalf)
   ctx.arc(cx, cy, r1, mid - half, mid + half)
