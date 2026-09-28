@@ -260,11 +260,14 @@ function renderTerrain(view: MapView, terrain: Terrain, t: ThemeTokens, dpr: num
     const name = h.name && !seen.has(h.name) ? h.name : ''
     if (h.name) seen.add(h.name)
     const text = `${name ? `${name} ` : ''}${h.peakFt.toLocaleString('en-US')} ft`
+    // Keep the label inside the map.
+    const half = ctx.measureText(text).width / 2
+    const lx = Math.min(view.width - half - 3, Math.max(half + 3, s.x))
     ctx.lineWidth = 3
     ctx.strokeStyle = withAlpha(t['sim-bg'], 0.8)
-    ctx.strokeText(text, s.x, s.y + 5)
+    ctx.strokeText(text, lx, s.y + 5)
     ctx.fillStyle = t['sim-muted']
-    ctx.fillText(text, s.x, s.y + 5)
+    ctx.fillText(text, lx, s.y + 5)
   }
   return c
 }

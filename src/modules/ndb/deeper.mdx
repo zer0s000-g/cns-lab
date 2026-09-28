@@ -1,0 +1,64 @@
+### Frequencies and waves
+
+NDBs work in the **LF and MF bands, 190–1750 kHz**, and most aeronautical beacons sit between **190 and 535 kHz**. At 344 kHz the wavelength is about
+
+<Formula>{`λ = c / f = 299,792,458 m/s ÷ 344,000 Hz ≈ 870 m`}</Formula>
+
+Waves that long travel mainly as a **ground wave** that follows the curve of the Earth, so an NDB can be received beyond the radio horizon and at low altitude, unlike VHF systems such as the VOR.
+
+The carrier is amplitude-modulated by an audio tone that carries the **Morse ident** (two or three letters, keyed at about 7 words per minute). Some beacons key the carrier itself instead; the pilot then needs the receiver's beat-frequency oscillator (BFO) to hear it.
+
+{/* TODO(expert-review): ident tone (400 or 1020 Hz), keying speed and repetition rate; emission types A1A / A2A and when a BFO is needed. */}
+
+### Rated coverage
+
+The **rated coverage** is the area in which the ground-wave field strength is above a minimum value. Annex 10 sets that minimum higher in the tropics, where thunderstorm static is stronger. A locator beacon near an airport covers roughly 10–25 NM; an en-route beacon 50–100 NM or more.
+
+{/* TODO(expert-review): minimum field strengths for rated coverage (about 70 µV/m, and 120 µV/m between 30°N and 30°S) and typical locator / en-route coverage figures. */}
+
+### Loop and sense antennas
+
+A loop antenna's output depends on the angle θ between its axis and the arriving wave; a vertical sense antenna's does not:
+
+<Formula>{`loop  ∝ cos θ            (figure of eight: two lobes, two nulls)
+sense ∝ 1                (the same in every direction)
+loop + sense ∝ 1 + cos θ (cardioid: one null only)`}</Formula>
+
+The loop's sharp null gives the direction; the sense antenna decides which of the two possible directions is the right one. Modern ADFs use two fixed, crossed loops and electronics instead of a turning loop, but the principle is the same.
+
+### Bearings
+
+<Formula>{`relative bearing    = bearing to the station − heading
+                      (both true, or both magnetic)
+magnetic bearing TO = magnetic heading + relative bearing
+                      (subtract 360 if the sum passes 360)
+bearing FROM        = bearing TO ± 180
+true = magnetic + variation   (East positive: "East is least")`}</Formula>
+
+On an **RMI** the card turns with the magnetic heading, so the needle head reads the magnetic bearing TO the station and the tail the bearing FROM it, with no arithmetic. With no wind (as in CNS Lab), keeping the needle on the nose (homing) flies you straight to the beacon. With wind, homing gives a curved path; pilots then track a bearing by allowing for drift.
+
+### Errors
+
+| Error | Cause | Worst when | In this simulator |
+|---|---|---|---|
+| Night effect | Sky waves from the ionosphere mix with the ground wave | Dusk and dawn, far from the beacon | Sky-wave to ground-wave ratio grows with distance; its phase drifts |
+| Thunderstorm | Lightning is a powerful LF/MF transmitter; the needle swings toward flashes | Storm close, beacon far | Each flash adds a decaying pull toward it |
+| Coastal refraction | The ground wave is slightly faster over sea, so it bends at the coast | Signal crossing the coast at a shallow angle | Bend ∝ cot(angle to the coast), weighted by where the bend happens |
+| Mountain effect | Reflections from high terrain | Low, close to mountains | Reflected waves with path-dependent phase |
+| Noise | Weak signal far from the beacon | Beyond the rated coverage | Needle wander grows as the margin falls |
+
+An ADF is normally accurate to within a few degrees in good conditions. Other real errors not modelled here: **quadrantal error** (the aircraft's metal body bends the signal, corrected on installation) and **dip error** (the loop tilts in a banked turn).
+
+{/* TODO(expert-review): typical ADF bearing accuracy, and the magnitudes chosen for each simulated error (night effect up to about 25°, lightning pull up to about 30–40°, coastal refraction up to about 10°, mountain effect up to about 30°). */}
+
+<Note title="Honest simplifications">
+The error models are teaching models with physically sensible causes and plausible sizes, not certified propagation predictions. The signal strength uses a simple 1/distance law with extra ground loss. Without its sense antenna the simulated ADF always shows the answer ahead of the wings; a real one would be unpredictable. The radio waves on the map are drawn millions of times slower than reality.
+</Note>
+
+### Why NDBs are being phased out
+
+- **Satellite navigation** (GNSS) with **performance-based navigation** (PBN) gives accurate position anywhere, not just a direction to one point.
+- NDBs suffer all the errors above, and there is no warning in the cockpit when the needle is wrong.
+- Every beacon needs a large antenna, a site, power and maintenance, for a service fewer and fewer aircraft use.
+
+Many countries are switching NDBs off. Some remain as approach **locators**, as a backup when satellite signals are lost, and in regions with few other aids.

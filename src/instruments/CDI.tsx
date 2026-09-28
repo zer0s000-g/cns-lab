@@ -256,6 +256,8 @@ export function CDI({ read, variant = 'cdi', onCourseChange, size = 240, title, 
     return `${title ?? 'CDI'}: course ${fmt3(r.courseDeg)}, needle ${side === 'centred' ? 'centred' : `${dots} dots ${side}`}${r.hideToFrom ? '' : `, ${r.toFrom}`}${gs}.`
   }, 500)
 
+  const obsShown = useSampled(() => readRef.current().courseDeg, 150)
+
   const change = (delta: number) => {
     if (!onCourseChange) return
     onCourseChange(normalize360(Math.round(readRef.current().courseDeg + delta)))
@@ -310,7 +312,7 @@ export function CDI({ read, variant = 'cdi', onCourseChange, size = 240, title, 
             −1°
           </Button>
           <span className="w-16 text-center font-mono text-sm tabular-nums" aria-live="polite">
-            OBS {fmt3(read().courseDeg)}
+            OBS {fmt3(obsShown)}
           </span>
           <Button variant="outline" size="sm" onClick={() => change(1)} aria-label="Course plus 1 degree">
             +1°

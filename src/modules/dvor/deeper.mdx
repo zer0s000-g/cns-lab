@@ -1,0 +1,82 @@
+### Frequencies
+
+VORs transmit in the VHF band **108.00–117.95 MHz**, on channels 50 kHz apart. Between 108 and 112 MHz the band is shared with ILS localizers: VORs use the even tenths (108.00, 108.05, 108.20, …) and localizers the odd tenths (108.10, 108.15, 108.30, …). VHF travels in straight lines, so the range depends on height: roughly 1.23 × (√h_station + √h_aircraft) NM with heights in feet.
+
+{/* TODO(expert-review): channel plan in 108–112 MHz and typical service volumes of terminal and en-route VORs. */}
+
+### The two 30 Hz signals
+
+<Formula>{`radial = how far the 30 Hz AM lags the 30 Hz FM   (0–360°)
+       = magnetic bearing FROM the station
+radial 000: the two are in phase (aligned to magnetic north)`}</Formula>
+
+| | Conventional VOR (CVOR) | Doppler VOR (DVOR) |
+|---|---|---|
+| Reference (REF) | 30 Hz **FM** on a 9960 Hz subcarrier, deviation ±480 Hz; same phase in every direction | 30 Hz **AM** of the carrier from the centre antenna; same phase in every direction |
+| Variable (VAR) | 30 Hz **AM** from a pattern turning at 30 revolutions per second | 30 Hz **FM** made by the Doppler effect of the ring |
+| Rotation | pattern turns clockwise | switching runs counter-clockwise |
+| Phase relation | VAR (AM) lags REF by the radial | VAR (FM) leads REF by the radial |
+
+A VOR receiver does not know which kind of station it is listening to. It always measures **how far the 30 Hz AM lags the 30 Hz FM**. In a CVOR that is VAR lagging REF. In a DVOR the roles are swapped, and because the switching runs the other way round, the FM now leads the AM by the radial, which is the same thing seen from the other side. The same receiver reads the same radial from both.
+
+{/* TODO(expert-review): wording of the DVOR phase relationship and rotation sense (counter-clockwise commutation so a conventional receiver reads the correct bearing). */}
+
+The carrier also carries the **Morse ident** on a 1020 Hz tone (three letters, about 7 words per minute, repeated roughly every 10 s) and sometimes voice. Modulation depths are about 30 % for the 30 Hz AM and for the 9960 Hz subcarrier.
+
+{/* TODO(expert-review): ident keying speed and repetition rate, modulation depths. */}
+
+### The Doppler ring
+
+A DVOR has a central carrier antenna and a ring of about **48 antennas, about 13.5 m across**, on a large metal counterpoise. The sidebands (carrier ± 9960 Hz) are switched from antenna to antenna so that the source seems to spin 30 times a second. A source moving toward you arrives at a higher frequency:
+
+<Formula>{`rim speed      v = 2π × r × f_rot = 2π × 6.76 m × 30 /s ≈ 1,274 m/s
+wavelength     λ = c / f ≈ 299,792,458 / 113,000,000 ≈ 2.65 m
+peak Doppler  Δf = v / λ ≈ 480 Hz`}</Formula>
+
+So the 9960 Hz tone wobbles by ±480 Hz at 30 Hz: the same deviation the CVOR's reference uses, by design.
+
+### Why a DVOR is less affected by reflections
+
+A reflection from a building arrives with the variable signal of the building's direction. In a CVOR it mixes directly into the 30 Hz AM:
+
+<Formula>{`CVOR error ≈ atan( k·sin(ψ − θ) / (1 + k·cos(ψ − θ)) ),  k = a·cos φ
+  a = reflection strength     φ = its radio phase
+  ψ = building direction      θ = aircraft direction`}</Formula>
+
+In a DVOR the ring's large **aperture** (about five wavelengths across) makes the reflected signal's Doppler pattern very different from the direct one, and the receiver's FM detection averages most of it out. Only a small part survives, about 2·a·J₁(M)/m with m = 2πr/λ ≈ 16 and M = 2m·sin((ψ − θ)/2), so the error is typically **ten or more times smaller**. The improvement is least for reflectors almost in line with the aircraft.
+
+{/* TODO(expert-review): reflection strength model and the DVOR suppression ratio (the simulator gives about 1/14 at worst and about 1/40 on average for one building). */}
+
+### The course indicator
+
+<Formula>{`d = OBS − radial   (made to lie between −180° and +180°)
+|d| ≤ 90°  → FROM,  deviation = d
+|d| > 90°  → TO,    deviation = 180° − d
+full scale = 10°  (5 dots of 2°);  needle right = fly right`}</Formula>
+
+The indication depends only on where you are, not on your heading. Fly a heading close to the selected course and the needle is "fly toward it"; fly the opposite way and it works backwards (reverse sensing).
+
+### Cone of confusion
+
+Above the station the direction information breaks down. Coverage is required up to an elevation of about 40°; the simulator lets the needle swing above 40° and shows the flag above 50°. The cone's radius at a height h above the station is
+
+<Formula>{`r = h / tan(elevation limit)
+e.g. 20,000 ft ≈ 3.3 NM up → r ≈ 2.8 NM at 50°`}</Formula>
+
+{/* TODO(expert-review): elevation angles used for the swing zone (40°) and the flag (50°), and the TO/FROM ambiguity width near abeam (±4° in the simulator). */}
+
+### Monitoring and integrity
+
+An **integral monitor** listens to the station through an antenna near it. If the bearing it measures shifts by more than about **1°**, or a modulation component drops by about **15 %**, the monitor removes the navigation and ident signals: the station changes over to a standby transmitter or shuts down. In the cockpit the flag appears. A monitor cannot see reflection errors far away, which is why sites are chosen and flight-checked carefully.
+
+During maintenance the ident may be removed while the station radiates: the needle can look normal, but **a VOR without its ident must not be used**.
+
+{/* TODO(expert-review): monitor alarm limits, time allowed before shutdown, changeover delay, and practice for ident during maintenance. */}
+
+### VOR/DME pairing
+
+Most VORs have a DME at the same site. Each VOR frequency is paired with exactly one <Term id="dme-pairing">DME channel</Term>, so tuning the VOR tunes the DME too, and both share the same ident. Together they give direction and distance: a position from one station.
+
+<Note title="Honest simplifications">
+The 3D ring and the turning pattern are shown about 120 times slower than reality, and distances around the station are not to scale. The building is a single reflector with a simple strength model. The needle swing in and near the cone is a smooth random wander, not a full model of the overhead field.
+</Note>

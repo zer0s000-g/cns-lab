@@ -1,0 +1,57 @@
+[
+  {
+    "id": "cvor",
+    "term": "CVOR (conventional VOR)",
+    "definition": "The original VOR design. Its variable signal comes from a radiation pattern that turns 30 times a second, which makes the signal's strength rise and fall (AM) at a time that depends on your direction."
+  },
+  {
+    "id": "dvor",
+    "term": "DVOR (Doppler VOR)",
+    "definition": "A VOR whose variable signal is made by switching a radio signal around a large ring of antennas. The Doppler effect shifts its frequency (FM) at a time that depends on your direction. It is much less disturbed by nearby buildings and hills."
+  },
+  {
+    "id": "reference-signal",
+    "term": "Reference signal (REF)",
+    "definition": "The VOR signal that ticks at the same moment in every direction, like a flash seen by everyone at once. The receiver compares the variable signal against it."
+  },
+  {
+    "id": "variable-signal",
+    "term": "Variable signal (VAR)",
+    "definition": "The VOR signal whose timing depends on where you are around the station. How far it is out of step with the reference signal gives your radial."
+  },
+  {
+    "id": "subcarrier",
+    "term": "Subcarrier",
+    "definition": "A second, lower-frequency signal carried inside the main radio signal. In a VOR it is a 9960 Hz tone, and one of the two 30 Hz signals rides on it as a frequency change."
+  },
+  {
+    "id": "commutation",
+    "term": "Commutation (antenna switching)",
+    "definition": "Switching a signal from one antenna to the next around the DVOR ring, very fast, so that the signal seems to come from a source spinning 30 times a second."
+  },
+  {
+    "id": "counterpoise",
+    "term": "Counterpoise",
+    "definition": "The large, round metal platform a VOR's antennas stand on. It gives the antennas a clean, flat 'ground' so the signal leaves the station evenly."
+  },
+  {
+    "id": "cone-of-confusion",
+    "term": "Cone of confusion",
+    "definition": "The cone-shaped region above a VOR where the signal cannot be used. Flying through it, the needle swings and the warning flag appears, until you are past the station."
+  },
+  {
+    "id": "site-error",
+    "term": "Site error",
+    "definition": "A bearing error caused by the station's surroundings: buildings, fences, trees or hills that reflect part of the signal. The reflected copy mixes with the direct signal and bends the course."
+  },
+  {
+    "id": "scalloping",
+    "term": "Scalloping",
+    "definition": "A wavy course: because of reflections, the needle swings a little from side to side around the correct course as the aircraft flies."
+  },
+  {
+    "id": "vor-monitor",
+    "term": "VOR monitor",
+    "definition": "Equipment at the station that constantly checks the signal it radiates. If the bearing shifts too much or a signal weakens, it switches to a standby transmitter or shuts the station down, so no wrong guidance goes out."
+  }
+]

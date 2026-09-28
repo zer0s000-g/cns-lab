@@ -1,0 +1,57 @@
+[
+  {
+    "id": "lf-mf",
+    "term": "LF and MF (low and medium frequency)",
+    "definition": "Radio frequencies from 30 to 300 kHz (LF) and 300 to 3000 kHz (MF). The waves are hundreds of metres long and can follow the curve of the Earth. NDBs and AM broadcast stations use them."
+  },
+  {
+    "id": "loop-antenna",
+    "term": "Loop antenna",
+    "definition": "A coil of wire that picks up a radio signal strongly from two opposite directions and not at all side-on. The ADF uses it to find the direction of a beacon, but on its own it cannot tell front from back."
+  },
+  {
+    "id": "sense-antenna",
+    "term": "Sense antenna",
+    "definition": "A simple wire antenna that hears every direction equally. Combined with the loop antenna it removes the front-or-back doubt, so the ADF needle points the right way."
+  },
+  {
+    "id": "cardioid",
+    "term": "Cardioid (heart-shaped pattern)",
+    "definition": "The heart-shaped reception pattern you get by adding a loop antenna and a sense antenna. It has only one direction of silence, so it shows which side the station is on."
+  },
+  {
+    "id": "rated-coverage",
+    "term": "Rated coverage",
+    "definition": "The area around a beacon inside which its signal is guaranteed to be strong enough to use. Beyond it the needle may still move, but it is not reliable."
+  },
+  {
+    "id": "morse-ident",
+    "term": "Morse ident",
+    "definition": "The two or three letters a radio navigation station sends in Morse code, again and again, so pilots can check they are listening to the right station. No ident means: do not use it."
+  },
+  {
+    "id": "station-passage",
+    "term": "Station passage",
+    "definition": "The moment an aircraft flies over a beacon. The needle swings from pointing ahead to pointing behind, which tells the pilot they are overhead."
+  },
+  {
+    "id": "homing",
+    "term": "Homing",
+    "definition": "Flying to a beacon by simply keeping the ADF needle on the nose. With no wind the aircraft flies straight to it."
+  },
+  {
+    "id": "night-effect",
+    "term": "Night effect",
+    "definition": "At night, sky waves reflected by the ionosphere mix with the ground wave and make the ADF needle wander. It is worst around dusk and dawn and far from the beacon."
+  },
+  {
+    "id": "coastal-refraction",
+    "term": "Coastal refraction",
+    "definition": "A beacon's signal speeds up slightly over the sea and bends where it crosses a coastline. The ADF then points a few degrees off, most when the signal crosses the coast at a shallow angle."
+  },
+  {
+    "id": "mountain-effect",
+    "term": "Mountain effect",
+    "definition": "Reflections of a radio signal from high ground. Near mountains the reflected and direct waves mix, and the ADF needle becomes erratic."
+  }
+]

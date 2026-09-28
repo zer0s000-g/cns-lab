@@ -86,9 +86,8 @@ export function Oscilloscope({
       ctx.fillRect(Math.min(x0, x1), padT, Math.abs(x1 - x0), h)
       ctx.fillStyle = t['scope-text']
       ctx.font = `600 11px ${t.fontSans}`
-      ctx.textAlign = 'center'
       ctx.textBaseline = 'bottom'
-      ctx.fillText(r.span.label, (x0 + x1) / 2, padT + h - 4)
+      placeText(ctx, r.span.label, (x0 + x1) / 2, padT + h - 4, padL, padL + w)
     }
 
     r.traces.forEach((tr, k) => {
@@ -128,9 +127,8 @@ export function Oscilloscope({
       ctx.setLineDash([])
       ctx.fillStyle = t['scope-warning']
       ctx.font = `600 10px ${t.fontSans}`
-      ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
-      ctx.fillText(m.label, x, padT + h + 4)
+      placeText(ctx, m.label, x, padT + h + 4, padL, padL + w)
     }
 
     // Time axis labels.
@@ -146,6 +144,13 @@ export function Oscilloscope({
 
   const label = useSampled(() => (describe ? describe() : 'Oscilloscope'), 1000)
   return <Canvas2D draw={draw} label={label} className={cn('h-48 w-full rounded-lg', className)} />
+}
+
+/** Centred text that is shifted so it stays between `minX` and `maxX`. */
+function placeText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, minX: number, maxX: number) {
+  const w = ctx.measureText(text).width
+  ctx.textAlign = 'left'
+  ctx.fillText(text, Math.min(maxX - w, Math.max(minX, x - w / 2)), y)
 }
 
 function formatNum(v: number): string {
