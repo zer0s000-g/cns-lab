@@ -1,0 +1,144 @@
+### The pseudorange
+
+Each satellite sends its position (from its <Term id="ephemeris">ephemeris</Term>) and the time the signal left, from its <Term id="atomic-clock">atomic clocks</Term>. The receiver notes when it arrived and multiplies the travel time by the speed of light *c* = 299,792,458 m/s. Its own clock is off by an unknown amount *b*, which adds the same error to every satellite:
+
+<Formula>{`ρᵢ = |sᵢ − r| + c·b + εᵢ
+
+ρᵢ   measured pseudorange to satellite i
+sᵢ   satellite position (known from its message)
+r    receiver position (unknown: x, y, z)
+c·b  receiver clock error as a distance (unknown)
+εᵢ   everything else: ionosphere, troposphere, orbit, noise`}</Formula>
+
+Four unknowns (x, y, z, c·b) need at least four equations, so at least four satellites. A clock that is off by 1 µs adds 300 m to every distance. In the simulator the receiver clock is off by 0.35 ms, which is about 105 km.
+
+### Solving it: iterative least squares
+
+The equations are not linear, so the receiver guesses a position (the centre of the Earth is good enough), linearises around the guess and improves it, a few times:
+
+<Formula>{`One row per satellite:      Hᵢ = [ −(sᵢ − r)/|sᵢ − r| , 1 ]
+Measured minus predicted:   Δρ = ρ − (|s − r| + c·b)
+Correction, then repeat:    Δx = (HᵀH)⁻¹ Hᵀ Δρ   (x, y, z and c·b)`}</Formula>
+
+With more than four satellites, this <Term id="least-squares">least-squares</Term> answer fits all of them as well as possible. The leftovers Δρ after the last step are the **residuals**: how far each distance sphere misses the answer ("misfit" in the simulator).
+
+**Why three satellites are not enough.** Pick any clock error and three spheres still meet (at two points, one near the Earth and one far out in space). A different clock error gives a different meeting point near the Earth. The possible answers form a line; in the simulator 1 µs of clock error moves the answer by several hundred metres, mostly up or down. Only a fourth sphere picks the one clock error for which all four meet.
+
+### Satellite geometry: dilution of precision
+
+In local east–north–up axes, with **e**ᵢ the unit vector from the receiver to satellite i:
+
+<Formula>{`One row per satellite:   G = [ −e_E  −e_N  −e_U  1 ]
+Then:                    Q = (GᵀG)⁻¹
+
+GDOP = √(Q_EE + Q_NN + Q_UU + Q_tt)     PDOP = √(Q_EE + Q_NN + Q_UU)
+HDOP = √(Q_EE + Q_NN)     VDOP = √Q_UU     TDOP = √Q_tt
+
+position error ≈ DOP × σ_UERE          95% horizontal ≈ 2 × HDOP × σ_UERE`}</Formula>
+
+Four satellites give the best geometry with one overhead and three low down, spread evenly around the horizon (PDOP about 1.7 with a 5° mask). Satellites bunched in one part of the sky give a large DOP. All satellites are above the receiver, never below, which is why the height (VDOP) is usually worse than the horizontal position (HDOP).
+
+| DOP | 1 | 1–2 | 2–5 | 5–10 | 10–20 | over 20 |
+|---|---|---|---|---|---|---|
+| Rating | Ideal | Excellent | Good | Moderate | Fair | Poor |
+
+### Error budget
+
+The simulator's one-sigma ranging errors (<Term id="ranging-error">UERE</Term>) for a satellite 45° up, on a quiet day:
+
+| Source | No corrections | With SBAS | With GBAS |
+|---|---|---|---|
+| Satellite clock and orbit | 2.0 m | 0.5 m | 0.05 m |
+| Ionosphere (left after correction) | 3.8 m | 0.5 m | 0.07 m |
+| Troposphere (left after the model) | 0.2 m | 0.2 m | 0.04 m |
+| Receiver noise and <Term id="multipath">multipath</Term> | 0.5 m | 0.2 m | 0.2 m, plus 0.1 m from the ground station |
+| **Total (UERE)** | **about 4.3 m** | **about 0.75 m** | **about 0.25 m** |
+
+Low satellites are worse: at 5° up the totals are about 9 m, 1.8 m and 0.6 m, because the signal crosses much more of the atmosphere. The ionosphere delay grows with the obliquity factor of a thin shell 350 km up (*R* is the Earth radius, *E* the elevation):
+
+<Formula>{`F = 1 / √(1 − (R·cos E / (R + h))²)       F = 1 overhead, about 3 at 5°`}</Formula>
+
+A GPS receiver on its own removes about half of the ionosphere delay with a simple model the satellites broadcast. Dual-frequency receivers (L1 and L5) can measure and remove almost all of it, because the delay depends on frequency. In an ionospheric storm the unaugmented error in the simulator grows to about 17 m at 45°.
+
+{/* TODO(expert-review): every value in this table is an illustrative teaching budget, not a specification. */}
+
+### RAIM and fault detection and exclusion
+
+With n satellites and 4 unknowns there are n − 4 spare measurements. <Term id="raim">RAIM</Term> uses them to check consistency. The sum of the squared residuals (SSE), divided by the expected ranging variance σ², follows a chi-square distribution with n − 4 degrees of freedom when nothing is wrong:
+
+<Formula>{`alarm  if  SSE / σ²  >  T²(n − 4, P_fa)
+
+n = 4   no spare measurement: no check possible
+n = 5   one spare: a fault can be DETECTED, not located
+n ≥ 6   leave each satellite out in turn: if exactly one group of
+        n − 1 passes, the one left out is faulty and is EXCLUDED (FDE)`}</Formula>
+
+The simulator uses a false-alarm probability of one in a million per check. Some faults are harder to see than others: if a satellite's error can be almost fully explained by moving the position, the residuals stay small. That is why certified receivers compute a **protection level** (HPL, VPL), the largest position error that could go undetected, and compare it with the **alert limit** of the operation, for example 556 m (0.3 NM) for an RNP approach.
+
+{/* TODO(expert-review): P_fa value and the RAIM/FDE description are simplified; certified FDE follows RTCA DO-229 / TSO-C145/C146 and ICAO Annex 10 Vol I requirements. */}
+
+### Signals and systems
+
+| System | Operator | Aviation frequencies |
+|---|---|---|
+| <Term id="gps">GPS</Term> | USA | L1 1575.42 MHz, L5 1176.45 MHz (also L2 1227.60 MHz) |
+| Galileo | European Union | E1 1575.42 MHz, E5a 1176.45 MHz |
+| GLONASS | Russia | L1 about 1602 MHz: each satellite on its own channel (FDMA), 1598.0625–1605.375 MHz |
+| BeiDou | China | B1I 1561.098 MHz, B1C 1575.42 MHz, B2a 1176.45 MHz |
+
+GPS L1 1575.42 MHz is 154 × 10.23 MHz, the satellites' reference clock. A GPS signal reaches the ground at about −130 dBm (the specified minimum for L1 C/A is −128.5 dBm), while the thermal noise in the 2 MHz the signal occupies is about −111 dBm. The receiver lifts the signal out of the noise by correlating with the satellite's known code: squeezing 2 MHz of spread-out signal back into its 50-bit-per-second message gains about 43 dB.
+
+ICAO Annex 10 Volume I defines GPS and GLONASS as core constellations, plus SBAS and GBAS augmentation; dual-frequency multi-constellation (DFMC) standards add Galileo and BeiDou and the L5/E5a frequency.
+
+{/* TODO(expert-review): confirm the list of Annex 10 core constellations and the DFMC status at publication. */}
+
+### Augmentation
+
+**<Term id="sbas">SBAS</Term>** reference stations across a region measure every satellite; central stations compute corrections (satellite orbit and clock, and a grid of ionosphere delays) and integrity data, broadcast by geostationary satellites on L1. SBAS supports approaches with vertical guidance down to 200 ft (LPV-200) and must warn of a problem within about 6 seconds.
+
+| SBAS | Region |
+|---|---|
+| WAAS | United States |
+| EGNOS | Europe |
+| MSAS | Japan |
+| GAGAN | India |
+| SDCM | Russia |
+| BDSBAS | China |
+| KASS | Korea |
+| SouthPAN | Australia and New Zealand |
+
+**<Term id="gbas">GBAS</Term>** puts (usually four) reference receivers at one airport. They compute corrections for each satellite and send them, with integrity data and the approach path, over the <Term id="vdb">VHF data broadcast</Term> in the band 108–117.975 MHz. Aircraft fly <Term id="gls">GLS</Term> approaches with it: CAT I today, CAT II/III with the newer GAST D service. Corrections are only valid near the station, about 23 NM.
+
+{/* TODO(expert-review): SBAS time to alert, LPV-200, GBAS coverage and GAST service types. */}
+
+### Performance-based navigation
+
+<Term id="pbn">PBN</Term> specifies what the navigation must achieve, not which beacon to use. The number is the lateral accuracy in NM that must be met 95% of the flight time.
+
+| | <Term id="rnav">RNAV</Term> | <Term id="rnp">RNP</Term> |
+|---|---|---|
+| On-board performance monitoring and alerting | No | Yes |
+| Typical specifications | RNAV 10, RNAV 5, RNAV 2, RNAV 1 | RNP 4, RNP 2, RNP 1, RNP APCH (0.3 NM), RNP AR |
+| Sensors | GNSS, DME/DME, inertial | Mostly GNSS |
+
+### Jamming and spoofing
+
+A jammer only needs to beat a very weak signal. The receiver's effective signal-to-noise with a jammer of power J against signal S is roughly
+
+<Formula>{`1/(C/N₀)eff = 1/(C/N₀) + (J/S) / (Q·Rc)      Rc = 1.023 × 10⁶ chips/s`}</Formula>
+
+In the simulator a 10 W jammer that the receiver can see over the horizon at 100 km arrives about 34 dB (2,500 times) stronger than the satellites, just enough to stop tracking. On the ground, hills and the curve of the Earth hide it much sooner; in the air it reaches far further. A spoofer instead sends a complete set of fake but consistent signals. RAIM cannot see it, because the fake signals agree with each other. Aircraft catch it by comparing GNSS with DME/DME, VOR/DME, <Term id="inertial-navigation">inertial navigation</Term> and radar, and by noticing signals that are suspiciously strong or all from one direction.
+
+{/* TODO(expert-review): jammer power, spectral factor Q, the 28 dB-Hz tracking threshold and the 0.5 NM cross-check limit are illustrative. */}
+
+### The GPS orbits
+
+<Formula>{`semi-major axis a = 26,560 km (about 20,200 km above the surface)
+period T = 2π √(a³ / GM) ≈ 11 h 58 min   (half a sidereal day)
+inclination 55°, six planes A–F, 60° apart, at least 24 satellites`}</Formula>
+
+Because the period is half a sidereal day, each satellite traces the same path across the sky every day, about four minutes earlier.
+
+<Note title="Honest simplifications">
+The orbits are perfect circles and do not drift slowly as the real ones do; the satellite numbers are made up. The simulated fault is always put on a satellite whose error RAIM can see clearly. The receiver is held still above the airport and its clock error is fixed. The simulator ignores the Earth's rotation during the signal's 0.07 s trip (real receivers correct it, it is worth tens of metres) and generates and solves the measurements consistently. Errors are simulated from the budget above, not measured, and the solution uses all satellites with equal weight. The airport is fictional, and so is its SBAS coverage.
+</Note>

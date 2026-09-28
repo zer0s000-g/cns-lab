@@ -37,6 +37,8 @@ export interface SpectrumReading {
   ticks?: number[]
   /** Log-frequency axis (for spectrum-wide charts). */
   log?: boolean
+  /** Unit of the level axis (default "dB"). */
+  levelUnit?: string
 }
 
 /** Spectrum view: frequency across, strength up. */
@@ -50,7 +52,7 @@ export function Spectrum({ read, className, describe }: { read: () => SpectrumRe
     const floor = r.floorDb ?? -60
     const padL = 36
     const padR = 10
-    const padT = 10
+    const padT = 20
     const padB = 26
     const w = width - padL - padR
     const h = height - padT - padB
@@ -165,7 +167,8 @@ export function Spectrum({ read, className, describe }: { read: () => SpectrumRe
     ctx.textAlign = 'right'
     ctx.fillText(r.unit, padL + w, padT + h + 14)
     ctx.textAlign = 'left'
-    ctx.fillText('dB', 2, padT)
+    ctx.textBaseline = 'top'
+    ctx.fillText(r.levelUnit ?? 'dB', 2, 3)
   }, [])
 
   const label = useSampled(() => (describe ? describe() : 'Spectrum view'), 1000)

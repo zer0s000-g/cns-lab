@@ -1,0 +1,137 @@
+[
+  {
+    "id": "gps",
+    "term": "GPS",
+    "definition": "The Global Positioning System, run by the United States: about 30 satellites that broadcast their position and the exact time so that a receiver can work out where it is. It was the first GNSS; Galileo, GLONASS and BeiDou work the same way."
+  },
+  {
+    "id": "constellation",
+    "term": "Satellite constellation",
+    "definition": "The whole family of satellites of one navigation system, arranged in several orbits so that at least four are above the horizon everywhere on Earth at any time. GPS uses six orbits, each tilted 55 degrees to the equator."
+  },
+  {
+    "id": "trilateration",
+    "term": "Trilateration",
+    "definition": "Finding a position from distances alone: if you know how far you are from several known points, only one place fits all the distances at once."
+  },
+  {
+    "id": "pseudorange",
+    "term": "Pseudorange",
+    "definition": "The distance to a satellite that a receiver measures from the signal's travel time. It is called a 'pseudo' range because it also contains the error of the receiver's own clock, which is the same for every satellite."
+  },
+  {
+    "id": "receiver-clock-error",
+    "term": "Receiver clock error",
+    "definition": "How far the receiver's inexpensive quartz clock is from the satellites' exact time. Light travels 300 m in a millionth of a second, so even a tiny clock error spoils every distance. The receiver treats it as a fourth unknown, which is why it needs a fourth satellite."
+  },
+  {
+    "id": "atomic-clock",
+    "term": "Atomic clock",
+    "definition": "A clock that keeps time using the steady vibrations of atoms. Each navigation satellite carries several, accurate to a few billionths of a second, and the ground control keeps them all in step."
+  },
+  {
+    "id": "ephemeris",
+    "term": "Ephemeris",
+    "definition": "The precise description of a satellite's orbit that the satellite broadcasts, so a receiver can calculate exactly where the satellite was when it sent its signal."
+  },
+  {
+    "id": "least-squares",
+    "term": "Least squares",
+    "definition": "A way to find the answer that fits many slightly imperfect measurements best: the one that makes the sum of the squared mismatches as small as possible. GNSS receivers use it to combine all the satellites they can hear."
+  },
+  {
+    "id": "dop",
+    "term": "DOP (dilution of precision)",
+    "definition": "A number that says how much the satellite geometry magnifies the ranging errors into position error. Satellites spread across the sky give a low DOP (good, about 1 to 2); satellites bunched together give a high DOP (poor). PDOP is for position, HDOP for across the ground, VDOP for height."
+  },
+  {
+    "id": "sky-plot",
+    "term": "Sky plot",
+    "definition": "A round chart of the sky as seen from the receiver: straight overhead in the middle, the horizon at the edge, north at the top. It shows where every satellite is and how they are spread."
+  },
+  {
+    "id": "elevation-mask",
+    "term": "Elevation mask",
+    "definition": "The lowest angle above the horizon at which a receiver will use a satellite, usually 5 degrees for aircraft. Signals from lower down pass through much more air and are more easily reflected or blocked."
+  },
+  {
+    "id": "multipath",
+    "term": "Multipath",
+    "definition": "When a signal reaches the antenna both directly and after bouncing off buildings, the ground or the aircraft itself. The reflected copy arrives late and makes the measured distance slightly wrong."
+  },
+  {
+    "id": "ranging-error",
+    "term": "Ranging error (UERE)",
+    "definition": "How wrong each measured satellite distance typically is, from all causes together: satellite clock and orbit, ionosphere, troposphere, receiver noise and multipath. Position error is roughly this number multiplied by the DOP."
+  },
+  {
+    "id": "c-n0",
+    "term": "C/N0 (carrier-to-noise density)",
+    "definition": "A measure of how strong a satellite signal is compared with the background noise, in dB-Hz. Clear signals are about 40 to 50 dB-Hz; below roughly 28 the receiver can no longer follow the signal."
+  },
+  {
+    "id": "sbas",
+    "term": "SBAS",
+    "definition": "Satellite-Based Augmentation System. A network of ground stations measures GNSS errors over a whole region and a geostationary satellite broadcasts corrections and 'do not use' warnings on the GPS frequency. Examples: WAAS (USA), EGNOS (Europe), MSAS (Japan), GAGAN (India)."
+  },
+  {
+    "id": "gbas",
+    "term": "GBAS",
+    "definition": "Ground-Based Augmentation System. Reference receivers at an airport measure the GNSS errors right there and send corrections and integrity information to landing aircraft over a VHF data link. It supports precision approaches called GLS."
+  },
+  {
+    "id": "vdb",
+    "term": "VDB (VHF data broadcast)",
+    "definition": "The radio link a GBAS station uses to send its corrections to aircraft, in the same VHF band as ILS localizers and VORs (108 to 117.975 MHz)."
+  },
+  {
+    "id": "gls",
+    "term": "GLS",
+    "definition": "GBAS Landing System: a precision approach flown with GNSS corrected by a GBAS station at the airport. To the pilot it looks and feels much like an ILS approach."
+  },
+  {
+    "id": "integrity",
+    "term": "Integrity",
+    "definition": "The trust that can be placed in a navigation system: its ability to warn the pilot in time when its information should not be used. For aviation, a wrong position without a warning is far worse than no position at all."
+  },
+  {
+    "id": "raim",
+    "term": "RAIM",
+    "definition": "Receiver Autonomous Integrity Monitoring. The receiver checks whether all its satellite measurements agree with each other. With 5 satellites it can detect that one is wrong; with 6 or more it can usually find which one and leave it out."
+  },
+  {
+    "id": "fde",
+    "term": "FDE (fault detection and exclusion)",
+    "definition": "The part of RAIM that, after detecting a problem, works out which satellite is faulty and continues navigating without it. It needs at least 6 satellites."
+  },
+  {
+    "id": "jamming",
+    "term": "Jamming",
+    "definition": "Drowning out radio signals with a stronger transmission on the same frequency. GNSS signals are so weak by the time they reach the ground that even a small jammer can blind receivers kilometres away."
+  },
+  {
+    "id": "spoofing",
+    "term": "Spoofing",
+    "definition": "Transmitting fake satellite signals so that a receiver calculates a false position or time without noticing. Aircraft guard against it by cross-checking GNSS with other aids such as DME, VOR, inertial navigation and radar."
+  },
+  {
+    "id": "inertial-navigation",
+    "term": "Inertial navigation",
+    "definition": "Working out position from very sensitive gyroscopes and accelerometers on board, with no outside signals at all. It cannot be jammed, but its error slowly grows, typically by a nautical mile or two per hour."
+  },
+  {
+    "id": "pbn",
+    "term": "PBN (performance-based navigation)",
+    "definition": "The ICAO way of defining routes and approaches by the accuracy, integrity and continuity an aircraft's navigation must achieve, instead of by which beacon it uses. RNAV and RNP are its two families."
+  },
+  {
+    "id": "rnav",
+    "term": "RNAV",
+    "definition": "Area navigation: flying any desired path between points, rather than only from beacon to beacon, using GNSS, DME/DME or inertial navigation."
+  },
+  {
+    "id": "rnp",
+    "term": "RNP",
+    "definition": "Required Navigation Performance: area navigation with on-board performance monitoring and alerting. The system checks its own accuracy and alerts the crew if it cannot guarantee the required value, for example 0.3 NM on an approach."
+  }
+]

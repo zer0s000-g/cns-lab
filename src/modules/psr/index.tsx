@@ -327,6 +327,7 @@ function PsrPage() {
       ),
       checked: env.mti,
       onChange: (v) => s.setEnv('mti', v),
+      kind: 'fix',
     },
   ]
 

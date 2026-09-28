@@ -51,7 +51,7 @@ export function ControlSlider({ label, value, min, max, step = 1, onChange, form
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3">
         <Label id={`${id}-label`} className="text-sm font-medium">
-          {label}
+          <span>{label}</span>
         </Label>
         <span className="font-mono text-xs tabular-nums text-muted-foreground" aria-hidden>
           {shown}
@@ -92,7 +92,7 @@ export function ControlSwitch({
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 flex-col gap-0.5">
         <Label htmlFor={id} className="text-sm leading-5 font-medium">
-          {label}
+          <span>{label}</span>
         </Label>
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
