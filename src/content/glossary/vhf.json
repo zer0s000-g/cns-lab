@@ -1,0 +1,67 @@
+[
+  {
+    "id": "press-to-talk",
+    "term": "Press to talk (PTT)",
+    "definition": "The button a pilot or controller holds down to transmit. While it is held, their own receiver is muted; when it is released, they can listen again."
+  },
+  {
+    "id": "simplex",
+    "term": "Simplex",
+    "definition": "Radio where everyone shares one frequency and only one person can transmit at a time, like a walkie-talkie. Aviation voice radio works this way."
+  },
+  {
+    "id": "squelch",
+    "term": "Squelch",
+    "definition": "A gate in the receiver that keeps the loudspeaker silent until a signal stronger than a set threshold arrives, so you do not have to listen to hiss."
+  },
+  {
+    "id": "heterodyne",
+    "term": "Heterodyne (squeal)",
+    "definition": "The loud whistle heard when two transmitters on almost the same frequency are on the air together: their carriers beat against each other."
+  },
+  {
+    "id": "blocked-transmission",
+    "term": "Blocked transmission",
+    "definition": "Two stations transmitting on the same frequency at the same moment. Listeners hear a squeal and neither message gets through. Also called being \"stepped on\"."
+  },
+  {
+    "id": "guard-frequency",
+    "term": "Guard frequency",
+    "definition": "An emergency frequency that many aircraft and ATC units listen to all the time: 121.5 MHz for civil aviation, 243.0 MHz for military aircraft."
+  },
+  {
+    "id": "channel-spacing",
+    "term": "Channel spacing",
+    "definition": "How far apart neighbouring radio channels are. Aviation VHF uses 25 kHz, or 8.33 kHz where more channels are needed: three channels fit where one used to be."
+  },
+  {
+    "id": "vccs",
+    "term": "VCCS (voice switch)",
+    "definition": "Voice communication control system: the equipment that connects each controller's headset and keys to the right radios and telephone lines."
+  },
+  {
+    "id": "stuck-microphone",
+    "term": "Stuck microphone",
+    "definition": "A transmit button that stays pressed, for example jammed or sat on. The radio keeps transmitting and blocks the frequency for everyone in range."
+  },
+  {
+    "id": "adjacent-channel-interference",
+    "term": "Adjacent-channel interference",
+    "definition": "A strong transmitter on the next channel leaking into your receiver, because no filter can cut off a neighbouring frequency completely."
+  },
+  {
+    "id": "standby-transmitter",
+    "term": "Main and standby transmitter",
+    "definition": "Radio sites keep a spare transmitter ready. If the main one fails, the controller or the system changes over to the standby so that voice keeps going out."
+  },
+  {
+    "id": "radio-site",
+    "term": "Radio site",
+    "definition": "A place with antennas, transmitters and receivers, often on a hill and far from the control centre, connected to the controllers by lines."
+  },
+  {
+    "id": "dbm",
+    "term": "dBm",
+    "definition": "Decibels compared with one milliwatt. 0 dBm is 1 mW, −30 dBm is a thousandth of that; a received radio signal is often around −60 to −100 dBm."
+  }
+]

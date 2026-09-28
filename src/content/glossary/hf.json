@@ -1,0 +1,77 @@
+[
+  {
+    "id": "ionosphere",
+    "term": "Ionosphere",
+    "definition": "The part of the upper atmosphere, from about 60 to 400 km up, where sunlight frees electrons from the air. It can bend HF radio waves back down to Earth."
+  },
+  {
+    "id": "sky-wave",
+    "term": "Sky wave",
+    "definition": "A radio wave that goes up, is bent back down by the ionosphere and reaches the ground far away, sometimes after several bounces."
+  },
+  {
+    "id": "ground-wave",
+    "term": "Ground wave",
+    "definition": "A radio wave that follows the curve of the Earth's surface. At HF it only reaches a few tens to a few hundred kilometres."
+  },
+  {
+    "id": "skip-zone",
+    "term": "Skip zone",
+    "definition": "The ring around an HF transmitter where nothing is heard: too far for the ground wave, too close for the first sky wave to come back down."
+  },
+  {
+    "id": "critical-frequency",
+    "term": "Critical frequency",
+    "definition": "The highest frequency an ionospheric layer sends back when you transmit straight up. Slanting waves are returned at higher frequencies."
+  },
+  {
+    "id": "muf",
+    "term": "Maximum usable frequency (MUF)",
+    "definition": "The highest frequency the ionosphere will bend back to reach a particular place at a particular time. Above it, the waves escape into space."
+  },
+  {
+    "id": "owf",
+    "term": "Optimum working frequency",
+    "definition": "A frequency a little below the MUF (about 85 % of it) that gives a strong, reliable HF path with a safety margin."
+  },
+  {
+    "id": "d-layer",
+    "term": "D layer",
+    "definition": "The lowest part of the ionosphere, about 60 to 90 km up. It exists only in daylight and absorbs HF waves, the lower frequencies most."
+  },
+  {
+    "id": "f-layer",
+    "term": "F layer",
+    "definition": "The highest ionospheric layer, about 250 to 400 km up (F1 and F2 by day, one merged F layer at night). It is the main mirror for long-distance HF."
+  },
+  {
+    "id": "selcal",
+    "term": "SELCAL",
+    "definition": "Selective calling: the ground station sends a four-letter code as two pairs of tones, and only the aircraft with that code rings a chime, so pilots do not have to listen to HF noise all the time."
+  },
+  {
+    "id": "ssb",
+    "term": "Single sideband (SSB)",
+    "definition": "A kind of AM that sends only one half of the voice signal and leaves out the carrier, so all the power goes into a narrow channel. HF aviation voice uses the upper sideband."
+  },
+  {
+    "id": "solar-flare",
+    "term": "Solar flare",
+    "definition": "A sudden burst of energy from the Sun. Its X-rays make the D layer absorb strongly on the sunlit side of the Earth, blacking out HF for minutes to hours."
+  },
+  {
+    "id": "atmospheric-noise",
+    "term": "Atmospheric noise",
+    "definition": "Crackles and crashes in a radio caused mainly by lightning, which can be heard thousands of kilometres away on HF. It is worst at low frequencies."
+  },
+  {
+    "id": "hop",
+    "term": "Hop",
+    "definition": "One trip of an HF wave up to the ionosphere and back down to the Earth. Long paths use several hops, bouncing off the sea in between."
+  },
+  {
+    "id": "hf-data-link",
+    "term": "HF data link (HFDL)",
+    "definition": "Sending short data messages, such as position reports and text messages, over HF radio instead of voice. Used where satellites are not available."
+  }
+]

@@ -1,0 +1,68 @@
+### Frequencies
+
+| Service | Frequencies | Modulation |
+|---|---|---|
+| Civil air-ground voice (VHF) | 118.000–136.975 MHz | Double-sideband AM (amplitude modulation) |
+| Emergency (guard), civil | 121.500 MHz | AM, monitored by many aircraft and ATC units |
+| Military air-ground voice (UHF) | 225–400 MHz | AM |
+| Emergency (guard), military | 243.000 MHz | AM |
+
+The same band also carries VHF data links, such as the one that delivers CPDLC text messages to aircraft over land.
+
+{/* TODO(expert-review): confirm band edges, guard frequencies and the note on data-link use (ICAO Annex 10 Vol III and V). */}
+
+### Radio line of sight
+
+VHF and UHF travel in straight lines, bent very slightly downward by the atmosphere. Aviation uses a rule of thumb, with heights in feet and range in nautical miles:
+
+<Formula>{`range ≈ 1.23 × ( √h_antenna + √h_aircraft )`}</Formula>
+
+A 100 ft antenna and an aircraft at 36,000 ft can reach each other up to about 1.23 × (10 + 190) ≈ 245 NM. Turned around, an aircraft *d* NM from the antenna loses contact below
+
+<Formula>{`h_min = ( d / 1.23 − √h_antenna )²      e.g. 150 NM → about 12,500 ft`}</Formula>
+
+The factor 1.23 already includes the gentle bending of radio waves in the air. It works like drawing a straight ray over an Earth about 4/3 larger than the real one, which is exactly how the side view is drawn. A hill or mountain on the path blocks the ray too: the simulator checks the terrain along the whole path.
+
+### How strong is the signal?
+
+Inside line of sight the signal only spreads out. The free-space loss grows with distance *d* and frequency *f*:
+
+<Formula>{`received power = transmit power + antenna gains − cable losses − path loss
+path loss (dB) = 20 × log₁₀( 4π × d × f / c )`}</Formula>
+
+Twice the distance costs 6 dB (a quarter of the power). In the simulator a 25 W ground transmitter reaches an aircraft 200 NM away at about −86 dBm, still more than 30 dB above the receiver noise of about −120 dBm. That is why VHF range is limited by the horizon, not by power: past the horizon the signal falls away almost completely.
+
+{/* TODO(expert-review): transmitter powers, antenna gains, cable losses, receiver noise floor and squelch settings used in the simulator are illustrative. */}
+
+### Squelch
+
+The squelch mutes the loudspeaker until a signal stronger than a threshold arrives. Set it below the noise and the noise peaks open it: constant hiss. Set it very high and a weak, distant station never opens it.
+
+### One frequency, one speaker
+
+Air-ground voice is *simplex*: everyone on a frequency uses the same channel, one at a time. There is no way to know that someone else pressed their button at the same moment. With AM, two carriers a few hundred hertz apart beat together into a loud whistle (a **heterodyne**) and both messages are lost. Unlike FM, AM has no "capture effect" that would let the stronger station win cleanly. The simulator treats any two carriers well above the noise as blocking each other.
+
+A **stuck microphone** keeps a transmitter on the air for minutes, blocking the frequency for everyone who hears it. Many radios stop transmitting automatically after a time-out. The controller moves traffic to another frequency, announces it on 121.5 MHz, uses a different radio site that the stuck aircraft cannot reach, or sends text by CPDLC.
+
+{/* TODO(expert-review): typical push-to-talk time-out values. */}
+
+### 25 kHz and 8.33 kHz channels
+
+| Spacing | Channels in 118.000–136.975 MHz |
+|---|---|
+| 25 kHz | 760 |
+| 8.33 kHz (one third of 25 kHz) | 2,280 (three per 25 kHz slot) |
+
+European airspace ran out of VHF voice channels: every sector, approach, tower and information service needs its own frequency, and the same frequency can only be reused far away. Splitting each 25 kHz channel into three 8.33 kHz channels tripled the number available. Radios need tighter filters and more precise frequencies, and a strong transmitter one channel away is harder to keep out.
+
+To tell the two apart, 8.33 kHz channels have their own "channel names". In each 25 kHz slot, the 25 kHz channel keeps its frequency as its name (for example 118.000), and the three 8.33 kHz channels are dialled as 118.005, 118.010 and 118.015 (on 118.0000, 118.0083 and 118.0167 MHz).
+
+{/* TODO(expert-review): 8.33 kHz channel naming table, the adjacent-channel rejection values (70 dB at 25 kHz, 50 dB at 8.33 kHz) and the filter widths shown in the frequency strip. */}
+
+### On the ground
+
+A control centre is often hundreds of kilometres from its antennas. The controller's headset and keys connect to a **voice communication control system** (VCCS, or VCS), which routes the audio to remote radio sites. Each site usually has a main and a standby transmitter and receiver, and the controller can change over when one fails. Busy sectors use several sites on the same frequency to cover the whole area.
+
+<Note title="Honest simplifications">
+Everything sits on one straight line in the side view. Beyond the radio horizon the signal is treated as gone (a little does bend over the horizon, but far too little for clear speech). Speech is synthesised by your browser, voices and message timings are invented for teaching, and "Listen at the controller" lets you hear what only the ground receivers would pick up.
+</Note>

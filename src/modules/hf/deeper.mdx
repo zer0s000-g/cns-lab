@@ -1,0 +1,98 @@
+### Frequencies and modulation
+
+Aeronautical HF voice uses bands between about **2.85 and 22 MHz**, with **single sideband** (upper sideband, called J3E): only one copy of the voice spectrum is sent and the carrier is suppressed, so all the power goes into a channel about 3 kHz wide. Frequencies are organised in "families" spread over several bands, so that a crew can always find one that suits the time of day and the distance.
+
+| Band (MHz) | Simulator channel (MHz) |
+|---|---|
+| 2.850–3.025 | 2.899 |
+| 3.400–3.500 | 3.476 |
+| 4.650–4.700 | 4.675 |
+| 5.480–5.680 | 5.616 |
+| 6.525–6.685 | 6.622 |
+| 8.815–8.965 | 8.864 |
+| 10.005–10.100 | 10.051 |
+| 11.275–11.400 | 11.336 |
+| 13.260–13.360 | 13.306 |
+| 17.900–17.970 | 17.946 |
+| 21.924–22.000 | 21.964 |
+
+{/* TODO(expert-review): the aeronautical mobile (R) HF sub-band edges (ITU Radio Regulations Appendix 27) and the example channel frequencies. */}
+
+### The ionosphere
+
+Sunlight knocks electrons off gas molecules high above the Earth. The free electrons bend HF waves back down.
+
+| Layer | Height | Behaviour |
+|---|---|---|
+| D | about 60–90 km | Only by day. Does not reflect HF; it **absorbs**, much more at low frequencies. |
+| E | about 100–120 km | Reflects by day (up to about 3–4 MHz straight up); very weak at night. |
+| F1 | about 200 km | Only by day. |
+| F2 | about 250–400 km | The main HF mirror. At night F1 and F2 merge into one F layer near 300 km. |
+
+The **critical frequency** foF2 is the highest frequency the F2 layer returns when you transmit straight up: in this simulator about 10 MHz in the afternoon and 4 MHz before dawn. Real values run from about 6–12 MHz by day to 3–5 MHz at night and change with the 11-year solar cycle, the season and latitude.
+
+{/* TODO(expert-review): layer heights, foF2 day/night values, the F2 time lag (3 h) and the foE and foF1 formulas used in the simulator. */}
+
+### The secant law and hop distance
+
+A wave leaving the ground at elevation angle β meets a layer at (virtual) height h at an incidence angle i from the vertical. On a round Earth of radius R = 6,371 km:
+
+<Formula>{`sin i = R · cos β / (R + h)
+
+reflected if   f ≤ fc / cos i   ( = fc · sec i )
+hop distance   D = 2 · R · (π/2 − β − i)`}</Formula>
+
+A slanting wave (small β, large i) is reflected at a much higher frequency than one going straight up. For a given distance, the angle is fixed, so the path has a **maximum usable frequency**, MUF = fc · sec i. Above it the wave escapes into space. A low ray off the F2 layer covers up to about 3,500–4,000 km in one hop; longer paths need several hops, reflecting off the sea in between.
+
+Operators aim a little below the MUF, at the **optimum working frequency**:
+
+<Formula>{`OWF ≈ 0.85 × MUF`}</Formula>
+
+By day the MUF is high (and low frequencies are absorbed); at night the MUF drops. So HF operators move to a higher band in the morning and a lower one in the evening.
+
+{/* TODO(expert-review): 0.85 × MUF as the optimum working frequency. */}
+
+### The skip zone
+
+The ground wave dies out within a few tens to a few hundred kilometres. Above the critical frequency, steep rays escape, so the first sky wave lands some distance away. In between is the **skip zone**: nothing is heard there, although stations farther away hear the signal clearly. Below the critical frequency even a vertical ray comes back, and there is no skip zone.
+
+### Absorption and noise
+
+The D layer absorbs roughly in proportion to 1/f² and to the slant path through it (sec i). The simulator treats a ray that loses more than 30 dB (99.9 % of its power) as absorbed.
+
+<Formula>{`D-layer loss per pass ≈ A × (10 MHz / f)² × sec i      (A: about 1.5 dB at noon, almost 0 at night)`}</Formula>
+
+A **solar flare** sends a burst of X-rays that multiplies D-layer absorption on the sunlit side of the Earth for minutes to hours: an HF blackout (a sudden ionospheric disturbance). The night side is not affected.
+
+HF receivers also pick up a lot of **noise**: man-made and galactic background, and static from thunderstorms, which can travel thousands of kilometres. All of it is stronger at lower frequencies.
+
+{/* TODO(expert-review): absorption constant A, flare factor (×20), ABSORBED threshold, ground-wave range, noise curves (based on the ITU-R P.372 rural man-made curve), transmitter power and antenna gains. */}
+
+### SELCAL
+
+Selective calling saves the crew from listening to HF noise for hours. Each aircraft has a four-letter code. The ground station sends two pulses, each two tones at once for about 1 second, with about 0.2 seconds between them (for example "AB-CD": A + B, then C + D). The decoder in the called aircraft rings a chime and lights a light; everyone else stays quiet.
+
+| Letter | Hz | Letter | Hz | Letter | Hz | Letter | Hz |
+|---|---|---|---|---|---|---|---|
+| A | 312.6 | E | 473.2 | J | 716.1 | P | 1083.9 |
+| B | 346.7 | F | 524.8 | K | 794.3 | Q | 1202.3 |
+| C | 384.6 | G | 582.1 | L | 881.0 | R | 1333.5 |
+| D | 426.6 | H | 645.7 | M | 977.2 | S | 1479.1 |
+
+The letters I, N and O are not used. A newer 32-tone set exists and is not shown here.
+
+{/* TODO(expert-review): SELCAL tone frequencies, pulse timing tolerances (ICAO Annex 10 Vol III) and the 32-tone extension. */}
+
+### Why HF voice is being replaced
+
+HF worked over the oceans for decades, but it is noisy, it depends on the Sun, controllers talk to aircraft through a radio operator who relays each message, and a busy frequency makes position reports slow. Many oceanic regions now use:
+
+- **CPDLC**: standard text messages between controller and pilot, sent over satellite (or VHF near land). No mishearing, and no waiting for a quiet frequency.
+- **SATCOM** voice and data: satellites reach almost everywhere and do not care about the ionosphere.
+- **ADS-C**: the aircraft reports its position automatically.
+
+HF remains the backup, and <Term id="hf-data-link">HF data link</Term> (HFDL) carries the same kind of data messages over HF where satellites are not available, such as over the poles.
+
+<Note title="Honest simplifications">
+The ionosphere is modelled as smooth mirrors at fixed virtual heights, the same all along the path, at a place on the equator at the equinox. Real rays bend gradually inside each layer, the layers tilt and ripple, and the E layer can come and go in patches. Fading is a simple wobble. The direct wave to a high aircraft near the station uses the same line-of-sight rule as VHF.
+</Note>
