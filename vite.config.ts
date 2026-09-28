@@ -21,5 +21,7 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
     environment: 'node',
+    // Some engine tests simulate hours of flight; CI runners are slower than a laptop.
+    testTimeout: 30_000,
   },
 })
