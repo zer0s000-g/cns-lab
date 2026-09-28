@@ -1,0 +1,342 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+/*
+ * CNS Lab design tokens — the single place where colour values live.
+ * Components and canvases read these variables; never hardcode a colour.
+ * See design.md for the rules behind each token.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
+  /* 13px UI text, 12px meta, 15px reading prose */
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-prose: 0.9375rem;
+  --text-prose--line-height: 1.6rem;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Simulation surfaces (usable as bg-sim-bg, text-scope-text, ...) */
+  --color-sim-bg: var(--sim-bg);
+  --color-sim-grid: var(--sim-grid);
+  --color-sim-ink: var(--sim-ink);
+  --color-sim-muted: var(--sim-muted);
+  --color-sim-signal: var(--sim-signal);
+  --color-sim-signal-2: var(--sim-signal-2);
+  --color-sim-neutral: var(--sim-neutral);
+  --color-sim-land: var(--sim-land);
+  --color-sim-water: var(--sim-water);
+  --color-sim-warning: var(--sim-warning);
+  --color-sim-alert: var(--sim-alert);
+  --color-sim-ok: var(--sim-ok);
+  --color-scope-bg: var(--scope-bg);
+  --color-scope-text: var(--scope-text);
+  --color-scope-dim: var(--scope-dim);
+  --color-scope-trace: var(--scope-trace);
+  --color-scope-trace-2: var(--scope-trace-2);
+  --color-scope-blip: var(--scope-blip);
+  --color-scope-warning: var(--scope-warning);
+  --color-scope-alert: var(--scope-alert);
+  --color-scope-grid: var(--scope-grid);
+  --color-instrument-face: var(--instrument-face);
+  --color-instrument-bezel: var(--instrument-bezel);
+  --color-instrument-marking: var(--instrument-marking);
+  --color-instrument-dim: var(--instrument-dim);
+  --color-instrument-accent: var(--instrument-accent);
+  --color-instrument-flag: var(--instrument-flag);
+  --color-lobe-90: var(--lobe-90);
+  --color-lobe-150: var(--lobe-150);
+  --color-marker-outer: var(--marker-outer);
+  --color-marker-middle: var(--marker-middle);
+  --color-marker-inner: var(--marker-inner);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+}
+
+:root {
+  --radius: 0.5rem; /* 8px cards; md = 6px inputs and buttons */
+
+  /* Enterprise core (light) */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(222 47% 11%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(222 47% 11%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(222 47% 11%);
+  --primary: hsl(221 83% 53%);
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(210 40% 96%);
+  --secondary-foreground: hsl(222 47% 11%);
+  --muted: hsl(210 40% 96%);
+  --muted-foreground: hsl(215 16% 47%);
+  --accent: hsl(214 95% 96%);
+  --accent-foreground: hsl(224 76% 40%);
+  --destructive: hsl(0 72% 51%);
+  --success: hsl(142 72% 29%);
+  --warning: hsl(32 95% 38%);
+  --border: hsl(214 32% 91%);
+  --input: hsl(214 32% 84%);
+  --ring: hsl(221 83% 53%);
+
+  /* Blue monochrome data series */
+  --chart-1: hsl(221 83% 53%);
+  --chart-2: hsl(213 94% 68%);
+  --chart-3: hsl(224 76% 40%);
+  --chart-4: hsl(199 89% 48%);
+  --chart-5: hsl(215 20% 65%);
+
+  /* Maps and diagrams (follow the theme) */
+  --sim-bg: hsl(210 40% 98%);
+  --sim-land: hsl(210 25% 95%);
+  --sim-water: hsl(208 85% 90%);
+  --sim-terrain: hsl(215 14% 62%);
+  --sim-terrain-high: hsl(215 19% 40%);
+  --sim-grid: hsl(214 32% 86%);
+  --sim-grid-strong: hsl(215 20% 72%);
+  --sim-ink: hsl(222 47% 11%);
+  --sim-muted: hsl(215 16% 42%);
+  --sim-signal: hsl(221 83% 53%);
+  --sim-signal-2: hsl(199 89% 40%);
+  --sim-neutral: hsl(215 20% 55%);
+  --sim-coverage: hsl(221 83% 53% / 0.12);
+  --sim-shadow-zone: hsl(222 47% 11% / 0.08);
+  --sim-warning: hsl(32 95% 44%);
+  --sim-alert: hsl(0 72% 51%);
+  --sim-ok: hsl(142 72% 29%);
+  --sim-sky: hsl(210 60% 96%);
+  --sim-fog: hsl(210 20% 92%);
+
+  /* Instrument screens and radar scopes are dark in both themes, like the real thing */
+  --scope-bg: hsl(224 50% 7%);
+  --scope-grid: hsl(210 40% 96% / 0.16);
+  --scope-grid-strong: hsl(210 40% 96% / 0.32);
+  --scope-trace: hsl(199 95% 62%);
+  --scope-trace-2: hsl(0 0% 94%);
+  --scope-blip: hsl(199 95% 72%);
+  --scope-text: hsl(210 40% 96%);
+  --scope-dim: hsl(215 20% 66%);
+  --scope-clutter: hsl(215 20% 60%);
+  --scope-warning: hsl(38 92% 58%);
+  --scope-alert: hsl(0 84% 64%);
+  --instrument-face: hsl(222 30% 9%);
+  --instrument-bezel: hsl(220 13% 24%);
+  --instrument-marking: hsl(0 0% 96%);
+  --instrument-dim: hsl(215 16% 62%);
+  --instrument-needle: hsl(0 0% 100%);
+  --instrument-accent: hsl(199 95% 62%);
+  --instrument-flag: hsl(0 84% 60%);
+
+  /* ILS lobes: always paired with a label and a hatch pattern */
+  --lobe-90: hsl(221 83% 53%);
+  --lobe-150: hsl(215 16% 47%);
+
+  /* Marker beacon lamps (real cockpit colours), always labelled O / M / I */
+  --marker-outer: hsl(217 91% 60%);
+  --marker-middle: hsl(38 92% 50%);
+  --marker-inner: hsl(0 0% 100%);
+}
+
+.dark {
+  --background: hsl(229 84% 5%);
+  --foreground: hsl(210 40% 98%);
+  --card: hsl(226 55% 7%);
+  --card-foreground: hsl(210 40% 98%);
+  --popover: hsl(226 55% 8%);
+  --popover-foreground: hsl(210 40% 98%);
+  --primary: hsl(217 91% 60%);
+  --primary-foreground: hsl(229 84% 5%);
+  --secondary: hsl(217 33% 14%);
+  --secondary-foreground: hsl(210 40% 98%);
+  --muted: hsl(217 33% 13%);
+  --muted-foreground: hsl(215 20% 68%);
+  --accent: hsl(217 50% 16%);
+  --accent-foreground: hsl(213 94% 78%);
+  --destructive: hsl(0 84% 62%);
+  --success: hsl(142 69% 52%);
+  --warning: hsl(38 92% 58%);
+  --border: hsl(217 33% 18%);
+  --input: hsl(217 33% 24%);
+  --ring: hsl(217 91% 60%);
+
+  --chart-1: hsl(217 91% 60%);
+  --chart-2: hsl(213 94% 78%);
+  --chart-3: hsl(221 83% 45%);
+  --chart-4: hsl(199 89% 55%);
+  --chart-5: hsl(215 20% 50%);
+
+  --sim-bg: hsl(226 60% 6%);
+  --sim-land: hsl(222 38% 10%);
+  --sim-water: hsl(215 62% 15%);
+  --sim-terrain: hsl(215 20% 30%);
+  --sim-terrain-high: hsl(215 16% 52%);
+  --sim-grid: hsl(217 33% 16%);
+  --sim-grid-strong: hsl(217 25% 30%);
+  --sim-ink: hsl(210 40% 96%);
+  --sim-muted: hsl(215 20% 66%);
+  --sim-signal: hsl(217 91% 64%);
+  --sim-signal-2: hsl(199 89% 58%);
+  --sim-neutral: hsl(215 16% 58%);
+  --sim-coverage: hsl(217 91% 60% / 0.14);
+  --sim-shadow-zone: hsl(0 0% 0% / 0.3);
+  --sim-warning: hsl(38 92% 55%);
+  --sim-alert: hsl(0 84% 62%);
+  --sim-ok: hsl(142 69% 52%);
+  --sim-sky: hsl(222 45% 11%);
+  --sim-fog: hsl(218 20% 30%);
+
+  --scope-bg: hsl(226 60% 4%);
+  --instrument-face: hsl(222 36% 6%);
+  --instrument-bezel: hsl(220 13% 20%);
+
+  --lobe-90: hsl(217 91% 60%);
+  --lobe-150: hsl(215 16% 62%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground text-sm antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  canvas:focus-visible {
+    outline-offset: -2px;
+  }
+}
+
+@layer utilities {
+  .prose-lab {
+    font-size: var(--text-prose);
+    line-height: var(--text-prose--line-height);
+    color: var(--foreground);
+    max-width: 68ch;
+  }
+  .prose-lab p + p {
+    margin-top: 0.75rem;
+  }
+  .prose-lab ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+  }
+  .prose-lab ol {
+    list-style: decimal;
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+  }
+  .prose-lab li + li {
+    margin-top: 0.25rem;
+  }
+  .prose-lab h3 {
+    font-weight: 600;
+    font-size: 0.9375rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+  .prose-lab h4 {
+    font-weight: 600;
+    margin-top: 1rem;
+  }
+  .prose-lab code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--muted);
+    border-radius: var(--radius-sm);
+    padding: 0.05rem 0.3rem;
+  }
+  .prose-lab table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+    font-size: var(--text-sm);
+  }
+  .prose-lab th,
+  .prose-lab td {
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose-lab th {
+    font-weight: 600;
+    color: var(--muted-foreground);
+  }
+  .prose-lab a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .formula {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.75rem;
+    margin: 0.5rem 0;
+    overflow-x: auto;
+    white-space: pre;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
