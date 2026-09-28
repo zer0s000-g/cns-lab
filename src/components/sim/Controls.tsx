@@ -50,7 +50,7 @@ export function ControlSlider({ label, value, min, max, step = 1, onChange, form
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3">
-        <Label htmlFor={id} className="text-sm font-medium">
+        <Label id={`${id}-label`} className="text-sm font-medium">
           {label}
         </Label>
         <span className="font-mono text-xs tabular-nums text-muted-foreground" aria-hidden>
@@ -59,6 +59,7 @@ export function ControlSlider({ label, value, min, max, step = 1, onChange, form
       </div>
       <Slider
         id={id}
+        aria-labelledby={`${id}-label`}
         value={[value]}
         min={min}
         max={max}
