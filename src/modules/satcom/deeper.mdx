@@ -1,0 +1,73 @@
+### Why a GEO satellite stands still
+
+A satellite on a circular orbit of radius *r* (from the Earth's centre) goes round in
+
+<Formula>{`T = 2π × √( r³ / GM )        GM = 3.986 × 10¹⁴ m³/s²`}</Formula>
+
+Set *T* equal to one turn of the Earth relative to the stars, a **sidereal day** of 23 h 56 min 4 s, and you get *r* ≈ 42,164 km: **35,786 km above the equator**. Over the equator, moving east at the same angular speed as the ground below, the satellite seems fixed in the sky. A 780 km orbit gives *T* ≈ 100 minutes.
+
+### Coverage and elevation
+
+A satellite is usable while it is at least a few degrees above the horizon (the **elevation mask**). The simulator uses 5° for GEO and 8.2° for the Iridium-style LEO constellation. The edge of the coverage circle is an Earth-centre angle λ from the point below the satellite:
+
+<Formula>{`λ = arccos( R × cos E / r ) − E        R = Earth radius, E = elevation mask
+
+GEO, E = 0°  → λ ≈ 81°
+GEO, E = 5°  → λ ≈ 76°   (so no GEO coverage beyond about 76° N or S)
+LEO 780 km, E = 8.2° → λ ≈ 20°`}</Formula>
+
+The footprints on the globe are drawn with this formula, and the link uses the elevation computed from the actual satellite and aircraft positions; the two agree exactly because both use the same spherical Earth.
+
+{/* TODO(expert-review): elevation masks (5° GEO, 8.2° LEO) and the 5° airframe mask used for antenna blockage. */}
+
+### Latency: distance over the speed of light
+
+<Formula>{`delay = path length / c        c = 299,792,458 m/s
+
+GEO: aircraft → satellite → ground station ≈ 2 × 36,000–41,700 km
+     ≈ 0.24–0.28 s one way, about 0.5 s for a question and its answer
+LEO: 780–2,500 km up and down, plus inter-satellite hops of about 4,000 km
+     ≈ 10–60 ms one way`}</Formula>
+
+Real systems add time for coding, queues, the ground network and processing. The simulator shows that part separately and marks it **illustrative**: it depends heavily on the system, the service and the load.
+
+{/* TODO(expert-review): illustrative processing and queuing delays (voice 0.25 s, CPDLC and ADS-C 3 s, space-based ADS-B 1 s), and handover interruption times. */}
+
+### The systems
+
+| | Inmarsat (GEO) | Iridium (LEO) |
+|---|---|---|
+| Height | 35,786 km | about 780 km |
+| Satellites | a few, each covering an ocean region | 66 active, in 6 near-polar planes (inclination 86.4°) |
+| Period | one sidereal day | about 100 minutes |
+| Polar coverage | no (beyond about 76°) | yes |
+| Aircraft link | L-band | L-band |
+| Safety services | Classic Aero, SwiftBroadband Safety | Iridium (and Iridium Certus) safety voice and data |
+
+Both carry **FANS 1/A** CPDLC and ADS-C for oceanic control, and SATVOICE. Receivers for 1090 MHz ADS-B carried on the Iridium NEXT satellites relay ADS-B from anywhere on Earth (**space-based ADS-B**).
+
+{/* TODO(expert-review): Iridium constellation parameters (780 km, plane spacing 31.6°, 22° seam, cross-plane links off above 60° latitude), GEO satellite longitudes and ground station positions used in the simulator (illustrative, similar to Inmarsat's fleet). */}
+
+### L-band and rain
+
+Aeronautical safety SATCOM uses **L-band** between aircraft and satellite, roughly 1.5–1.6 GHz. Rain attenuation per kilometre follows a power law (ITU-R P.838):
+
+<Formula>{`γ = k × R^α   dB/km,  R = rain rate in mm/h
+
+25 mm/h:  1.6 GHz → about 0.001 dB/km
+          12 GHz  → about 1 dB/km
+          20 GHz  → about 3 dB/km`}</Formula>
+
+Multiply by the length of the path inside the rain. At cruise the aircraft is above the rain, so its own link is untouched; ground stations use large margins and sometimes a second site for their higher-frequency feeder links. High-throughput passenger connectivity at Ku and Ka band is where rain fade really matters.
+
+{/* TODO(expert-review): ITU-R P.838 coefficients, 25 mm/h rain up to 5 km, the 6 dB clear-sky margin, and the omission of the path-reduction factor of ITU-R P.618. */}
+
+### Required communication performance
+
+For oceanic CPDLC over SATCOM, ICAO's performance-based communication and surveillance framework (PBCS) sets **RCP 240**: a controller's clearance and the pilot's answer must complete within 240 seconds in 99.9 % of cases (210 s for 95 %). Surveillance reports have a matching **RSP 180** requirement for ADS-C. The propagation delay is tiny compared with these limits; queues, handovers and outages are what count.
+
+{/* TODO(expert-review): RCP 240 / RSP 180 values and applicability. */}
+
+<Note title="Honest simplifications">
+The Earth is a sphere. Orbits are perfect circles with no drift. The steep turn is flown on the spot (a 45° turn at 480 kt has a radius of about 3 NM, too small to see on a globe), with pitch ignored. The antenna is a simple top-mounted antenna with a fixed mask above its tilted horizon. Rain is uniform below 5 km all along the route and only the aircraft's side of the path is modelled. Handover gaps and ground delays are illustrative.
+</Note>

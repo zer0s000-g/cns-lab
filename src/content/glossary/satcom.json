@@ -1,0 +1,87 @@
+[
+  {
+    "id": "satcom",
+    "term": "SATCOM (satellite communication)",
+    "definition": "Voice and data links between an aircraft and the ground that pass through a satellite. Used over oceans, deserts and the poles, where radar and VHF radio do not reach."
+  },
+  {
+    "id": "geostationary-orbit",
+    "term": "Geostationary orbit (GEO)",
+    "definition": "A circular orbit 35,786 km above the equator. A satellite there goes round once per turn of the Earth, so from the ground it seems to stay in one spot in the sky."
+  },
+  {
+    "id": "low-earth-orbit",
+    "term": "Low Earth orbit (LEO)",
+    "definition": "An orbit a few hundred to about 2,000 km up. Satellites there circle the Earth in about 100 minutes, so each one crosses the sky in a few minutes and many are needed to cover the globe."
+  },
+  {
+    "id": "coverage-footprint",
+    "term": "Coverage footprint",
+    "definition": "The area on the Earth from which a satellite is high enough in the sky to be used. A GEO footprint covers almost half the Earth; a LEO footprint is a few thousand kilometres across and moves with the satellite."
+  },
+  {
+    "id": "satellite-elevation",
+    "term": "Elevation (of a satellite)",
+    "definition": "How high a satellite appears above the horizon, in degrees: 0° is on the horizon, 90° is straight overhead. Links need a satellite a few degrees above the horizon."
+  },
+  {
+    "id": "satellite-handover",
+    "term": "Satellite handover",
+    "definition": "Switching a link from one satellite to another, for example when a low-orbit satellite is about to set below the horizon and the next one is rising. It can cause a brief interruption."
+  },
+  {
+    "id": "inter-satellite-link",
+    "term": "Inter-satellite link",
+    "definition": "A radio link directly between two satellites. Low-orbit constellations such as Iridium use them to pass a message around the world until a satellite can send it down to a ground gateway."
+  },
+  {
+    "id": "ground-earth-station",
+    "term": "Ground earth station",
+    "definition": "The large dish on the ground that connects a satellite to terrestrial networks, and from there to air traffic control. For low-orbit systems it is usually called a gateway."
+  },
+  {
+    "id": "latency",
+    "term": "Latency",
+    "definition": "The delay between sending a message and it arriving. For a satellite link it includes the trip through space (distance divided by the speed of light) plus time spent in equipment and queues."
+  },
+  {
+    "id": "ku-band",
+    "term": "Ku-band",
+    "definition": "Radio frequencies of roughly 12 to 18 GHz. Used for high-speed passenger internet via satellite. Heavy rain weakens it much more than L-band."
+  },
+  {
+    "id": "ka-band",
+    "term": "Ka-band",
+    "definition": "Radio frequencies of roughly 26 to 40 GHz (in satellite use, often 20 GHz down and 30 GHz up). Carries a lot of data but fades strongly in heavy rain."
+  },
+  {
+    "id": "rain-fade",
+    "term": "Rain fade",
+    "definition": "Weakening of a radio signal as it passes through rain, because the drops absorb and scatter it. It grows quickly with frequency: tiny at L-band, large at Ku and Ka band."
+  },
+  {
+    "id": "satvoice",
+    "term": "SATVOICE",
+    "definition": "Voice calls between pilots and air traffic control made through a satellite system instead of HF or VHF radio."
+  },
+  {
+    "id": "space-based-ads-b",
+    "term": "Space-based ADS-B",
+    "definition": "ADS-B receivers carried on low-orbit satellites. They pick up the position broadcasts aircraft already send and relay them to the ground, so controllers can see aircraft over oceans and poles."
+  },
+  {
+    "id": "inmarsat",
+    "term": "Inmarsat",
+    "definition": "A satellite operator whose geostationary satellites provide aeronautical safety voice and data services, such as Classic Aero and SwiftBroadband Safety."
+  },
+  {
+    "id": "iridium",
+    "term": "Iridium",
+    "definition": "A constellation of 66 active low-orbit satellites in six near-polar planes, linked to each other in space. It covers the whole Earth, including the poles."
+  },
+  {
+    "id": "sidereal-day",
+    "term": "Sidereal day",
+    "definition": "One turn of the Earth measured against the distant stars: 23 hours 56 minutes 4 seconds, a little shorter than the 24-hour solar day."
+  }
+]

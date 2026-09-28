@@ -1,0 +1,69 @@
+### Two families of CPDLC
+
+| | FANS 1/A | ATN Baseline 1 |
+|---|---|---|
+| Where | Oceanic and remote airspace (North Atlantic, Pacific, polar routes) | Continental Europe (the "Link 2000+" programme, above FL285) |
+| Carried over | ACARS: VHF data link, satellite (SATCOM) or HF data link | The Aeronautical Telecommunication Network over VDL Mode 2 |
+| Logon | AFN logon: flight identification and aircraft registration | Context management (CM) logon: flight identification and 24-bit aircraft address |
+| Also carries | ADS-C position reports | — |
+
+{/* TODO(expert-review): FANS 1/A logon content (registration vs 24-bit address) and ATN B1 applicability (Link 2000+ above FL285). */}
+
+### Logon, connection and data authority
+
+1. The crew enters the flight identification and sends a **logon** to the first centre.
+2. The centre checks it against the flight plan (flight identification **and** aircraft address or registration). A mismatch is rejected.
+3. The centre sends a **connection request**; the avionics confirm. That centre is now the **Current Data Authority (CDA)**: the only one whose CPDLC messages the aircraft accepts.
+4. Before the boundary the CDA sends **UM160 NEXT DATA AUTHORITY [unit]**, and passes the logon to that centre over the ground network. The next centre connects too, but its connection stays **inactive**.
+5. The CDA sends **CONTACT [unit] [frequency]** together with **UM161 END SERVICE**. When the pilot answers WILCO, the old connection ends and the inactive one becomes active.
+
+In ATN B1 the hand-over is organised differently in detail, but the principle is the same: one active connection at a time.
+
+{/* TODO(expert-review): exact ATN B1 transfer sequence (CM contact / ground-initiated transfer) and whether END SERVICE is used there. */}
+
+### Messages and replies
+
+Each message has a **message identification number (MIN)**; a reply carries the **message reference number (MRN)** of the message it answers.
+
+| Element | Text | Reply needed |
+|---|---|---|
+| UM20 | CLIMB TO [level] | W/U |
+| UM23 | DESCEND TO [level] | W/U |
+| UM117 | CONTACT [unit] [frequency] | W/U |
+| UM120 | MONITOR [unit] [frequency] | W/U |
+| UM160 | NEXT DATA AUTHORITY [unit] | N |
+| UM161 | END SERVICE | N |
+| UM0 / UM1 | UNABLE / STANDBY (controller) | N |
+| DM0 / DM1 / DM2 | WILCO / UNABLE / STANDBY | — |
+| DM3 / DM4 / DM5 | ROGER / AFFIRM / NEGATIVE | — |
+| DM6 | REQUEST [level] | Y (the controller must answer) |
+
+W/U means WILCO or UNABLE is required; STANDBY may be sent first, but a final answer must follow. A message with several elements takes the most demanding attribute of its elements.
+
+{/* TODO(expert-review): element numbering and response attributes per message set (FANS 1/A vs ATN B1). */}
+
+### How fast is fast enough? Required communication performance
+
+<Formula>{`RCP 240:  instruction + reply complete within 240 s for 99.9 % of transactions,
+          and within 210 s for 95 %
+RCP 400:  within 400 s (used where procedures allow)`}</Formula>
+
+The time includes the network in both directions and the crew reading and answering. The controller's workstation shows an elapsed-time timer for every open message; if it runs out, the controller uses voice.
+
+{/* TODO(expert-review): RCP 400 figures (350 s for 95 % used here) and how ground systems time a transaction after STANDBY. */}
+
+### Delays in this simulator
+
+| Path | Typical one way (illustrative) |
+|---|---|
+| VHF data link | 5 s (3–7 s) |
+| SATCOM | 20 s (12–28 s) |
+| HF data link | 60 s (36–84 s) |
+
+"Message delay" adds about 150 s per message, as on a congested network. The **voice versus datalink** challenge uses a simple model with made-up but plausible numbers: a 5 s instruction, 4 s readback, 35 % chance the frequency is busy, 6 % chance of a blocked transmission, 8 % chance of a wrong readback of which 60 % are caught; for CPDLC 6 s to compose, 10–40 s for the pilot to read and reply. It shows the shape of the trade-off, not measured performance.
+
+{/* TODO(expert-review): all delay values and challenge parameters are illustrative. */}
+
+<Note title="Honest simplifications">
+There is one controller, one pilot and one data link path at a time. Network acknowledgements, message latency checks in the avionics, error messages and the full ADS-C side of FANS are left out. Controller and pilot are both played by you.
+</Note>

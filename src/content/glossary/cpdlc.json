@@ -1,0 +1,62 @@
+[
+  {
+    "id": "cpdlc",
+    "term": "CPDLC (controller–pilot data link communications)",
+    "definition": "Standard text messages between controller and pilot, sent over a data link instead of spoken on the radio. The pilot answers with standard replies such as WILCO or UNABLE."
+  },
+  {
+    "id": "data-link",
+    "term": "Data link",
+    "definition": "A radio or satellite connection that carries digital messages between an aircraft and the ground, rather than voice."
+  },
+  {
+    "id": "fans-1a",
+    "term": "FANS 1/A",
+    "definition": "Future Air Navigation System: the CPDLC and ADS-C system used over oceans and remote areas. Its messages travel over ACARS by VHF, satellite or HF data link."
+  },
+  {
+    "id": "atn-b1",
+    "term": "ATN Baseline 1 (ATN B1)",
+    "definition": "The CPDLC system used in European airspace. Its messages travel over the Aeronautical Telecommunication Network using VDL Mode 2 radio."
+  },
+  {
+    "id": "acars",
+    "term": "ACARS",
+    "definition": "Aircraft Communications Addressing and Reporting System: an older, widely used network for short text messages between aircraft and the ground. FANS 1/A CPDLC runs over it."
+  },
+  {
+    "id": "vdl-mode-2",
+    "term": "VDL Mode 2",
+    "definition": "VHF Digital Link Mode 2: a data radio in the VHF aviation band that carries data link messages between aircraft and ground stations within radio range."
+  },
+  {
+    "id": "logon",
+    "term": "Logon",
+    "definition": "The first data link message from an aircraft to an ATC centre, with its flight identification and aircraft identity. The centre checks it against the flight plan before opening a CPDLC connection."
+  },
+  {
+    "id": "current-data-authority",
+    "term": "Current Data Authority (CDA)",
+    "definition": "The ATC centre that holds the active CPDLC connection with an aircraft. It is the only one whose CPDLC instructions the aircraft accepts."
+  },
+  {
+    "id": "next-data-authority",
+    "term": "Next Data Authority (NDA)",
+    "definition": "The ATC centre that will take over the data link connection next. The current centre announces it, the next centre connects in the background, and the connection is handed over at the boundary."
+  },
+  {
+    "id": "message-element",
+    "term": "Message element",
+    "definition": "One standard CPDLC phrase with a fixed number and wording, such as UM20 CLIMB TO [level]. A message can contain one or several elements."
+  },
+  {
+    "id": "rcp",
+    "term": "RCP (required communication performance)",
+    "definition": "How quickly and reliably an instruction and its answer must get through. RCP 240 means the whole exchange must be complete within 240 seconds in almost every case."
+  },
+  {
+    "id": "readback-error",
+    "term": "Readback error",
+    "definition": "When a pilot repeats a spoken clearance back wrongly, for example the wrong level. If the controller does not notice (a hearback error), the aircraft may do something different from what was meant."
+  }
+]
