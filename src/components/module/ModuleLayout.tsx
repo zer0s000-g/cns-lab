@@ -11,7 +11,8 @@ import { scrollToSection } from '@/components/module/scroll'
 import { ChapterScrubber } from '@/hud/ChapterScrubber'
 import { CornerBrackets, TitleBlock } from '@/hud/HudFrame'
 import { MissionClock } from '@/hud/MissionClock'
-import { Stage, type Quality, type Shot } from '@/stage/Stage'
+import { LazyStage } from '@/stage/LazyStage'
+import type { Quality, Shot } from '@/stage/types'
 import type { ThemeTokens } from '@/hooks/useThemeTokens'
 import { MODULE_BY_ID, isModuleReady, pillarName } from '@/modules/registry'
 import { audio } from '@/lib/audio'
@@ -186,9 +187,9 @@ export function ModuleLayout(props: ModuleLayoutProps) {
       {/* The stage stays put while the chapters scroll over it. */}
       <div className={cn('sticky top-14 z-20 md:z-0', stageH)}>
         {/* The stage is a night scene in both themes, so its chrome always uses the dark tokens. */}
-        <Stage className="dark absolute inset-0" shot={shot!} label={st.label}>
+        <LazyStage className="dark absolute inset-0" shot={shot!} label={st.label}>
           {(t, q) => st.scene(t, q)}
-        </Stage>
+        </LazyStage>
         <div
           aria-hidden
           className={cn(

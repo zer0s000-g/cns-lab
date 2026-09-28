@@ -11,6 +11,7 @@ import { applyTheme, usePrefs } from '@/stores/prefs'
 import Home from '@/pages/Home'
 import ModulePage from '@/pages/ModulePage'
 import NotFound from '@/pages/NotFound'
+import { RouteError } from '@/components/RouteError'
 
 const Glossary = lazy(() => import('@/pages/Glossary'))
 const Instruments = lazy(() => import('@/pages/Instruments'))
@@ -67,13 +68,19 @@ const router = createBrowserRouter(
     {
       element: <Shell />,
       children: [
-        { path: '/', element: <Home /> },
-        { path: '/modules/:id', element: <ModulePage /> },
-        { path: '/sandbox', element: <SandboxRoute /> },
-        { path: '/glossary', element: <Glossary /> },
-        { path: '/instruments', element: <Instruments /> },
-        { path: '/frequencies', element: <Frequencies /> },
-        { path: '*', element: <NotFound /> },
+        {
+          // Errors render inside the shell, so the header and footer stay.
+          errorElement: <RouteError />,
+          children: [
+            { path: '/', element: <Home /> },
+            { path: '/modules/:id', element: <ModulePage /> },
+            { path: '/sandbox', element: <SandboxRoute /> },
+            { path: '/glossary', element: <Glossary /> },
+            { path: '/instruments', element: <Instruments /> },
+            { path: '/frequencies', element: <Frequencies /> },
+            { path: '*', element: <NotFound /> },
+          ],
+        },
       ],
     },
   ],

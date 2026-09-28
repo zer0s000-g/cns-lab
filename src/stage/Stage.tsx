@@ -8,11 +8,8 @@ import { useReducedMotion } from '@/stores/prefs'
 import { toThreeStyle } from '@/lib/color'
 import { cn } from '@/lib/utils'
 
-export interface Shot {
-  position: [number, number, number]
-  target: [number, number, number]
-  fov?: number
-}
+import type { Quality, Shot } from './types'
+export type { Quality, Shot } from './types'
 
 /** three.js colour for a design token. */
 export const col = (t: ThemeTokens, name: keyof ThemeTokens) => new THREE.Color(toThreeStyle(String(t[name])))
@@ -26,7 +23,6 @@ function webglAvailable(): boolean {
   }
 }
 
-export type Quality = 'high' | 'medium' | 'low'
 
 /**
  * Eases the camera toward the current shot every frame (snaps when the
@@ -152,12 +148,24 @@ export function Stage({
   const [quality, setQuality] = useState<Quality>('high')
   const [dpr, setDpr] = useState(1.5)
   useEffect(() => setOk(webglAvailable()), [])
+  // Stop rendering while the stage is scrolled out of view (browsers already
+  // throttle hidden tabs).
+  const root = useRef<HTMLDivElement>(null)
+  const [onScreen, setOnScreen] = useState(true)
+  useEffect(() => {
+    const el = root.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { rootMargin: '120px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
   return (
-    <div role="img" aria-label={label} className={cn('relative overflow-hidden bg-stage-bg', className)}>
+    <div ref={root} role="img" aria-label={label} className={cn('relative overflow-hidden bg-stage-bg', className)}>
       {ok === false ? (
         <div className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-muted-foreground">{fallback ?? '3D view needs WebGL.'}</div>
       ) : ok ? (
         <Canvas
+          frameloop={onScreen ? 'always' : 'never'}
           dpr={dpr}
           gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
           camera={{ position: shot.position, fov: shot.fov ?? 30, near: 0.1, far: 400 }}

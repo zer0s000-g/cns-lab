@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { Link } from 'react-router'
 import { ModuleLayout } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
@@ -10,7 +11,13 @@ import { useClock } from '@/hooks/useSimClock'
 import { useSampled } from '@/hooks/useSampled'
 import { BarMeter, TelemetryRow } from '@/hud/Telemetry'
 import type { StageSpec } from '@/components/module/ModuleLayout'
-import { PsrHero, tableScaleLabel } from './Hero3D'
+import { HEIGHT_EXAGGERATION, TABLE_RADIUS_NM } from '@/stage/scale'
+
+// The 3D scene is its own chunk, so the page text appears before three.js loads.
+const PsrHero = lazy(() => import('./Hero3D'))
+
+/** Honesty label: what is to scale on the table and what is not. */
+const tableScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · radar and aircraft larger than life`
 import Deeper from './deeper.mdx'
 import { PsrSimulator } from './Simulator'
 import { PsrProvider, usePsr, usePsrState } from './state'

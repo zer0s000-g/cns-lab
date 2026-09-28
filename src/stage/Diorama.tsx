@@ -8,23 +8,14 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ParametricGeometry } from 'three/examples/jsm/geometries/ParametricGeometry.js'
-import { bearingToThreeRotationY, toRad, type Vec2 } from '@/core/geometry'
-import { FT_PER_NM } from '@/core/units'
+import { bearingToThreeRotationY, toRad } from '@/core/geometry'
 import { isWater, terrainElevationFt } from '@/core/world'
 import type { ThemeTokens } from '@/hooks/useThemeTokens'
 import { toThreeStyle } from '@/lib/color'
 import { col } from './Stage'
 
-export const TABLE_RADIUS_NM = 60
-export const TABLE_RADIUS_U = 10
-export const S = TABLE_RADIUS_U / TABLE_RADIUS_NM // units per NM
-export const V = 1 / 10000 // units per ft
-/** How much taller things look than they would at true scale. */
-export const HEIGHT_EXAGGERATION = V / (S / FT_PER_NM)
-const TABLE_TOP = 0
-export const FLOOR_Y = -1.35
-
-export const toU = (p: Vec2, altFt = 0): [number, number, number] => [p.x * S, TABLE_TOP + altFt * V, -p.y * S]
+export { FLOOR_Y, HEIGHT_EXAGGERATION, S, TABLE_RADIUS_NM, TABLE_RADIUS_U, V, toU } from './scale'
+import { FLOOR_Y, TABLE_RADIUS_NM, TABLE_RADIUS_U, V, toU } from './scale'
 
 // ---------------------------------------------------------------------------
 // Terrain relief with contour lines and the sweep afterglow painted on it
@@ -241,9 +232,8 @@ function useReflector() {
 }
 
 /** A radar antenna (primary reflector with the secondary array on top), its tower and shelter. */
-export const RADAR_SCALE = 0.82
-/** Height of the reflector centre above the table, for the beam and callout. */
-export const ANTENNA_Y = (0.12 + 1.1 + 0.18 + 0.42) * RADAR_SCALE // deck + pedestal + reflector centre
+export { ANTENNA_Y, RADAR_SCALE } from './scale'
+import { RADAR_SCALE } from './scale'
 
 const LEG_H = 1.1
 const TOWER_TOP = 0.12 + LEG_H

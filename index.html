@@ -1,14 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>CNS Lab — How air traffic management equipment works</title>
+    <meta name="description" content="CNS Lab: an interactive laboratory that shows how the radio systems behind air traffic management work: radar, navigation beacons, landing systems, satellites and radio. For educational use only." />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0b0e13" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="CNS Lab: an interactive laboratory that shows how the radio systems behind air traffic management work. For educational use only." />
-    <title>CNS Lab</title>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CNS Lab" />
+    <meta property="og:title" content="CNS Lab — How the sky stays safe" />
+    <meta property="og:description" content="Drag aircraft, turn knobs and switch failures on and off to see how radar, radio beacons, landing systems and satellites keep air traffic safe." />
+    <meta property="og:url" content="%VITE_SITE_URL%" />
+    <meta property="og:image" content="%VITE_SITE_URL%og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A tabletop model of an airspace with radars, beacons, satellites and aircraft, next to the title How the sky stays safe." />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <p style="font-family: system-ui, sans-serif; padding: 2rem; max-width: 40rem">
+        CNS Lab is an interactive laboratory and needs JavaScript to run its simulations. Please enable JavaScript and reload.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -22,7 +22,6 @@ import {
   AircraftModel,
   DioramaTable,
   FLOOR_Y,
-  HEIGHT_EXAGGERATION,
   RadarTower,
   S,
   TABLE_RADIUS_NM,
@@ -482,5 +481,4 @@ export function PsrHero({
   )
 }
 
-/** Honesty label: what is to scale on the table and what is not. */
-export const tableScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · radar and aircraft larger than life`
+export default PsrHero

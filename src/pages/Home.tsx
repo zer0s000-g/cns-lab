@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { ArrowRight, ArrowUpRight, BookOpen, Check, RadioReceiver, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -7,8 +7,12 @@ import { CornerBrackets } from '@/hud/HudFrame'
 import { LEARNING_PATH, MODULE_BY_ID, PILLARS, isModuleReady, modulesByPillar, pillarName } from '@/modules/registry'
 import { useProgress } from '@/stores/progress'
 import { cn } from '@/lib/utils'
-import { Stage, type Shot } from '@/stage/Stage'
-import { AIRPORT_ZOOM, WORLD_SITES, WORLD_TIME_SCALE, WorldScene, type WorldFilter } from './home/World3D'
+import { LazyStage } from '@/stage/LazyStage'
+import type { Shot } from '@/stage/types'
+import { AIRPORT_ZOOM, WORLD_SITES, WORLD_TIME_SCALE, type WorldFilter } from './home/worldSites'
+
+// three.js and the scene load after the page text (see LazyStage).
+const WorldScene = lazy(() => import('./home/World3D'))
 
 const SHOT_START: Shot = { position: [2, 34, 26], target: [0, 0, 0], fov: 30 }
 const SHOT_HERO: Shot = { position: [12, 10, 17], target: [-4.6, 1.2, 0.6], fov: 36 }
@@ -38,13 +42,13 @@ export default function Home() {
     <div className="flex flex-col">
       <section aria-labelledby="hero-title" className="relative md:h-[calc(100svh-3.5rem)] md:min-h-[640px]">
         <div className="relative h-[52svh] md:absolute md:inset-0 md:h-auto">
-          <Stage
+          <LazyStage
             className="dark absolute inset-0"
             shot={shot}
             label="A tabletop model of an airspace with an airport, radars, radio beacons, satellites and aircraft. Each system is labelled and links to its module."
           >
             {(t) => <WorldScene t={t} filter={filter} hover={hover} onHover={setHover} onOpen={(id) => navigate(MODULE_BY_ID.get(id)!.path)} />}
-          </Stage>
+          </LazyStage>
           <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-[62%] bg-linear-to-r from-background from-30% via-background/80 to-transparent md:block" />
           <div className="dark pointer-events-none absolute inset-0 z-10 text-foreground">
             <CornerBrackets inset={14} />

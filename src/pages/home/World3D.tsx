@@ -22,45 +22,10 @@ import { ANTENNA_Y, AircraftModel, DioramaTable, FLOOR_Y, RadarTower, S, V, make
 import { PenPlot } from '@/stage/PenPlot'
 import { StudioFloor, col } from '@/stage/Stage'
 
-/** Home-page time runs this much faster than real time (labelled on the page). */
-export const WORLD_TIME_SCALE = 20
-/** The airport is drawn this much larger than life so the runway can be seen. */
-export const AIRPORT_ZOOM = 10
-/** The radar tower is shown smaller here than in the radar module, to sit with the other miniatures. */
-const HOME_RADAR_SCALE = 0.62
-const RUNWAY_HALF_NM = 0.81 * AIRPORT_ZOOM
+import { AIRPORT_ZOOM, HOME_RADAR_SCALE, RUNWAY_HALF_NM, WORLD_SITES, WORLD_TIME_SCALE, type WorldFilter, type WorldSite } from './worldSites'
+
 /** Glide path antenna: about 300 m in from the threshold and 120 m to the side, zoomed like the airport. */
 const GLIDE_PATH_POS: Vec2 = { x: -RUNWAY_HALF_NM + 0.16 * AIRPORT_ZOOM, y: 0.065 * AIRPORT_ZOOM * 1.8 }
-
-export type WorldFilter = 'all' | Exclude<Pillar, 'integration'>
-
-export interface WorldSite {
-  id: string
-  label: string
-  desc: string
-  /** Map point, NM (x east, y north). Not to scale: spread out to be seen. */
-  pos: Vec2
-  /** Label height above the site's ground, scene units. */
-  labelY: number
-  side?: 'left' | 'right'
-}
-
-export const WORLD_SITES: WorldSite[] = [
-  { id: 'psr', label: 'Primary radar', desc: 'Bounces pulses off aircraft to find them, with no help from the aircraft.', pos: { x: -16, y: 20 }, labelY: ANTENNA_Y * HOME_RADAR_SCALE - 0.05, side: 'left' },
-  { id: 'ssr', label: 'SSR / Mode S', desc: 'The bar on top of the radar asks each aircraft "who are you and how high?"', pos: { x: -16, y: 20 }, labelY: (ANTENNA_Y + 0.4) * HOME_RADAR_SCALE },
-  { id: 'surface', label: 'Surface radar', desc: 'A fast, very sharp radar on the tower roof that sees everything on the ground.', pos: { x: 3, y: 3.2 }, labelY: 0.95 },
-  { id: 'vhf', label: 'VHF radio', desc: 'Press to talk: the voice radio between pilots and controllers.', pos: { x: -3, y: 3.4 }, labelY: 1.15, side: 'left' },
-  { id: 'cpdlc', label: 'CPDLC', desc: 'The control centre sends standard text messages to cockpits instead of speaking.', pos: { x: -20, y: -8 }, labelY: 0.55, side: 'left' },
-  { id: 'ils', label: 'ILS', desc: 'Two radio beams at the runway guide aircraft left-right and up-down in fog.', pos: { x: RUNWAY_HALF_NM + 2.4, y: 0 }, labelY: 0.4 },
-  { id: 'dvor', label: 'VOR', desc: 'Two signals ticking out of step tell an aircraft its direction from the station.', pos: { x: 24, y: -14 }, labelY: 0.5 },
-  { id: 'dme', label: 'DME', desc: 'Answers the aircraft’s question so it can time the reply and work out its distance.', pos: { x: 24, y: -14 }, labelY: 0.95, side: 'left' },
-  { id: 'ndb', label: 'NDB', desc: 'A simple beacon sending the same signal everywhere; the cockpit needle points at it.', pos: { x: -32, y: -12 }, labelY: 0.8 },
-  { id: 'ads', label: 'ADS-B', desc: 'Listens to aircraft broadcasting their own satellite position twice a second.', pos: { x: 16, y: 20 }, labelY: 0.55 },
-  { id: 'mlat', label: 'MLAT / WAM', desc: 'Receivers time the same signal; tiny differences pinpoint the aircraft.', pos: { x: 30, y: 8 }, labelY: 0.4 },
-  { id: 'hf', label: 'HF radio', desc: 'Waves that bounce off the upper atmosphere to reach aircraft across oceans.', pos: { x: -24, y: -36 }, labelY: 0.95 },
-  { id: 'satcom', label: 'SATCOM', desc: 'Aircraft over oceans and poles talk to ATC through communication satellites.', pos: { x: 12, y: -32 }, labelY: 0.55 },
-  { id: 'sandbox', label: 'Airspace sandbox', desc: 'Every system working together, and what happens when one fails.', pos: { x: -RUNWAY_HALF_NM, y: -3.5 }, labelY: 0.3, side: 'left' },
-]
 
 const GNSS_SITE: WorldSite = { id: 'gnss', label: 'GNSS', desc: 'Satellites broadcast the exact time; a receiver measures the delays and works out where it is.', pos: { x: 0, y: 0 }, labelY: 0 }
 
@@ -649,3 +614,5 @@ export function WorldScene({
     </group>
   )
 }
+
+export default WorldScene
