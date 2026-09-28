@@ -1,0 +1,52 @@
+[
+  {
+    "id": "smr",
+    "term": "SMR (surface movement radar)",
+    "definition": "A primary radar at an airport that looks at the runways, taxiways and aprons. Very short pulses, a very narrow beam and one turn per second let it show the shape of every aircraft and vehicle, but not who they are."
+  },
+  {
+    "id": "a-smgcs",
+    "term": "A-SMGCS",
+    "definition": "Advanced Surface Movement Guidance and Control System: the airport system that combines surface radar, multilateration and ADS-B into one picture, warns of runway incursions, plans taxi routes and guides pilots with lights."
+  },
+  {
+    "id": "stop-bar",
+    "term": "Stop bar",
+    "definition": "A row of red lights set into a taxiway where it meets the runway. It means: stop, do not enter. It is switched off only for the aircraft or vehicle cleared onto the runway."
+  },
+  {
+    "id": "runway-protected-area",
+    "term": "Runway protected area",
+    "definition": "The runway and the ground close to it, up to the holding positions where the stop bars are. Nobody may be inside it without clearance while the runway is in use."
+  },
+  {
+    "id": "runway-incursion",
+    "term": "Runway incursion",
+    "definition": "An aircraft, vehicle or person wrongly on the runway or its protected area, for example after crossing a red stop bar. It is one of the most serious hazards at airports."
+  },
+  {
+    "id": "ghost-target",
+    "term": "Ghost target",
+    "definition": "A false echo on a radar display caused by the signal bouncing off a large flat surface, such as a building. It appears at the mirror image of a real object, behind the reflecting surface."
+  },
+  {
+    "id": "circular-polarisation",
+    "term": "Circular polarisation",
+    "definition": "Sending radio waves whose direction of vibration rotates as they travel. Round raindrops send them back with the opposite rotation, so the radar can reject much of the rain echo."
+  },
+  {
+    "id": "visibility",
+    "term": "Visibility",
+    "definition": "The greatest distance at which an object can still be made out against its background. In fog the contrast of objects falls with distance until, at the visibility, it is too faint to see."
+  },
+  {
+    "id": "taxiway",
+    "term": "Taxiway",
+    "definition": "A paved path that aircraft use to move between the runway and the parking stands, at low speed under their own power."
+  },
+  {
+    "id": "x-band",
+    "term": "X-band",
+    "definition": "Radio frequencies around 8 to 12 GHz, with waves about 3 cm long. Good for fine detail over short distances, but weakened and cluttered by heavy rain."
+  }
+]

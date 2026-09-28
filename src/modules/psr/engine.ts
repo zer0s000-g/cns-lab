@@ -221,6 +221,8 @@ export class PsrEngine {
   private paintAt(trueRangeNm: number, azDeg: number, strength: number, kind: ScopePaint['kind'], widthDeg: number, depthNm: number) {
     const app = apparentRange(trueRangeNm, this.params.prfHz)
     const a = (azDeg * Math.PI) / 180
+    // If no screen is reading the paints (scrolled away), keep only the latest few turns.
+    if (this.pending.length > 20000) this.pending.splice(0, this.pending.length - 15000)
     this.pending.push({
       x: this.site.pos.x + Math.sin(a) * app.rangeNm,
       y: this.site.pos.y + Math.cos(a) * app.rangeNm,

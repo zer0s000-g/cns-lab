@@ -1,0 +1,70 @@
+### Surface movement radar (SMR)
+
+An SMR is a primary radar built for detail rather than range. It works in the <Term id="x-band">X-band</Term>, **about 9 GHz** (some use the Ku-band, about 16 GHz), turns about **once per second (60 rpm)**, sends pulses only a few tens of nanoseconds long and has a very narrow beam.
+
+<Formula>{`Range resolution   ΔR = c × τ / 2          τ = 20 ns → about 3 m
+Cross-range detail  ≈ R × beam width        0.35° at 1 km → about 6 m`}</Formula>
+
+With cells that small, an aircraft covers dozens of them, so the screen shows its **shape**. Compare the approach radar in the primary radar module: 1 µs pulses (150 m) and a 1.4° beam.
+
+{/* TODO(expert-review): typical SMR band, rotation rate, pulse length and beam width (9.2 GHz, 60 rpm, 20 ns, 0.35° used here). */}
+
+### Rain at X-band
+
+Short wavelengths are strongly affected by rain in two ways:
+
+<Formula>{`Attenuation   γ = k × Rᵅ  dB/km      (about 0.5 dB/km at 25 mm/h near 9 GHz; the signal loses it twice)
+Rain echo      grows with the volume of each resolution cell ∝ R²
+               so signal-to-rain ratio falls by 20 dB per tenfold range`}</Formula>
+
+Near the radar the targets still stand out; far away small targets drown in the rain echo. **Circular polarisation** helps: raindrops are nearly round and reflect circularly polarised waves with the "wrong" hand, so the antenna rejects much of the rain echo (in the simulator: 15 dB), at a small cost to the targets.
+
+{/* TODO(expert-review): P.838 coefficients near 9 GHz and the circular polarisation rain rejection (15 dB) used here. */}
+
+### Ghost targets from reflections
+
+A large flat face, such as a glass terminal building, acts as a mirror. The pulse can travel radar → wall → aircraft and back the same way. The radar then sees an echo in the direction of the reflection point, at the longer, reflected range, which is exactly where the **mirror image** of the aircraft behind the wall would be:
+
+<Formula>{`ghost = mirror image of the target across the wall
+range to ghost = |radar → reflection point| + |reflection point → target|`}</Formula>
+
+This is a form of <Term id="multipath">multipath</Term>. That is why ghosts in the simulator appear behind the terminal, in the car park, and move when the real aircraft moves. Real systems suppress them with maps of known reflectors, careful radar siting, and by checking that a plot has a matching MLAT or ADS-B report.
+
+### Visibility and the tower view
+
+In fog, an object's apparent contrast falls with distance (Koschmieder's law):
+
+<Formula>{`C = C₀ × e^(−σd)        visibility V = ln(1/0.05) / σ ≈ 3 / σ
+so  C ≈ e^(−3 d / V)     (5% contrast at exactly the visibility distance)`}</Formula>
+
+Lights can be seen farther than objects, which is why <Term id="rvr">runway visual range</Term> is measured with lights. Radio waves at 1 GHz or 9 GHz pass through fog almost unaffected, so the surveillance display stays clear.
+
+{/* TODO(expert-review): Koschmieder daytime law with a 5% threshold; ICAO visibility conditions 1 to 4 (Doc 9830) for when controllers can no longer see the manoeuvring area. */}
+
+### A-SMGCS
+
+Advanced Surface Movement Guidance and Control Systems (ICAO Doc 9830) are usually described as four services, added in stages:
+
+| Service | What it does | In the simulator |
+|---|---|---|
+| Surveillance | Position and identity of every aircraft and vehicle, from SMR, MLAT and ADS-B combined | The fused display |
+| Alerting (safety nets) | Warns of runway incursions, a red stop bar being crossed, conflicting clearances | The runway incursion alert |
+| Routing (planning) | Plans each taxi route | The departures' routes |
+| Guidance | Shows pilots the way, for example taxiway centreline lights switched on ahead of them ("follow the greens") and stop bars | Green lights and stop bars on the airport map |
+
+{/* TODO(expert-review): current ICAO terminology for A-SMGCS services versus the older "levels 1 to 5"; EUROCAE ED-87 performance figures. */}
+
+### The runway incursion alert used here
+
+- **Protected area**: the runway and everything inside the runway-holding positions (90 m from the centreline here), plus 60 m beyond each end.
+- **Caution**: a target is inside it without clearance and nothing is using the runway.
+- **Alert**: the same while an aircraft is landing (within **2 NM or 60 s** of the threshold, or on its landing roll) or taking off.
+- A landing aircraft that still finds the runway occupied 1 NM out goes around.
+
+{/* TODO(expert-review): stages and timing of the runway incursion alert (2 NM / 60 s used here). */}
+
+**Stop bars** are rows of red, inset lights across a taxiway at the runway-holding position. They are switched off only for the aircraft cleared onto the runway; crossing a lit stop bar is an incursion in itself.
+
+<Note title="Honest simplifications">
+Traffic is compressed (a landing about every three minutes and 90-second turnarounds). The SMR model uses a few dozen scatter points per aircraft, a simple detection curve and one reflector. MLAT receivers on the airport hear targets within 2.5 km unless a building is in the way. The tracker simply takes the most accurate fresh source. The tower view is a simple drawing, not a 3D model.
+</Note>

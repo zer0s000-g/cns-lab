@@ -1,0 +1,37 @@
+[
+  {
+    "id": "multilateration",
+    "term": "Multilateration (MLAT)",
+    "definition": "Finding where a transmitter is by comparing when its signal arrives at several receivers. The differences in arrival time give the position, without any rotating radar and without trusting the position the aircraft reports."
+  },
+  {
+    "id": "wam",
+    "term": "WAM (wide area multilateration)",
+    "definition": "Multilateration over a large area such as a terminal area or en-route airspace, with receivers tens of kilometres apart, often on hills. Airport MLAT covers only the runways, taxiways and the final approach."
+  },
+  {
+    "id": "tdoa",
+    "term": "TDOA (time difference of arrival)",
+    "definition": "The difference between the times one signal reaches two receivers. Multiplied by the speed of light it gives how much farther the transmitter is from one receiver than from the other."
+  },
+  {
+    "id": "hyperbola",
+    "term": "Hyperbola",
+    "definition": "The curve of all points whose distances to two fixed points differ by the same amount. Each time difference between two receivers puts the aircraft somewhere on one hyperbola."
+  },
+  {
+    "id": "geometry-factor",
+    "term": "Geometry factor (GDOP)",
+    "definition": "How much the layout of the receivers magnifies timing errors into position errors. About 1 inside a well-spread network; much larger outside it or when the receivers stand in a line. Also called dilution of precision."
+  },
+  {
+    "id": "time-synchronisation",
+    "term": "Time synchronisation",
+    "definition": "Keeping the clocks of all receivers in step to within a few nanoseconds, using satellite (GNSS) time, a reference transmitter at a known place, or one central clock. A clock that is 1 ns off puts 30 cm of error into its distances."
+  },
+  {
+    "id": "adsb-spoofing",
+    "term": "ADS-B spoofing",
+    "definition": "Broadcasting ADS-B messages with a false position, from a faulty or tampered transmitter. Multilateration can catch it, because it works out where the signal really came from."
+  }
+]

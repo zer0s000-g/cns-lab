@@ -1,0 +1,77 @@
+### Time difference of arrival (TDOA)
+
+The transponder sends at an unknown moment *t₀*. Receiver *i*, at position **rᵢ**, stamps the arrival at
+
+<Formula>{`tᵢ = t₀ + |p − rᵢ| / c          c ≈ 299,792 km/s ≈ 0.2998 m per ns`}</Formula>
+
+Subtracting two arrival times removes *t₀*:
+
+<Formula>{`Δtᵢⱼ = tᵢ − tⱼ = ( |p − rᵢ| − |p − rⱼ| ) / c`}</Formula>
+
+A constant difference of distances to two fixed points is a **hyperbola** on a flat map, and a **hyperboloid** (a curved sheet) in 3D. The simulator draws the slice of each hyperboloid at the aircraft's reported altitude, from the *measured* time difference, so a clock error visibly moves the curve.
+
+### How many receivers?
+
+| Receivers | Independent differences | With the reported altitude (solve x, y) | Without it (solve x, y, z) |
+|---|---|---|---|
+| 2 | 1 | one curve: no position | no position |
+| 3 | 2 | a position, but in some places two fit | no position |
+| 4 | 3 | unique, with one spare to cross-check | a position, sometimes two |
+| 5 or more | 4 or more | unique and checked | unique and checked |
+
+Receivers on the ground all look at the aircraft from low elevation angles, so the height they compute is poor. That is why MLAT normally uses the pressure altitude the aircraft reports in its Mode C or Mode S reply (Mode S reports it in 25 ft steps).
+
+{/* TODO(expert-review): how operational WAM systems combine the altitude report with the TDOA solution (barometric altitude differs from geometric height). */}
+
+### Solving the equations
+
+The curves are not straight lines, so the position is found step by step (Gauss–Newton least squares): guess a position, compute the time differences it would give, compare them with the measured ones and move the guess to reduce the mismatch. The simulator tries many starting guesses, so it notices when two different positions fit equally well.
+
+All differences are taken against one reference receiver, so they share that receiver's noise. The least-squares weight that accounts for this is
+
+<Formula>{`W = I − 1·1ᵀ / N`}</Formula>
+
+which makes the TDOA solution identical to solving the raw arrival times with *t₀* as one more unknown, exactly like a GNSS receiver solving for its clock error.
+
+### Accuracy and geometry
+
+<Formula>{`σ_horizontal ≈ HDOP × c × σ_timing      (HDOP: horizontal dilution of precision,
+                                         the "geometry factor" in the readouts)`}</Formula>
+
+| Timing error | Distance error (× c) |
+|---|---|
+| 1 ns | 0.3 m |
+| 10 ns | 3 m |
+| 100 ns | 30 m |
+| 1 µs | 300 m |
+
+The geometry factor is about 1 inside a well-spread network, where the curves cross at steep angles. Outside the network the signals all arrive from roughly the same direction, the curves become nearly parallel and it grows quickly. Receivers in a straight line cannot tell which side of the line the aircraft is on. The simulator uses 15 ns of random timing error per receiver by default.
+
+{/* TODO(expert-review): typical receiver time-of-arrival accuracy for Mode S replies and squitters (15 ns rms used here). */}
+
+### Keeping the clocks in step
+
+Every receiver must stamp time on the same clock to within a few nanoseconds. Three common ways:
+
+- **GNSS time**: each receiver has a clock steered by GPS or another satellite system.
+- **Reference transmitter**: a beacon at a known position sends signals; the system knows what time differences it *should* measure and corrects every receiver's clock.
+- **Common clock**: receivers send the raw signal to a central site over links with known delays, where it is time-stamped by one clock.
+
+{/* TODO(expert-review): relative use of GNSS-synchronised, reference-transmitter and common-clock architectures in current systems. */}
+
+### Airport MLAT and Wide Area Multilateration (WAM)
+
+| | Airport MLAT | WAM |
+|---|---|---|
+| Covers | runways, taxiways, aprons and the final approach | terminal areas and en-route airspace |
+| Receivers | about 10 to 20, a few km apart | about 5 to 20, tens of km apart, often on hills |
+| Typical accuracy | metres (for example 7.5 m on runways) | tens of metres, growing to 100 m or more at long range |
+| Standards | EUROCAE ED-117 | EUROCAE ED-142 |
+
+{/* TODO(expert-review): accuracy figures (7.5 m on runways, tens of metres to 100 m+ for WAM) and the current ED-117 / ED-142 editions. */}
+
+MLAT uses the replies and squitters aircraft already send, so **no new equipment is needed on board**. It can listen passively to replies triggered by radars, or interrogate aircraft itself. Because it measures *where the signal came from*, it does not depend on the aircraft's own position report, which makes it a good independent check of ADS-B.
+
+<Note title="Honest simplifications">
+The simulator uses a flat local Earth, straight-line signal paths with no terrain blocking or reflections, the same random timing error at every receiver, one fix per second, and treats the reported altitude as the true height. The receivers always hear every aircraft.
+</Note>
