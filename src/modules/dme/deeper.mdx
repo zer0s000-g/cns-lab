@@ -1,0 +1,60 @@
+### Distance from time
+
+The aircraft starts a stopwatch when it sends its pulse pair and stops it when the answer arrives. The ground station always waits the same reply delay *T*<sub>d</sub> before answering, so
+
+<Formula>{`distance = (t − T_d) × c / 2
+
+X channels: T_d = 50 µs
+Y channels: T_d = 56 µs`}</Formula>
+
+Radio needs about **12.36 µs** for one nautical mile there and back. An answer after 421 µs on an X channel means (421 − 50) ÷ 12.36 ≈ **30 NM**.
+
+### Slant range, not ground distance
+
+The DME measures the straight line to the antenna. With ground distance *g* and height *h* above the station (both in NM; 1 NM ≈ 6,076 ft):
+
+<Formula>{`slant range = √(g² + h²)
+
+Right overhead (g = 0): slant range = h
+e.g. 6,000 ft → about 1.0 NM`}</Formula>
+
+Far from the station the difference is tiny: at 10,000 ft and 30 NM out, the DME reads 30.04 NM for 30.00 NM over the ground. It only matters close to the station, and most at high altitude.
+
+### Groundspeed and time to station
+
+The avionics compare successive distances and smooth the result. What they get is the rate of change of the slant range:
+
+<Formula>{`DME speed = (g / slant range) × v × |cos α|`}</Formula>
+
+where *v* is the real groundspeed and α the angle between your track and the line to the station. Straight in or out (α = 0° or 180°) far away, DME speed ≈ *v*. Circling the station (α = 90°) it is zero. Close to the station the factor *g* / slant range drops, so the reading falls to almost nothing as you pass overhead. Time to station is distance ÷ closure speed.
+
+### Frequencies and channels
+
+DME uses the **UHF band from 962 to 1213 MHz**: 126 channels in each of two modes, X and Y, 252 in all. The aircraft asks on 1025–1150 MHz; the station answers **63 MHz** above or below.
+
+| Mode | Question spacing | Answer spacing | Reply delay |
+|---|---|---|---|
+| X | 12 µs | 12 µs | 50 µs |
+| Y | 36 µs | 30 µs | 56 µs |
+
+Every VOR and ILS frequency is <Term id="dme-pairing">paired</Term> with one DME channel, so the pilot tunes both with one knob:
+
+| VHF frequency | DME channel | Question / answer |
+|---|---|---|
+| 108.00 MHz (VOR) | 17X | 1041 / 978 MHz |
+| 110.30 MHz (ILS localizer) | 40X | 1064 / 1001 MHz |
+| 114.30 MHz (the CNS VOR in this simulator) | 90X | 1114 / 1177 MHz |
+
+The DME sends its Morse identification on a **1350 Hz** tone, one ident period in four of its paired VOR.
+
+### Many aircraft, one station
+
+The interrogator asks about **150 times a second** while searching and at most about **30 times a second** once it is tracking (<Term id="dme-search-track">search and track</Term>). Its questions are spaced randomly (**jitter**). Only answers to its own questions keep arriving at the same delay, so it looks for that line-up and ignores the rest.
+
+The ground station is designed for about **100 aircraft** and can send up to about **2,700 answers a second**. After each answer its receiver is blind for about **60 µs** (<Term id="dme-dead-time">dead time</Term>). When few aircraft ask, it fills the gaps with random <Term id="dme-squitter">squitter</Term> pairs so it transmits at least about 700 pairs a second. When too many ask, it lowers its receiver sensitivity: the weakest questions, from the farthest aircraft, stop getting answers first, and their <Term id="dme-reply-efficiency">reply efficiency</Term> drops to zero.
+
+<Note title="Honest simplifications">
+The simulator uses a flat 60 µs dead time, treats the questions of all aircraft as random in time, lets traffic interrogate at a fixed rate (1 in 20 aircraft searching) and checks only the radio horizon (not hills) for the other traffic, models the sensitivity reduction as a sharp distance cut-off and uses the 1.23·(√h₁ + √h₂) radio-horizon rule. Measured distances have no noise. Real avionics use more elaborate search and memory logic.
+</Note>
+
+{/* TODO(expert-review): interrogation rates (150 pps search, 30 pps track), transponder capacity (100 aircraft), 2,700 pps maximum, 60 µs dead time, 700 pps minimum transmission, memory time, and the DME ident timing relative to its paired VOR. */}

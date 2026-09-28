@@ -1,0 +1,16 @@
+[
+  { "id": "dme-interrogator", "term": "Interrogator (DME)", "definition": "The DME box in the aircraft. It sends short radio questions to the ground station and times how long the answers take." },
+  { "id": "dme-transponder", "term": "DME ground transponder", "definition": "The ground part of a DME. It listens for questions from aircraft, waits a fixed time and answers each one." },
+  { "id": "dme-pulse-pair", "term": "Pulse pair", "definition": "Two short radio pulses a fixed time apart. DME questions and answers are pulse pairs; the spacing tells the receiver which channel mode (X or Y) it is." },
+  { "id": "dme-reply-delay", "term": "Reply delay", "definition": "The fixed wait between the ground station hearing a question and sending its answer: 50 microseconds on X channels, 56 on Y channels. The aircraft subtracts it before working out the distance." },
+  { "id": "dme-channel", "term": "DME channel (X and Y)", "definition": "One of 252 DME channels: numbers 1 to 126, each in an X and a Y version. X and Y use different pulse spacings and reply delays, so two stations can share nearby frequencies." },
+  { "id": "dme-pairing", "term": "Frequency pairing", "definition": "Each VOR or ILS frequency belongs to exactly one DME channel. Tuning the VOR or ILS automatically tunes its DME, for example 108.00 MHz with channel 17X." },
+  { "id": "dme-jitter", "term": "Jitter", "definition": "Spacing the questions randomly instead of evenly. Answers to your own questions then keep coming back at the same delay, while everyone else's answers land at random times." },
+  { "id": "dme-squitter", "term": "Squitter", "definition": "Random pulse pairs a DME ground station sends when few aircraft are asking, so its transmitter and the aircraft receivers keep working steadily." },
+  { "id": "dme-search-track", "term": "Search and track", "definition": "How the DME in the aircraft finds its answers. While searching it asks fast and looks for a delay where answers keep lining up. Once it finds one it tracks it and asks more slowly." },
+  { "id": "dme-memory", "term": "Memory mode", "definition": "When the answers stop for a moment, the DME keeps showing its last distance for a few seconds before it gives up and starts searching again." },
+  { "id": "dme-groundspeed", "term": "DME groundspeed", "definition": "How fast the DME distance is changing. It equals the real groundspeed only when flying straight toward or away from the station." },
+  { "id": "dme-reply-efficiency", "term": "Reply efficiency", "definition": "The share of an aircraft's questions that get an answer from the ground station. It falls when the station is very busy." },
+  { "id": "dme-dead-time", "term": "Dead time", "definition": "A short moment after each answer (about 60 microseconds) when the ground station cannot hear new questions." },
+  { "id": "dme-overload", "term": "Station overload", "definition": "More aircraft asking than the ground station can answer. It then turns down its receiver sensitivity so it keeps answering the closest aircraft, and the farthest ones lose their answers." }
+]

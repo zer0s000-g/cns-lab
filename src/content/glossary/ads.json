@@ -1,0 +1,13 @@
+[
+  { "id": "ads-b-out", "term": "ADS-B Out", "definition": "The transmitting side of ADS-B: equipment on the aircraft that broadcasts its own GNSS position, speed, altitude and identity about twice a second." },
+  { "id": "ads-b-in", "term": "ADS-B In", "definition": "Equipment on an aircraft that receives other aircraft's ADS-B broadcasts and shows them to the pilot on a traffic display." },
+  { "id": "ads-c", "term": "ADS-C", "definition": "Automatic Dependent Surveillance–Contract: the aircraft sends position reports to one chosen control centre, at agreed times or when something changes, usually by satellite data link." },
+  { "id": "adsc-contract", "term": "ADS-C contract", "definition": "The agreement between a control centre and an aircraft about what to report: periodic (every so many minutes), event (for example when leaving an altitude band) or demand (once, now)." },
+  { "id": "extended-squitter", "term": "Extended squitter (1090ES)", "definition": "A 112-bit Mode S message (format DF17) that an aircraft sends on 1090 MHz without being asked. ADS-B uses it to broadcast position, velocity and identification." },
+  { "id": "uat", "term": "UAT", "definition": "Universal Access Transceiver: a second ADS-B radio link on 978 MHz, used only in the United States, mostly by small aircraft." },
+  { "id": "nacp", "term": "NACp", "definition": "Navigation Accuracy Category for position: a number from 0 to 11 saying how accurate the broadcast position is. NACp 10 means 95% of errors are under 10 m; 0 means unknown." },
+  { "id": "nic", "term": "NIC", "definition": "Navigation Integrity Category: a number from 0 to 11 giving the radius the true position is guaranteed to be within. It drops to 0 when the GNSS fix is lost." },
+  { "id": "cpr", "term": "Compact Position Reporting (CPR)", "definition": "The trick ADS-B uses to fit latitude and longitude into 17 bits each. Messages alternate between two slightly different grids (even and odd); a pair of them pins down the position." },
+  { "id": "cdti", "term": "Cockpit traffic display", "definition": "A screen in the cockpit that shows nearby traffic around the pilot's own aircraft, with each aircraft's height difference, using ADS-B In." },
+  { "id": "position-cross-check", "term": "Cross-checking positions", "definition": "Comparing a position from one system with an independent measurement, such as radar or multilateration. A target that only one system sees, or that the others see elsewhere, is suspicious." }
+]

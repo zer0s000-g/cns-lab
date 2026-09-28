@@ -1,0 +1,21 @@
+[
+  { "id": "localizer", "term": "Localizer", "definition": "The part of an ILS that shows left and right. Its antenna row stands beyond the far end of the runway and sends two overlapping signals along the centreline." },
+  { "id": "glideslope", "term": "Glideslope (glide path)", "definition": "The part of an ILS that shows up and down. Its mast stands beside the runway and marks a slope of about 3° down to the touchdown zone." },
+  { "id": "tone-90-150", "term": "90 Hz and 150 Hz tones", "definition": "The two low tones an ILS adds to its radio signals. One side of the path gets more of the 90 Hz tone, the other side more of the 150 Hz tone; on the path both are equally strong." },
+  { "id": "depth-of-modulation", "term": "Depth of modulation", "definition": "How strongly a tone is carried on the radio signal, as a percentage. On the localizer centreline each ILS tone is 20%; on the glide path each is 40%." },
+  { "id": "ddm", "term": "DDM (difference in depth of modulation)", "definition": "The ILS receiver subtracts the 150 Hz strength from the 90 Hz strength. Zero means on the path; the bigger the difference, the further the needle moves." },
+  { "id": "course-sector", "term": "Course sector", "definition": "The narrow wedge around the localizer centreline in which the needle moves from full left to full right. It is only about ±2° wide: about ±107 m (350 ft) either side of the centreline at the threshold." },
+  { "id": "marker-beacon", "term": "Marker beacon", "definition": "A small 75 MHz transmitter on the approach path that beams straight up. Passing over it, the pilot hears a tone and sees a lamp: outer (blue), middle (amber) or inner (white)." },
+  { "id": "runway-threshold", "term": "Runway threshold", "definition": "The start of the part of the runway that can be used for landing, marked by white stripes and a row of green lights." },
+  { "id": "decision-height", "term": "Decision height (minimums)", "definition": "The height on an ILS approach at which the pilot must see the runway or its lights. If not, the pilot must go around." },
+  { "id": "rvr", "term": "RVR (runway visual range)", "definition": "How far a pilot on the runway can see along it, in metres. Instruments beside the runway measure it in fog." },
+  { "id": "ils-category", "term": "ILS category (CAT I, II, III)", "definition": "How low an ILS approach may go in bad weather. CAT I needs to see the runway at 200 ft; CAT II at 100 ft; CAT III lower still, down to landing in fog with almost no visibility." },
+  { "id": "approach-lights", "term": "Approach lights", "definition": "Rows of bright lights on poles in front of the runway, usually 900 m long, that lead the pilot's eye to the threshold in poor visibility." },
+  { "id": "go-around", "term": "Go around", "definition": "Stopping an approach and climbing away to try again or go elsewhere, for example when the runway is not in sight at the decision height." },
+  { "id": "autoland", "term": "Autopilot and autoland", "definition": "An autopilot can fly the ILS needles by itself. Certified autoland systems can also flare and land the aircraft, which CAT III approaches in thick fog rely on." },
+  { "id": "critical-area", "term": "ILS critical area", "definition": "An area around the localizer and glideslope antennas that must be kept free of vehicles and aircraft while an ILS is in use, because they reflect the signal and bend the beams." },
+  { "id": "false-glideslope", "term": "False glideslope", "definition": "A place above the real glide path, at about 2 and 3 times its angle, where the two tones are equal again. The needle centres there although the aircraft is far too high." },
+  { "id": "ils-monitor", "term": "ILS monitor", "definition": "Equipment that constantly checks the ILS signal. If the course shifts or the signal changes too much, it switches the ILS off within seconds and the pilot sees a warning flag." },
+  { "id": "ils-coverage", "term": "Coverage area", "definition": "The space in which an ILS signal is guaranteed to be good. The localizer covers about ±35° out to 17 NM; the glideslope a much narrower area out to about 10 NM." },
+  { "id": "warning-flag", "term": "Warning flag", "definition": "A red flag on the cockpit instrument that appears when the receiver has no usable signal. The needle must then not be trusted." }
+]

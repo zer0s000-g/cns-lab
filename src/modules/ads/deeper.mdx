@@ -1,0 +1,100 @@
+### Two ADS-B links
+
+| Link | Frequency | Where |
+|---|---|---|
+| 1090 MHz Extended Squitter (1090ES) | 1090 MHz, shared with SSR replies | Worldwide |
+| UAT (Universal Access Transceiver) | 978 MHz | United States only, mostly general aviation |
+
+### The 112-bit message (DF17)
+
+| Field | Bits | Content |
+|---|---|---|
+| DF | 5 | Downlink format 17: extended squitter |
+| CA | 3 | Transponder capability |
+| AA | 24 | The aircraft's 24-bit address |
+| ME | 56 | The message itself; its first 5 bits are the type code |
+| PI | 24 | Parity: catches corrupted messages |
+
+| Type code | Message | Sent about every |
+|---|---|---|
+| 1–4 | Identification (callsign, 8 characters of 6 bits) | 5 s |
+| 9–18 | Airborne position (barometric altitude); the type code also carries NIC | 0.5 s |
+| 19 | Airborne velocity (east and north components, vertical rate) | 0.5 s |
+| 0 | No position available, altitude only | while GNSS is lost |
+| 31 | Operational status, including NACp | a few seconds |
+
+Transmission times are randomised (position and velocity every 0.4 to 0.6 s, identification every 4.8 to 5.2 s) so that two aircraft never keep colliding. Every message in the simulator is a real DF17 frame: the hex shown in the panel decodes with any standard ADS-B decoder.
+
+{/* TODO(expert-review): message rates and the NIC ↔ type code mapping (DO-260B). */}
+
+### Compact Position Reporting (CPR)
+
+Latitude and longitude get 17 bits each, a resolution of about 5 m. To make that possible, positions are sent on two grids that alternate: **even** frames use 60 latitude zones, **odd** frames 59.
+
+<Formula>{`Dlat = 360° / (4·15 − i)          i = 0 even, 1 odd
+YZ   = floor(2¹⁷ × mod(lat, Dlat) / Dlat + ½)`}</Formula>
+
+A receiver needs one even and one odd frame (within about 10 s) to decode the position anywhere on Earth. After that it can decode each new frame on its own, using the last position as a reference.
+
+### How good is the position?
+
+| NACp | 95% accuracy | | NIC | Containment radius |
+|---|---|---|---|---|
+| 11 | better than 3 m | | 11 | 7.5 m |
+| 10 | better than 10 m | | 10 | 25 m |
+| 9 | better than 30 m | | 9 | 75 m |
+| 8 | better than 0.05 NM | | 8 | 0.1 NM |
+| 7 | better than 0.1 NM | | 7 | 0.2 NM |
+| 6 | better than 0.3 NM | | 6 | 0.6 NM |
+| 0 | unknown | | 0 | unknown |
+
+NACp says how accurate the position probably is; NIC gives a guaranteed bound (integrity). Both fall to 0 when the GNSS fix is lost.
+
+{/* TODO(expert-review): NACp and NIC tables (DO-260B), and the simplification that NIC supplements are not modelled. */}
+
+### Coverage
+
+A ground receiver hears an aircraft when there is radio line of sight:
+
+<Formula>{`range_NM ≈ 1.23 × (√h_receiver_ft + √h_aircraft_ft)
+receiver at 120 ft, aircraft at FL350  →  about 244 NM`}</Formula>
+
+Receivers are cheap and have no moving parts, which is why ADS-B is spreading fast. Over oceans there are no receivers, so **space-based ADS-B** puts them on low-orbit satellites (for example Iridium NEXT, about 780 km up). The satellites relay the messages to the ground within a second or two.
+
+{/* TODO(expert-review): space-based ADS-B latency (1.5 s in the simulator). */}
+
+### Radar and ADS-B compared
+
+| | Radar (monopulse SSR) | ADS-B |
+|---|---|---|
+| Update | once per antenna turn, 4–12 s | about every 0.5 s |
+| Error | grows with range: sideways error ≈ R × σ_azimuth | set by GNSS, the same at any range |
+| Example | 0.07° at 100 NM → about 230 m (1σ) sideways | NACp 10: better than 10 m |
+| Depends on | the aircraft's transponder | GNSS **and** an honest transmitter |
+
+Radar measures where the aircraft is; ADS-B reports where the aircraft thinks it is. That is why ADS-B is cross-checked against radar or **multilateration**, which locates the transmitter itself from arrival times: a spoofer on the ground is found on the ground, not where its messages claim.
+
+{/* TODO(expert-review): MSSR accuracy (0.07° azimuth, 25 m range) used in the comparison. */}
+
+### ADS-C and FANS 1/A
+
+ADS-C messages travel over **ACARS**, through a satellite (or VHF or HF data link), to the centre that set up the contract. The same system (FANS 1/A) carries CPDLC text messages.
+
+| Contract | Report sent |
+|---|---|
+| Periodic | every N minutes (the simulator lets you pick 5 to 30) |
+| Event: altitude range | when the aircraft leaves an agreed altitude band |
+| Event: lateral deviation | when it drifts more than a set distance off its route |
+| Event: vertical rate | when it climbs or descends faster than a limit |
+| Event: waypoint change | when the next waypoint changes |
+| Demand | once, as soon as it is asked |
+
+A report can carry several groups: the basic position, altitude, time and accuracy, plus the predicted route (next waypoint and time), the earth-referenced group (track, ground speed, vertical rate) and weather data.
+
+The radio part is quick: up to a geostationary satellite and down again is about 2 × 36,000–41,000 km, roughly a quarter of a second. Most of the delay is the data network. Oceanic separation standards assume a surveillance performance such as RSP 180, where reports should arrive within 90 s most of the time.
+
+{/* TODO(expert-review): ADS-C delivery time model (20–80 s), RSP 180 figures, typical oceanic periodic rates (often 14–27 min), event thresholds and re-arming. */}
+
+<Note title="Honest simplifications">
+All messages decode perfectly when heard (no collisions on 1090 MHz). Only identification, position and velocity messages are sent; the NACp shown travels alongside them instead of in a separate operational status message. Receivers use smooth-Earth line of sight plus terrain near the airport. Directions are true, not magnetic. The ocean map is flat, with made-up coasts; latitudes and longitudes come from the same local conversion. The jammer's footprint uses two fixed radii. The simulated radar is the Mode S radar from the SSR module, with ground distance worked out from the reported altitude.
+</Note>

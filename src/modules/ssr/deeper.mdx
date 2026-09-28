@@ -1,0 +1,122 @@
+### Two frequencies
+
+| Direction | Frequency | Carries |
+|---|---|---|
+| Ground to air (uplink) | 1030 MHz | Interrogations (questions) |
+| Air to ground (downlink) | 1090 MHz | Replies (answers), and also ADS-B |
+
+### The question: P1, P2, P3
+
+Every pulse is 0.8 µs long. P2 follows P1 by 2 µs and comes from the control antenna. The gap from P1 to P3 selects the question:
+
+| Mode | P1 to P3 | Question |
+|---|---|---|
+| Mode A | 8 µs | Identity (the squawk code) |
+| Mode C | 21 µs | Pressure altitude |
+
+Radars usually alternate A and C ("interlace") so each target gets both answers on every turn.
+
+### The answer: framing pulses and code pulses
+
+F1 and F2 are exactly **20.3 µs** apart. Between them sit 12 information positions, 1.45 µs apart, in this order after F1:
+
+<Formula>{`C1   1.45 µs     A1   2.90 µs     C2   4.35 µs     A2   5.80 µs
+C4   7.25 µs     A4   8.70 µs     X   10.15 µs     B1  11.60 µs
+D1  13.05 µs     B2  14.50 µs     D2  15.95 µs     B4  17.40 µs
+D4  18.85 µs     F2  20.30 µs`}</Formula>
+
+Each pulse is 0.45 µs wide. The X position is never transmitted. The SPI ("ident") pulse comes 4.35 µs after F2 and is added for about 18 s after the pilot presses IDENT.
+
+{/* TODO(expert-review): SPI duration (about 18 s) and pulse tolerances. */}
+
+### Squawk codes
+
+Four octal digits ABCD, each 0 to 7, so there are 8 × 8 × 8 × 8 = **4,096** codes. Each digit is the sum of three pulses:
+
+<Formula>{`A = 4·A4 + 2·A2 + 1·A1      (and the same for B, C and D)`}</Formula>
+
+| Code | Meaning |
+|---|---|
+| 7500 | Unlawful interference (hijack) |
+| 7600 | Radio communication failure |
+| 7700 | Emergency |
+| 7000 | VFR flight (ICAO and European use; the United States uses 1200) |
+| 2000 | No code assigned yet |
+
+In Mode A/C only the code is sent; ground systems look it up in the flight plan to show the callsign on the label.
+
+### Mode C altitude: the Gillham code
+
+Mode C sends **pressure altitude** (referred to 1013.25 hPa) in 100 ft steps from −1,200 ft to 126,700 ft. With the altitude in 100 ft steps:
+
+<Formula>{`k = (altitude + 1300) / 100 − 1
+F = floor(k / 5)              500 ft count  → Gray code in D1 D2 D4 A1 A2 A4 B1 B2 B4
+H = (k mod 5) + 1             100 ft count
+if F is odd:  H = 6 − H       (the 100 ft count runs backwards every other 500 ft)
+if H = 5:     use 7           → Gray code in C1 C2 C4`}</Formula>
+
+Neighbouring altitudes always differ in exactly one pulse, so a reply read while the encoder is changing is at most 100 ft wrong. C1 C2 C4 patterns 000, 101 and 111 never occur. The simulator's tests check every one of the 1,280 altitudes.
+
+### Distance from the reply time
+
+The transponder waits **3 µs** after P3 before it sends F1, so
+
+<Formula>{`R = c × (t − 3 µs) / 2       t = time from P3 leaving to F1 arriving`}</Formula>
+
+### Side-lobe suppression
+
+Every directional antenna leaks some energy sideways (side lobes). Close to the radar, a side lobe can trigger a transponder, which would then appear at the wrong bearing. P2 fixes this. The transponder compares the two pulses:
+
+| Received levels | Transponder must |
+|---|---|
+| P1 at least 9 dB above P2 | reply (main beam) |
+| P2 equal to or stronger than P1 | not reply (side lobe) |
+| In between | reply or not (either is allowed) |
+
+In the simulator the control antenna sends P2 at **15 dB** below the main-beam peak in every direction, and the side lobes are 22 to 30 dB below it. Many modern radars also compare the reply on receive (receiver side-lobe suppression). With the control antenna off, an aircraft a few miles from the radar answers side lobes all round and appears as a ring of false targets ("ring-around").
+
+{/* TODO(expert-review): control antenna level, side-lobe envelope and beam width (2.4°) used in the simulator. */}
+
+### Garbling and FRUIT
+
+A reply lasts 20.75 µs from the start of F1 to the end of F2. Two replies overlap when both aircraft are in the beam and their slant ranges differ by less than
+
+<Formula>{`ΔR = c × 20.75 µs / 2 ≈ 1.68 NM`}</Formula>
+
+If the overlap is exact, the pulses merge into one wrong code that cannot be detected. **FRUIT** (False Replies Unsynchronized In Time) are replies that other radars triggered; they arrive at random times. A defruiter keeps only replies that line up at the same range on consecutive interrogations.
+
+{/* TODO(expert-review): interrogation rate (250 per second), FRUIT rate and plot-extractor thresholds used in the simulator. */}
+
+### Why SSR needs less power than primary radar
+
+Primary radar hears a faint echo, weakened on the way out **and** on the way back:
+
+<Formula>{`Primary:    P_received ∝ P_transmit × σ / R⁴
+Secondary:  P_received ∝ P_transmit / R²   (in each direction, one way)`}</Formula>
+
+Doubling the range of a secondary radar needs 4 times the power, not 16 times. A transponder transmits a few hundred watts and an interrogator a kilowatt or two, while a primary radar needs tens of kilowatts to hundreds of kilowatts.
+
+{/* TODO(expert-review): transponder (21–27 dBW) and interrogator power figures, MTL −74 dBm. */}
+
+### Mode S
+
+Each aircraft has a unique **24-bit address**: 2²⁴ = 16,777,216 possibilities, given out in blocks to each country.
+
+- **All-call** (UF11 → DF11): new aircraft announce their address. Once acquired they are "locked out" and stop answering all-calls from that radar.
+- **Roll-call** (UF4 / UF5 → DF4 / DF5, 56 bits): the radar asks one aircraft by address for its altitude (in 25 ft steps) or identity. Only that aircraft answers, and the radar schedules the answers so they cannot overlap: no garbling.
+- **Comm-B** (UF20 / UF21 → DF20 / DF21, 112 bits): the answer carries one data register (BDS).
+
+A Mode S interrogation is P1, P2 and a long P6 pulse carrying the data by phase changes. P1 and P2 are equal, which tells older Mode A/C transponders to stay silent. The transponder starts its reply **128 µs** after the sync phase reversal inside P6. The reply has an 8 µs preamble and then 1 bit per µs, sent by pulse position (a pulse in the first half of the bit for 1, the second half for 0). The last 24 bits are a parity check combined with the address, so a reply with a single wrong bit, or from the wrong aircraft, is rejected.
+
+| Register | Content | Surveillance level |
+|---|---|---|
+| BDS 2,0 | Aircraft identification (callsign) | Elementary |
+| BDS 4,0 | Selected altitude on the autopilot | Enhanced |
+| BDS 5,0 | True track, ground speed, roll angle | Enhanced |
+| BDS 6,0 | Magnetic heading, airspeed, vertical rate | Enhanced |
+
+{/* TODO(expert-review): Mode S timing (P6 16.25/30.25 µs, sync phase reversal 1.25 µs into P6, 128 µs turnaround), lockout 18 s, and the stochastic all-call acquisition model. */}
+
+<Note title="Honest simplifications">
+All aircraft carry Mode S transponders; in Mode S the radar uses only roll-calls. The controller's screen draws slant range, like a real radar, while the map shows the true ground position. The primary radar on the same antenna is the one from the primary radar module. Link levels are calibrated for teaching. Mode S side-lobe suppression (the P5 pulse) is described but not simulated. There is no weather, so pressure altitude equals the altitude shown on the map.
+</Note>
