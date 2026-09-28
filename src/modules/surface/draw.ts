@@ -1,3 +1,4 @@
+import { getThemeTokens } from '@/hooks/useThemeTokens'
 /**
  * Drawing helpers shared by the airport map (theme colours) and the
  * surveillance display underlay (scope colours). Everything is in metres and
@@ -113,7 +114,7 @@ export function drawAirport(
   // Runway designators painted near each end.
   ctx.save()
   ctx.fillStyle = pal.marking
-  ctx.font = `700 ${Math.max(8, Math.min(14, 30 * pxPerM))}px sans-serif`
+  ctx.font = `700 ${Math.max(8, Math.min(14, 30 * pxPerM))}px ${getThemeTokens().fontSans}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   const d09 = toS({ x: RWY.thresholdX + 110, y: 0 })
@@ -165,7 +166,7 @@ export function drawAirport(
 
   if (opts.labels) {
     ctx.fillStyle = pal.text
-    ctx.font = opts.font ?? '600 10px sans-serif'
+    ctx.font = opts.font ?? `600 10px ${getThemeTokens().fontSans}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     const tc = toS({ x: (TERMINAL.minX + TERMINAL.maxX) / 2, y: (TERMINAL.minY + TERMINAL.maxY) / 2 })

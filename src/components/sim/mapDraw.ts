@@ -3,7 +3,7 @@
  */
 
 import { toRad, worldToScreen, type MapView, type Vec2 } from '@/core/geometry'
-import type { ThemeTokens } from '@/hooks/useThemeTokens'
+import { getThemeTokens, type ThemeTokens } from '@/hooks/useThemeTokens'
 import { withAlpha } from '@/lib/color'
 
 export type IconStyle = 'normal' | 'selected' | 'dim' | 'alert'
@@ -213,7 +213,7 @@ export function drawRangeRing(
     const a = toRad((opts.labelBearingDeg ?? 45) - 90)
     const lx = c.x + Math.cos(a) * radiusNm * view.pxPerNm
     const ly = c.y + Math.sin(a) * radiusNm * view.pxPerNm
-    ctx.font = `600 10px sans-serif`
+    ctx.font = `600 10px ${getThemeTokens().fontSans}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'bottom'
     ctx.fillStyle = color

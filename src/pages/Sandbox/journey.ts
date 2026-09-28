@@ -7,6 +7,7 @@
 
 import { distanceNm, type Vec2 } from '@/core/geometry'
 import { LAB_AIRPORT } from '@/core/world'
+import { FT_PER_NM } from '@/core/units'
 
 export interface Leg {
   to: Vec2
@@ -26,12 +27,12 @@ export const GS_ANGLE_DEG = 3
 /** Threshold crossing height, ft. */
 export const TCH_FT = 50
 /** Where the glide path meets the runway, NM past the threshold (TCH / tan θ). */
-export const GPIP_X = THRESHOLD.x + TCH_FT / Math.tan((GS_ANGLE_DEG * Math.PI) / 180) / 6076.12
+export const GPIP_X = THRESHOLD.x + TCH_FT / Math.tan((GS_ANGLE_DEG * Math.PI) / 180) / FT_PER_NM
 
 /** Glide path altitude (ft MSL) at a distance along the approach (x in the world frame). */
 export function glidePathAltitudeFt(x: number): number {
   const d = Math.max(0, GPIP_X - x) // NM before the glide path origin
-  return LAB_AIRPORT.elevationFt + d * 6076.12 * Math.tan((GS_ANGLE_DEG * Math.PI) / 180)
+  return LAB_AIRPORT.elevationFt + d * FT_PER_NM * Math.tan((GS_ANGLE_DEG * Math.PI) / 180)
 }
 
 /** Final approach intercept point: 13 NM from the threshold on the extended centreline. */

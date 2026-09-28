@@ -18,7 +18,7 @@ import {
   type LatLon,
   type Vec2,
 } from './geometry'
-import { clamp, ktToNmPerS } from './units'
+import { clamp, FT_PER_NM, ktToNmPerS } from './units'
 
 // ---------------------------------------------------------------------------
 // Airport
@@ -50,7 +50,7 @@ export interface Airport {
 
 /** Runway length 3,000 m ≈ 9,843 ft ≈ 1.62 NM. */
 const RWY_LENGTH_FT = 9843
-const RWY_HALF_NM = RWY_LENGTH_FT / 6076.12 / 2
+const RWY_HALF_NM = RWY_LENGTH_FT / FT_PER_NM / 2
 
 /**
  * The fictional CNS Lab airport. Runway 09/27 runs exactly east-west through

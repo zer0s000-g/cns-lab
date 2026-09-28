@@ -16,6 +16,8 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
+  // three.js (~900 kB) is split into its own chunk and only loaded by the 3D modules.
+  build: { chunkSizeWarningLimit: 1000 },
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
     environment: 'node',
