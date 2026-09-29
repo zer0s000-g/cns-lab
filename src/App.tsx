@@ -14,7 +14,6 @@ import NotFound from '@/pages/NotFound'
 import { RouteError } from '@/components/RouteError'
 
 const Glossary = lazy(() => import('@/pages/Glossary'))
-const Instruments = lazy(() => import('@/pages/Instruments'))
 const Frequencies = lazy(() => import('@/pages/Frequencies'))
 const SandboxRoute = lazy(() => import('@/pages/SandboxRoute'))
 
@@ -76,7 +75,6 @@ const router = createBrowserRouter(
             { path: '/modules/:id', element: <ModulePage /> },
             { path: '/sandbox', element: <SandboxRoute /> },
             { path: '/glossary', element: <Glossary /> },
-            { path: '/instruments', element: <Instruments /> },
             { path: '/frequencies', element: <Frequencies /> },
             { path: '*', element: <NotFound /> },
           ],

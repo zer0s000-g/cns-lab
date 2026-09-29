@@ -46,7 +46,6 @@ const routes = [...registry.matchAll(/\{ id: '([^']+)', name: '([^']+)',.*?path:
 routes.push(
   { path: '/glossary', title: 'Glossary · CNS Lab', description: 'Every technical word used in CNS Lab, explained in plain language.', entry: 'src/pages/Glossary.tsx', extra: [] },
   { path: '/frequencies', title: 'Frequency chart · CNS Lab', description: 'Where every air traffic management radio system lives in the radio spectrum.', entry: 'src/pages/Frequencies.tsx', extra: [] },
-  { path: '/instruments', title: 'Style guide and instruments · CNS Lab', description: 'The CNS Lab design system and its reusable cockpit and radar instruments.', entry: 'src/pages/Instruments.tsx', extra: [] },
 )
 
 let written = 0

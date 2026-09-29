@@ -43,22 +43,6 @@ export function TitleBlock({
   )
 }
 
-/** Small square status lamp with a label: LIVE, ARC ON, PAUSED... */
-export function StatusLamp({ on, label, tone = 'alert' }: { on: boolean; label: string; tone?: 'alert' | 'signal' | 'brass' }) {
-  return (
-    <span className="hud-label inline-flex items-center gap-1.5">
-      <span
-        aria-hidden
-        className={cn(
-          'inline-block size-2 rounded-full',
-          on ? (tone === 'alert' ? 'bg-destructive shadow-[0_0_10px_var(--destructive)]' : tone === 'brass' ? 'bg-brass shadow-[0_0_10px_var(--brass)]' : 'bg-signal shadow-[0_0_10px_var(--signal)]') : 'bg-muted-foreground/30',
-        )}
-      />
-      <span className={cn(on && (tone === 'alert' ? 'text-destructive' : tone === 'brass' ? 'text-brass' : 'text-signal'))}>{label}</span>
-    </span>
-  )
-}
-
 /** Translucent HUD panel with an indexed header. */
 export function HudPanel({
   index,

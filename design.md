@@ -1,8 +1,7 @@
 # CNS Lab: Design System ("Flight Deck")
 
 This file is the single source of design truth for CNS Lab, and every UI change must
-follow it. The live reference is `/instruments`, which renders the style guide
-(`src/pages/StyleGuide.tsx`) above the instrument library.
+follow it.
 
 ## 1. Design language
 
@@ -64,8 +63,8 @@ legible in the light theme too.
 ## 3. Components
 
 - **HUD kit** (`src/hud`):
-  - `HudFrame`: `CornerBrackets`, `TitleBlock`, `StatusLamp`, `HudPanel`.
-  - `Telemetry`: `TelemetryRow`, `BigReadout`, `BarMeter` (vertical or horizontal), `NeedleGauge`.
+  - `HudFrame`: `CornerBrackets`, `TitleBlock`, `HudPanel`.
+  - `Telemetry`: `TelemetryRow`, `BarMeter` (vertical or horizontal), `NeedleGauge`.
   - `Controls`: `Dial`, `LeverSwitch`, `Segmented`, `HudButton`.
   - Also `ChapterScrubber` and `MissionClock`.
   - Every control is keyboard operable and labelled. `Dial` is a `role="slider"` with

@@ -45,26 +45,6 @@ export function TelemetryRow({
   )
 }
 
-/** Big number with a mono label, for hero readouts. */
-export function BigReadout({ label, value, unit, tone = 'default' }: { label: string; value: ReactNode; unit?: string; tone?: 'default' | 'signal' | 'brass' | 'alert' }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="hud-label">{label}</span>
-      <span
-        className={cn(
-          'hud-value text-[26px] leading-none font-light text-foreground',
-          tone === 'signal' && 'text-signal',
-          tone === 'brass' && 'text-brass',
-          tone === 'alert' && 'text-destructive',
-        )}
-      >
-        {value}
-        {unit && <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">{unit}</span>}
-      </span>
-    </div>
-  )
-}
-
 /**
  * Segmented vertical bar meter (the column of dashes on the right edge of a
  * HUD). `value` is 0..1; segments above it are dim.

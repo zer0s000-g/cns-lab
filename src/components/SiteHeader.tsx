@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router'
-import { BookOpen, House, Menu, RadioReceiver, SlidersHorizontal } from 'lucide-react'
+import { BookOpen, House, Menu, RadioReceiver } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -10,7 +10,6 @@ const NAV = [
   { to: '/', label: 'Home', icon: House },
   { to: '/glossary', label: 'Glossary', icon: BookOpen },
   { to: '/frequencies', label: 'Frequency chart', icon: RadioReceiver },
-  { to: '/instruments', label: 'Instruments', icon: SlidersHorizontal },
 ]
 
 /** Top bar: CNS Lab wordmark, current module and pillar, Home link, settings. */

@@ -22,8 +22,8 @@ Every module follows the same seven sections: the simple idea, a simulator, how 
 guided experiments, failure toggles, a collapsed "Go deeper" with formulas and
 specifications, and a five-question quiz (progress is kept in the browser's localStorage).
 
-Also: a glossary (every jargon word has a tooltip), a frequency chart of the radio
-spectrum, and an instrument library page (`/instruments`).
+Also: a glossary (every jargon word has a tooltip), and a frequency chart of the radio
+spectrum.
 
 ## Requirements
 
@@ -70,7 +70,7 @@ src/
   components/    UI: shadcn/ui primitives (ui/), module layout (module/), simulator building blocks (sim/)
   modules/       One folder per module (engine, simulator console, Hero3D stage scene), plus registry.ts
   content/       Glossary JSON files and the frequency chart data
-  pages/         Home, Glossary, Frequency chart, Instruments, Airspace Sandbox
+  pages/         Home, Glossary, Frequency chart, Airspace Sandbox
   stores/        Preferences (theme, sound, captions, reduced motion) and quiz progress
 tests/           Vitest tests (core physics, module engines, content integrity, presentation helpers)
 scripts/         postbuild (route pages, 404, service worker stamp), budget check, expert-review list
@@ -81,7 +81,7 @@ CLAUDE.md        Project rules
 
 ## Design and accessibility
 
-- "Flight Deck" design system (`design.md`, live style guide at `/instruments`): dark-first
+- "Flight Deck" design system (`design.md`): dark-first
   HUD chrome over 3D tabletop dioramas, with a full light theme. Each module's 3D stage is
   driven by the same engine as its 2D views, and every exaggeration is labelled on screen.
   Colours come only from CSS variables in `src/globals.css`, including every canvas and 3D scene.
