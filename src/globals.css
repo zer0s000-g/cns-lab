@@ -207,6 +207,14 @@
   --stage-brass: hsl(36 80% 56%);
   --stage-alert: hsl(356 90% 60%);
   --stage-glass: hsl(195 60% 80%);
+  /* Airfield lights on the night stage: the real lamp colours (the same in both
+     themes). Only for runway, taxiway, stop-bar, PAPI and aircraft lights; they
+     are not the semantic alarm and OK colours. */
+  --lamp-red: hsl(0 100% 60%);
+  --lamp-green: hsl(140 85% 55%);
+  --lamp-white: hsl(45 70% 94%);
+  --lamp-blue: hsl(218 95% 66%);
+  --lamp-amber: hsl(38 100% 60%);
 }
 
 /*

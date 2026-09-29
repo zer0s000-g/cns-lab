@@ -83,6 +83,11 @@ export const TOKEN_NAMES = [
   'stage-brass',
   'stage-alert',
   'stage-glass',
+  'lamp-red',
+  'lamp-green',
+  'lamp-white',
+  'lamp-blue',
+  'lamp-amber',
 ] as const
 
 export type TokenName = (typeof TOKEN_NAMES)[number]

@@ -60,7 +60,7 @@ export const MODULES: ModuleMeta[] = [
   { id: 'cpdlc', name: 'Controller–Pilot Data Link (CPDLC)', short: 'CPDLC', pillar: 'communication', phase: 4, minutes: 15, icon: MessageSquareText, path: '/modules/cpdlc', summary: 'Standard text messages instead of crowded voice radio.' },
   { id: 'satcom', name: 'Satellite Communication (SATCOM)', short: 'SATCOM', pillar: 'communication', phase: 4, minutes: 15, icon: SatelliteDish, path: '/modules/satcom', summary: 'Talking to ATC through satellites over oceans and poles.' },
   // Integration
-  { id: 'sandbox', name: 'Airspace Sandbox', short: 'Sandbox', pillar: 'integration', phase: 6, minutes: 30, icon: Network, path: '/sandbox', summary: 'Every system working together, and what happens when one fails.' },
+  { id: 'sandbox', name: 'Airspace Sandbox', short: 'Sandbox', pillar: 'integration', phase: 6, minutes: 30, icon: Network, path: '/sandbox', summary: 'One flight, gate to gate: every system at work, and what happens when one fails.' },
 ]
 
 export const MODULE_BY_ID = new Map(MODULES.map((m) => [m.id, m]))

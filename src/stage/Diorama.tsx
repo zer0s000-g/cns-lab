@@ -4,7 +4,7 @@
  * tower, aircraft). Scenes place them with `toU`, which maps map NM and feet
  * to scene units.
  */
-import { useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { ParametricGeometry } from 'three/examples/jsm/geometries/ParametricGeometry.js'
@@ -22,7 +22,7 @@ import { FLOOR_Y, TABLE_RADIUS_NM, TABLE_RADIUS_U, V, toU } from './scale'
 // ---------------------------------------------------------------------------
 
 export function useTerrain(t: ThemeTokens) {
-  return useMemo(() => {
+  const geometry = useMemo(() => {
     const rings = 110
     const segs = 360
     const pos: number[] = []
@@ -64,6 +64,9 @@ export function useTerrain(t: ThemeTokens) {
     g.computeVertexNormals()
     return g
   }, [t])
+  // Free the GPU buffers when the scene (or the theme) changes.
+  useLayoutEffect(() => () => geometry.dispose(), [geometry])
+  return geometry
 }
 
 export function makeTerrainMaterial(t: ThemeTokens) {

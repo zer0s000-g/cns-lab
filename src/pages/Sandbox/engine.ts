@@ -2,10 +2,14 @@
  * Airspace Sandbox engine: aircraft, every CNS system, surveillance data
  * fusion and safety nets, driven by one clock. Uses the pure functions in
  * src/core (radar, propagation, coverage, fusion, safety nets, world).
+ *
+ * CNS700 flies its gate-to-gate journey in fixed ticks (phases.ts), so the
+ * live flight is exactly the precomputed one; everything else moves with the
+ * frame's time step.
  */
 
-import { bearingDeg, crossTrackNm, distanceNm, localToLatLon, normalize360, sweepCovers, destinationPoint, type Vec2 } from '@/core/geometry'
-import { evaluateTarget, maxDetectionRangeNm, RCS_M2, type RadarParams } from '@/core/radar'
+import { angleDiff, bearingDeg, crossTrackNm, destinationPoint, distanceNm, localToLatLon, normalize360, sweepCovers, type Vec2 } from '@/core/geometry'
+import { evaluateTarget, maxDetectionRangeNm, type RadarParams } from '@/core/radar'
 import { geoElevationDeg, ilsCoverage, siteSees, tdoaHdop } from '@/core/coverage'
 import {
   activeSources,
@@ -22,7 +26,7 @@ import {
 import { msaw, stca, STCA_ENROUTE, STCA_TMA, MSAW_DEFAULT, type PredictState } from '@/core/safetyNets'
 import { gaussian, mulberry32 } from '@/core/random'
 import { METRES_PER_NM } from '@/core/units'
-import { createAircraft, LAB_AIRPORT, radialSpeedKt, stepAircraftFine, terrainFn, type Aircraft } from '@/core/world'
+import { LAB_AIRPORT, radialSpeedKt, stepAircraftFine, terrainFn } from '@/core/world'
 import {
   ADSB_RANGE_NM,
   ADSB_SITES,
@@ -43,37 +47,28 @@ import {
   VORDME_SITE,
   type SystemId,
 } from './systems'
-import { GS_ANGLE_DEG, INTERCEPT, JOURNEY, JOURNEY_START, THRESHOLD, glidePathAltitudeFt, type Stage } from './journey'
+import { glidePathAltitudeFt, GS_ANGLE_DEG, INTERCEPT, THRESHOLD, TICK_S, type FlightPhase } from './journey'
+import { mk, type Equipment, type SbAircraft } from './aircraft'
+import {
+  createJourneyAircraft,
+  flightPhase,
+  getJourneyIndex,
+  isOnGround,
+  JOURNEY_ID,
+  journeyAt,
+  journeyEvents,
+  lerpPose,
+  stepJourneyTick,
+  transponderOn,
+  type JourneyEventKind,
+  type JourneyPose,
+} from './phases'
+import { commMedium, controllingUnit, RADIO_SCRIPT, type AtcUnit, type Channel, type Medium } from './atc'
+
+export type { Equipment, JourneyState, SbAircraft } from './aircraft'
+export { createJourneyAircraft } from './phases'
 
 export type ScenarioId = 'normal' | 'radarOutage' | 'gnssJam' | 'vhfFail' | 'mountain'
-
-export interface Equipment {
-  transponder: 'none' | 'modeC' | 'modeS'
-  adsb: boolean
-  /** FANS 1/A: CPDLC and ADS-C over satellite. */
-  fans: boolean
-}
-
-export interface JourneyState {
-  legIndex: number
-  phase: 'plan' | 'final' | 'rollout' | 'landed'
-  startS: number
-  landedAtS?: number
-}
-
-export interface SbAircraft extends Aircraft {
-  equip: Equipment
-  code: string
-  rcsM2: number
-  journey?: JourneyState
-  /** Onboard terrain warning (TAWS) currently commanding a pull-up. */
-  taws?: boolean
-  /** Scenario aircraft are removed when their scenario ends. */
-  scenario?: 'stca' | 'mountain'
-  nextAdsbS: number
-  nextMlatS: number
-  nextAdscS: number
-}
 
 export interface Availability {
   psr: boolean
@@ -103,6 +98,37 @@ export interface EventLogItem {
   text: string
 }
 
+/** One line of radio or data-link traffic with CNS700. */
+export interface RadioMessage {
+  id: number
+  timeS: number
+  unit: AtcUnit
+  from: 'atc' | 'pilot' | 'note'
+  text: string
+  medium: Medium
+  status: 'sent' | 'fallback' | 'blocked'
+  /** Shown as context after a jump, not sent live. */
+  earlier?: boolean
+}
+
+/** An ADS-C position report from CNS700 as received by the oceanic centre. */
+export interface AdscReport {
+  /** When the aircraft made the report, s. */
+  madeS: number
+  /** When it reached the centre, s. */
+  receivedS: number
+  pos: Vec2
+  altitudeFt: number
+}
+
+interface PendingLine {
+  dueTick: number
+  unit: AtcUnit
+  from: RadioMessage['from']
+  channel: Channel
+  text: string
+}
+
 export const JAMMER = { pos: { x: 10, y: -10 }, radiusNm: 90 }
 /** Satellite and ground processing delay of an ADS-C report, s (illustrative). */
 // TODO(expert-review): end-to-end ADS-C report latency over SATCOM.
@@ -126,26 +152,7 @@ export const ALL_SYSTEMS_ON: Record<SystemId, boolean> = {
 
 const terrain = terrainFn()
 
-function mk(
-  id: string,
-  pos: Vec2,
-  altitudeFt: number,
-  headingDeg: number,
-  speedKt: number,
-  equip: Equipment,
-  code: string,
-  category: Aircraft['category'] = 'medium',
-): SbAircraft {
-  const a = createAircraft({ id, pos, altitudeFt, headingDeg, speedKt, category })
-  return { ...a, equip, code, rcsM2: RCS_M2[category], nextAdsbS: 0, nextMlatS: 0, nextAdscS: 0 }
-}
-
 const route = (a: SbAircraft, wps: Vec2[]): SbAircraft => ({ ...a, mode: { kind: 'route', waypoints: wps, index: 0, loop: true } })
-
-export function createJourneyAircraft(startS = 0): SbAircraft {
-  const a = mk('CNS700', JOURNEY_START.pos, JOURNEY_START.altitudeFt, JOURNEY_START.headingDeg, JOURNEY_START.speedKt, { transponder: 'modeS', adsb: true, fans: true }, '4521')
-  return { ...a, journey: { legIndex: 0, phase: 'plan', startS } }
-}
 
 export function createTraffic(): SbAircraft[] {
   const full: Equipment = { transponder: 'modeS', adsb: true, fans: true }
@@ -174,62 +181,6 @@ export function createTraffic(): SbAircraft[] {
   ]
 }
 
-/** Stage of the journey aircraft for the timeline. */
-export function journeyStage(a: SbAircraft): Stage {
-  const j = a.journey
-  if (!j) return 'En-route'
-  if (j.phase === 'landed') return 'Landed'
-  if (j.phase === 'rollout') return 'Landing'
-  if (j.phase === 'final') return a.pos.x > THRESHOLD.x - 2 ? 'Landing' : 'Approach'
-  const leg = JOURNEY[j.legIndex]
-  if (leg.stage === 'Climb' && a.pos.x > OCEANIC_BOUNDARY_X) return 'Ocean'
-  if (leg.stage === 'Climb' && a.altitudeFt > 23000 && a.pos.x > 50) return 'En-route'
-  if (leg.stage === 'Return' && a.pos.x > OCEANIC_BOUNDARY_X) return 'Ocean'
-  return leg.stage
-}
-
-/**
- * Advance the journey aircraft one step: fly the legs, capture the localizer
- * and glideslope, land and roll out. Deterministic.
- */
-export function stepJourney(a: SbAircraft, dt: number): SbAircraft {
-  const j = a.journey!
-  if (j.phase === 'landed') return a
-  if (j.phase === 'rollout') {
-    const v = Math.max(0, a.speedKt - 3 * dt) // about 3 kt per second of braking
-    const d = ((a.speedKt + v) / 2 / 3600) * dt
-    const next = { ...a, pos: { x: a.pos.x + d, y: 0 }, speedKt: v, targetSpeedKt: v, altitudeFt: LAB_AIRPORT.elevationFt, verticalSpeedFpm: 0 }
-    return v < 25 ? { ...next, speedKt: 0, journey: { ...j, phase: 'landed' } } : next
-  }
-  if (j.phase === 'plan') {
-    const leg = JOURNEY[j.legIndex]
-    const reach = Math.max(1, (a.speedKt / 3600) * dt * 2)
-    if (distanceNm(a.pos, leg.to) < reach) {
-      const idx = j.legIndex + 1
-      if (idx >= JOURNEY.length) return stepJourney({ ...a, journey: { ...j, phase: 'final' } }, dt)
-      return stepJourney({ ...a, journey: { ...j, legIndex: idx } }, 0)
-    }
-    if (dt <= 0) return a
-    const flown = stepAircraftFine({ ...a, mode: { kind: 'direct', to: leg.to }, targetAltitudeFt: leg.altitudeFt, targetSpeedKt: leg.speedKt }, dt) as SbAircraft
-    return { ...flown, mode: { kind: 'heading' }, targetHeadingDeg: flown.headingDeg }
-  }
-  // Final approach: localizer capture (steer onto the centreline) and glideslope.
-  if (dt <= 0) return a
-  const xt = crossTrackNm(a.pos, THRESHOLD, ILS09.courseDeg) // + = right of course (south)
-  const heading = normalize360(ILS09.courseDeg - Math.max(-30, Math.min(30, xt * 25)))
-  // Stay at 3,000 ft until the glide path comes down to meet us, then follow it to the
-  // touchdown point (where the 3° path meets the runway, ~950 ft past the threshold).
-  const targetAlt = Math.min(3000, glidePathAltitudeFt(a.pos.x))
-  const beforeThreshold = a.pos.x < THRESHOLD.x
-  const toGo = THRESHOLD.x - a.pos.x
-  const speed = toGo > 5 ? 160 : 140
-  const flown = stepAircraftFine({ ...a, mode: { kind: 'heading' }, targetHeadingDeg: heading, targetAltitudeFt: targetAlt, targetSpeedKt: speed }, dt) as SbAircraft
-  if (!beforeThreshold && flown.altitudeFt <= LAB_AIRPORT.elevationFt + 5) {
-    return { ...flown, altitudeFt: LAB_AIRPORT.elevationFt, headingDeg: 90, journey: { ...j, phase: 'rollout' } }
-  }
-  return flown
-}
-
 export class SandboxEngine {
   timeS = 0
   aircraft: SbAircraft[] = []
@@ -244,27 +195,175 @@ export class SandboxEngine {
   log: EventLogItem[] = []
   appAz = 0
   enrAz = 180
+  /** Radio and data-link traffic with CNS700, newest first. */
+  radio: RadioMessage[] = []
+  /** CNS700's ADS-C reports as received, newest first. */
+  adscLog: AdscReport[] = []
+  /** Engine time at which CNS700's journey began (elapsed = timeS − journeyStartS). */
+  journeyStartS = 0
+  /** Increases on every reset, restart and jump (guided stops are remembered per run). */
+  runId = 0
+  /** Journey events of the most recent step, in order (for the page to react to). */
+  lastEvents: JourneyEventKind[] = []
+  /** CNS700 one tick ago, for smooth drawing between ticks. */
+  private journeyPrev: SbAircraft | null = null
   private rand: () => number
+  private readonly seed: number
   private pendingAdsc: Measurement[] = []
+  private pendingRadio: PendingLine[] = []
   private nextSafetyS = 0
   private nextHistoryS = 0
+  private radioId = 0
 
   constructor(seed = 11) {
+    this.seed = seed
     this.rand = mulberry32(seed)
     this.reset()
   }
 
+  /** Everything back to the start: world time 0, CNS700 at the gate, the same random sequence. */
   reset() {
+    this.rand = mulberry32(this.seed)
     this.timeS = 0
-    this.aircraft = [createJourneyAircraft(0), ...createTraffic()]
+    this.aircraft = [createJourneyAircraft(), ...createTraffic()]
     this.tracks.clear()
     this.history.clear()
     this.alerts = []
     this.log = []
     this.pendingAdsc = []
+    this.pendingRadio = []
+    this.radio = []
+    this.adscLog = []
     this.vhfStandby = false
     this.nextSafetyS = 0
     this.nextHistoryS = 0
+    this.appAz = 0
+    this.enrAz = 180
+    this.journeyStartS = 0
+    this.journeyPrev = null
+    this.lastEvents = []
+    this.runId++
+  }
+
+  // -------------------------------------------------------------------------
+  // CNS700's journey
+  // -------------------------------------------------------------------------
+
+  /** Journey ticks elapsed so far. */
+  get journeyTick(): number {
+    return this.journeyAircraft?.journey?.tick ?? 0
+  }
+
+  get journeyElapsedS(): number {
+    return this.journeyTick * TICK_S
+  }
+
+  get phase(): FlightPhase {
+    const a = this.journeyAircraft
+    return a ? flightPhase(a) : 'gate'
+  }
+
+  get unit(): AtcUnit {
+    return controllingUnit(this.phase)
+  }
+
+  /** CNS700 drawn between its last two ticks, so it moves smoothly at any clock speed. */
+  journeyPose(): JourneyPose | null {
+    const cur = this.journeyAircraft
+    if (!cur) return null
+    const prev = this.journeyPrev ?? cur
+    const into = (this.timeS - this.journeyStartS - cur.journey!.tick * TICK_S) / TICK_S
+    // Drawn one tick behind the truth: interpolate from the previous tick to the current one.
+    return lerpPose(prev, cur, into)
+  }
+
+  /** Journey time of the drawn pose, s (one tick behind the truth, like journeyPose). */
+  journeyDisplayElapsedS(): number {
+    return Math.max(0, this.timeS - this.journeyStartS - TICK_S)
+  }
+
+  /** CNS700's turn rate over the last tick, degrees per second (+ = turning right). */
+  journeyTurnRateDegS(): number {
+    const cur = this.journeyAircraft
+    const prev = this.journeyPrev
+    if (!cur || !prev) return 0
+    return angleDiff(prev.headingDeg, cur.headingDeg) / TICK_S
+  }
+
+  /** Put CNS700 at a point of its journey without touching the rest of the world. */
+  jumpToTick(tick: number) {
+    const a = journeyAt(tick)
+    this.replaceJourneyAircraft(a)
+    this.journeyStartS = this.timeS - a.journey!.tick * TICK_S
+    this.radio = this.contextBefore(a.journey!.tick)
+  }
+
+  jumpToPhase(p: FlightPhase) {
+    this.jumpToTick(getJourneyIndex().phaseStartTick[p])
+  }
+
+  /** A new journey from the gate (world time carries on). */
+  restartJourney() {
+    this.replaceJourneyAircraft(createJourneyAircraft())
+    this.journeyStartS = this.timeS
+    this.radio = []
+  }
+
+  private replaceJourneyAircraft(a: SbAircraft) {
+    const keep = this.aircraft.filter((x) => !x.journey)
+    this.aircraft = [{ ...a, nextAdsbS: this.timeS, nextMlatS: this.timeS, nextAdscS: this.timeS }, ...keep]
+    this.journeyPrev = null
+    this.tracks.delete(JOURNEY_ID)
+    this.history.delete(JOURNEY_ID)
+    this.pendingAdsc = this.pendingAdsc.filter((m) => m.targetId !== JOURNEY_ID)
+    this.pendingRadio = []
+    this.adscLog = []
+    this.alerts = this.alerts.filter((al) => !al.ids.includes(JOURNEY_ID))
+    this.lastEvents = []
+    this.runId++
+  }
+
+  /** The last few scripted lines before a point of the journey, shown as context after a jump. */
+  private contextBefore(tick: number): RadioMessage[] {
+    const out: RadioMessage[] = []
+    for (const e of getJourneyIndex().events) {
+      if (e.tick > tick) break
+      for (const line of RADIO_SCRIPT[e.kind] ?? []) {
+        if (e.tick + Math.round(line.delayS / TICK_S) > tick) continue
+        out.push({ id: ++this.radioId, timeS: this.timeS, unit: line.unit, from: line.from, text: line.text, medium: line.channel === 'note' ? 'none' : line.channel === 'datalink' ? 'cpdlcSat' : line.channel === 'hf' ? 'hf' : 'vhf', status: 'sent', earlier: true })
+      }
+    }
+    return out.slice(-6).reverse()
+  }
+
+  /** React to journey events: radio script, surveillance changes, log. */
+  private onJourneyEvents(events: JourneyEventKind[], tick: number) {
+    for (const kind of events) {
+      for (const line of RADIO_SCRIPT[kind] ?? []) {
+        this.pendingRadio.push({ dueTick: tick + Math.round(line.delayS / TICK_S), unit: line.unit, from: line.from, channel: line.channel, text: line.text })
+      }
+      if (kind === 'onBlocks') {
+        // Transponder to standby: the track simply ends (no "track lost" alarm).
+        this.tracks.delete(JOURNEY_ID)
+        this.history.delete(JOURNEY_ID)
+      }
+      if (kind === 'touchdown') this.addLog('CNS700 has landed on runway 09.')
+      if (kind === 'complete') this.addLog('CNS700 is back at stand S3. The journey is complete.')
+    }
+  }
+
+  /** Send the radio lines that are due, over whatever link works right now. */
+  private deliverRadio(tick: number) {
+    if (!this.pendingRadio.length) return
+    const ja = this.journeyAircraft
+    const av = ja ? this.availabilityFor(ja) : null
+    const due = this.pendingRadio.filter((l) => l.dueTick <= tick)
+    if (!due.length) return
+    this.pendingRadio = this.pendingRadio.filter((l) => l.dueTick > tick)
+    for (const l of due) {
+      const d = av ? commMedium(l.channel, l.unit, av) : { medium: 'none' as const, status: 'blocked' as const }
+      this.radio = [{ id: ++this.radioId, timeS: this.timeS, unit: l.unit, from: l.from, text: l.text, medium: d.medium, status: d.status }, ...this.radio].slice(0, 40)
+    }
   }
 
   addLog(text: string) {
@@ -415,45 +514,72 @@ export class SandboxEngine {
   // Step
   // -------------------------------------------------------------------------
 
-  step(dt: number) {
-    if (dt <= 0) return
+  /**
+   * Advance the world by dt seconds. `haltOn` may stop the step exactly at a
+   * journey event (a guided stop): the world then stands at that moment and
+   * the event is returned.
+   */
+  step(dt: number, haltOn?: (e: JourneyEventKind) => boolean): { halted: JourneyEventKind | null } {
+    this.lastEvents = []
+    if (!(dt > 0)) return { halted: null }
     // Split big steps so radar sweeps and message timing stay accurate.
     const n = Math.max(1, Math.ceil(dt / 0.5))
-    for (let i = 0; i < n; i++) this.stepOnce(dt / n)
+    for (let i = 0; i < n; i++) {
+      const halted = this.stepOnce(dt / n, haltOn)
+      if (halted) return { halted }
+    }
+    return { halted: null }
   }
 
-  private stepOnce(dt: number) {
+  /** Advance CNS700 by whole ticks up to the engine time t1 (or to a halting event). Returns the new t1. */
+  private advanceJourney(t1: number, haltOn?: (e: JourneyEventKind) => boolean): { t1: number; halted: JourneyEventKind | null } {
+    let ja = this.journeyAircraft
+    if (!ja?.journey) return { t1, halted: null }
+    let halted: JourneyEventKind | null = null
+    const target = t1 - this.journeyStartS + 1e-9
+    let prev = this.journeyPrev ?? ja
+    while ((ja.journey!.tick + 1) * TICK_S <= target) {
+      const next = stepJourneyTick(ja)
+      const events = journeyEvents(ja, next)
+      prev = ja
+      ja = next
+      if (events.length) {
+        this.lastEvents.push(...events)
+        this.onJourneyEvents(events, next.journey!.tick)
+      }
+      const hit = haltOn ? events.find(haltOn) : undefined
+      if (hit) {
+        halted = hit
+        t1 = this.journeyStartS + next.journey!.tick * TICK_S
+        break
+      }
+    }
+    this.journeyPrev = prev
+    const cur = ja
+    this.aircraft = this.aircraft.map((a) => (a.journey ? { ...cur, nextAdsbS: a.nextAdsbS, nextMlatS: a.nextMlatS, nextAdscS: a.nextAdscS } : a))
+    this.deliverRadio(cur.journey!.tick)
+    return { t1, halted }
+  }
+
+  private stepOnce(dtIn: number, haltOn?: (e: JourneyEventKind) => boolean): JourneyEventKind | null {
     const t0 = this.timeS
-    this.timeS += dt
+    // 1. CNS700 in whole journey ticks; a guided stop may shorten this step.
+    const { t1, halted } = this.advanceJourney(t0 + dtIn, haltOn)
+    const dt = Math.max(0, t1 - t0)
+    this.timeS = t1
     const measurements: Measurement[] = []
 
-    // 1. Aircraft.
-    this.aircraft = this.aircraft.map((a) => {
-      if (a.journey) {
-        const j = stepJourney(a, dt)
-        if (j.journey?.phase === 'landed' && a.journey.phase !== 'landed') {
-          this.addLog('CNS700 has landed on runway 09. The journey starts again shortly.')
-          return { ...j, journey: { ...j.journey, landedAtS: this.timeS } }
-        }
-        return j
-      }
-      return { ...(stepAircraftFine(a, dt) as SbAircraft) }
-    })
+    // 2. The other aircraft.
+    if (dt > 0) this.aircraft = this.aircraft.map((a) => (a.journey ? a : (stepAircraftFine(a, dt) as SbAircraft)))
     // Scenario aircraft that have flown far away are removed.
     this.aircraft = this.aircraft.filter((a) => !a.scenario || distanceNm(a.pos, { x: 0, y: 0 }) < 90)
-    const ja = this.journeyAircraft
-    if (ja?.journey?.phase === 'landed' && ja.journey.landedAtS !== undefined && this.timeS - ja.journey.landedAtS > 60) {
-      this.aircraft = this.aircraft.map((a) => (a.journey ? createJourneyAircraft(this.timeS) : a))
-      this.tracks.delete('CNS700')
-      this.history.delete('CNS700')
-    }
     this.applyTaws()
 
-    // 2. Radars: rotating antennas paint what they sweep.
+    // 3. Radars: rotating antennas paint what they sweep (not the aircraft on the airport surface).
     const appSpan = (360 / APPROACH_RADAR.rotationPeriodS) * dt
     const enrSpan = (360 / ENROUTE_RADAR.rotationPeriodS) * dt
     for (const a of this.aircraft) {
-      if (a.journey?.phase === 'landed') continue
+      if (a.journey && isOnGround(a)) continue
       if (this.systemUp('radarApp') && sweepCovers(bearingDeg(APPROACH_RADAR_SITE.pos, a.pos), this.appAz, appSpan)) {
         measurements.push(...this.radarPlots(a, APPROACH_RADAR_SITE, APPROACH_RADAR, SSR_RANGE_APP_NM))
       }
@@ -464,9 +590,9 @@ export class SandboxEngine {
     this.appAz = normalize360(this.appAz + appSpan)
     this.enrAz = normalize360(this.enrAz + enrSpan)
 
-    // 3. ADS-B, WAM and ADS-C.
+    // 4. ADS-B, WAM and ADS-C (CNS700's transponder is on standby at the gate).
     this.aircraft = this.aircraft.map((a) => {
-      if (a.journey?.phase === 'landed') return a
+      if (a.journey && !transponderOn(a)) return a
       let next = a
       const due = this.timeS >= a.nextAdsbS || this.timeS >= a.nextMlatS || this.timeS >= a.nextAdscS
       if (!due) return a
@@ -523,8 +649,11 @@ export class SandboxEngine {
     const due = this.pendingAdsc.filter((m) => this.timeS - m.timeS >= ADSC_LATENCY_S)
     this.pendingAdsc = this.pendingAdsc.filter((m) => this.timeS - m.timeS < ADSC_LATENCY_S)
     measurements.push(...due)
+    for (const m of due) {
+      if (m.targetId === JOURNEY_ID) this.adscLog = [{ madeS: m.timeS, receivedS: this.timeS, pos: { x: m.x, y: m.y }, altitudeFt: m.altitudeFt ?? 0 }, ...this.adscLog].slice(0, 12)
+    }
 
-    // 4. Fusion.
+    // 5. Fusion.
     measurements.sort((x, y) => x.timeS - y.timeS)
     for (const m of measurements) {
       const t = this.tracks.get(m.targetId)
@@ -546,11 +675,12 @@ export class SandboxEngine {
       }
     }
 
-    // 5. Safety nets once per second.
+    // 6. Safety nets once per second.
     if (this.timeS >= this.nextSafetyS || t0 === 0) {
       this.nextSafetyS = this.timeS + 1
       this.runSafetyNets()
     }
+    return halted
   }
 
   private radarPlots(a: SbAircraft, site: typeof APPROACH_RADAR_SITE, params: RadarParams, ssrRangeNm: number): Measurement[] {
@@ -677,19 +807,6 @@ export class SandboxEngine {
     const t = this.tracks.get(id)
     return t ? activeSources(t, this.timeS) : []
   }
-}
-
-/** Planned journey sampled every `dtS` seconds (deterministic, for the timeline). */
-export function simulateJourney(dtS = 10, maxS = 3 * 3600): { t: number; pos: Vec2; altitudeFt: number; stage: Stage }[] {
-  let a = createJourneyAircraft(0)
-  const out: { t: number; pos: Vec2; altitudeFt: number; stage: Stage }[] = []
-  for (let t = 0; t <= maxS; t += dtS) {
-    out.push({ t, pos: a.pos, altitudeFt: a.altitudeFt, stage: journeyStage(a) })
-    if (a.journey?.phase === 'landed') break
-    // Fly in 1 s pieces for fidelity.
-    for (let k = 0; k < dtS; k++) a = stepJourney(a, 1)
-  }
-  return out
 }
 
 export const GLIDE_ANGLE = GS_ANGLE_DEG

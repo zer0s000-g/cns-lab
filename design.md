@@ -52,6 +52,7 @@ Every colour is a CSS variable. Tailwind classes reference the variables.
 | Flight Deck | `--signal --brass --hud-line --hud-panel` | Accent pair, hairline, glass |
 | Semantic | `--destructive --success --warning` | Meaning only |
 | Stage (3D) | `--stage-bg --stage-floor --stage-fog --stage-line --stage-metal --stage-metal-dark --stage-paint --stage-terrain --stage-terrain-high --stage-water --stage-signal --stage-brass --stage-alert --stage-glass` | Night scene in both themes |
+| Airfield lamps | `--lamp-red --lamp-green --lamp-white --lamp-blue --lamp-amber` | The real colours of runway, taxiway, stop-bar, PAPI and aircraft lights, the same in both themes. Only for lamps: never the semantic alarm or OK colours |
 | Maps | `--sim-*` | Follow the theme |
 | Scopes | `--scope-*` | Dark in both themes |
 | Cockpit instruments | `--instrument-*` | Dark in both themes |
@@ -102,6 +103,28 @@ legible in the light theme too.
   | 390 | 42svh sticky strip on top | Content in one column below |
 
   No page may scroll sideways at any width.
+- **Airspace Sandbox** (`/sandbox`): one interactive page, not the seven chapters. It follows
+  CNS700 gate to gate, and the view follows the controller who owns the flight:
+  - the airport as a true-scale digital twin (1 unit = 1 m: glass terminal, tower, lights,
+    passengers, ground crew and vehicles) for delivery, ground and tower;
+  - the terrain table for departure and approach, with live data links from the aircraft to
+    the systems tracking it;
+  - a 2D region map (scope and stage colours) for area and oceanic control.
+
+  A short fade covers each switch. Chrome:
+  - top: the phase, the controller and frequency, the journey clock, play/pause and a
+    panels toggle;
+  - bottom: a twelve-phase timeline (click to jump), and camera buttons (follow, tower,
+    overview, zoom, reset);
+  - at 1440 and 1024 px the panels sit in two glass columns over the view (340 px, or 300 px
+    below 1440): the flight card, "What's happening", the radio log, time-lapse and view
+    controls, systems in use, the controller's screen, and "Break something";
+  - at 768 px the panels move below the view in two columns, and at 390 px into tabs (Now,
+    Radio, Systems, Break it).
+
+  Auto time-lapse runs slow on the runway and fast over the ocean. Guided stops pause the
+  journey at four moments, and a debrief with the quiz follows the landing. HUD text on the
+  view sits over top and bottom scrims.
 - **Home:** a hero diorama of every CNS system (labels link to modules, with a pillar
   filter), then the learning-path track, then the typographic module index.
 - **Footer on every page:** "For educational use only, not for operational use."
@@ -118,6 +141,14 @@ legible in the light theme too.
 - Audio always has a caption.
 
 ## 6. Honesty labels
+
+Sandbox examples:
+- "Airport at true scale · boarding and deboarding shortened · time ×8";
+- "Table 120 NM across · heights ×3.6 · aircraft and masts larger than life";
+- "Region map · to scale · maximum ranges shown dashed".
+
+Frequencies are "made up for this fictional airport", and the Break panel says the flight keeps
+its planned path whatever is broken.
 
 Every stage shows what is not to scale, for example "Table 120 NM across · heights ×3.6 ·
 radar and aircraft larger than life" or "Not to scale · airport drawn 10× larger · time ×20".
@@ -171,6 +202,13 @@ cached on use. A page opened once online keeps working offline.
 - `StageBoundary` keeps the page and its 2D simulator working when WebGL fails.
 
 ## 8. Verification
+
+For the Sandbox, also run `scripts/verify/sandbox-e2e.mjs` against a preview build. It covers:
+- every width and theme: every phase, no sideways scroll, axe;
+- the guided stop and the debrief;
+- keyboard reach and focus rings;
+- a GPU memory check over view switches, frame rate and heap;
+- reduced motion.
 
 Before calling any UI change done:
 - Take screenshots at 1440, 768 and 390 px, in dark and light.

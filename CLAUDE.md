@@ -12,7 +12,10 @@ Web Audio, Zustand, MDX, React Router, Vitest.
 ## Rules
 - Simulation logic lives in src/core as pure TypeScript functions, separate
   from rendering, and every function has unit tests (tests/core).
-- Every module uses the standard 7-section ModuleLayout.
+- Every module uses the standard 7-section ModuleLayout. The Airspace Sandbox
+  (src/pages/Sandbox) is the exception: one interactive gate-to-gate journey page
+  (design.md §4). Its journey is a fixed-tick state machine (phases.ts) with tests in
+  tests/modules/sandbox-*.test.ts.
 - Reuse instruments from src/instruments; do not create duplicates.
 - Plain language for general learners. Analogy first. Jargon gets tooltips
   (`<Term id="...">`). Formulas only inside "Go deeper".

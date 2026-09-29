@@ -42,6 +42,6 @@ export const WORLD_SITES: WorldSite[] = [
   { id: 'mlat', label: 'MLAT / WAM', desc: 'Receivers time the same signal; tiny differences pinpoint the aircraft.', pos: { x: 30, y: 8 }, labelY: 0.4 },
   { id: 'hf', label: 'HF radio', desc: 'Waves that bounce off the upper atmosphere to reach aircraft across oceans.', pos: { x: -24, y: -36 }, labelY: 0.95 },
   { id: 'satcom', label: 'SATCOM', desc: 'Aircraft over oceans and poles talk to ATC through communication satellites.', pos: { x: 12, y: -32 }, labelY: 0.55 },
-  { id: 'sandbox', label: 'Airspace sandbox', desc: 'Every system working together, and what happens when one fails.', pos: { x: -RUNWAY_HALF_NM, y: -3.5 }, labelY: 0.3, side: 'left' },
+  { id: 'sandbox', label: 'Airspace sandbox', desc: 'One flight, gate to gate: every system at work, and what happens when one fails.', pos: { x: -RUNWAY_HALF_NM, y: -3.5 }, labelY: 0.3, side: 'left' },
 ]
 

@@ -9,7 +9,8 @@
 //   node scripts/verify/gpu-render.mjs            # all routes, dark
 //   THEME=light node scripts/verify/gpu-render.mjs / /modules/psr
 //
-// Needs playwright-core and pngjs on the path (npx -p playwright-core -p pngjs node ...)
+// Needs playwright-core and pngjs on the path (npx -p playwright-core -p pngjs node ...).
+// On /sandbox it steps through the twelve journey phases with the timeline.
 // and a Chromium with GPU access (CHROME env var overrides the executable). Small
 // black fractions (< 0.5 %) with no jump are usually dark UI (scopes, quiz rows):
 // look at the saved PNG (OUT=dir) before treating them as failures.
@@ -23,6 +24,8 @@ const theme = process.env.THEME || 'dark'
 const modules = ['psr', 'ssr', 'ads', 'mlat', 'surface', 'ndb', 'dvor', 'dme', 'ils', 'gnss', 'vhf', 'hf', 'cpdlc', 'satcom']
 const routes = process.argv.slice(2).length ? process.argv.slice(2) : ['/', '/sandbox', ...modules.map((m) => '/modules/' + m)]
 const chapters = ['idea', 'simulator', 'how', 'try', 'wrong', 'deeper', 'quiz']
+// The sandbox is one page: step through its twelve journey phases with the timeline instead.
+const phases = ['gate', 'pushback', 'taxi', 'takeoff', 'departure', 'climb', 'ocean', 'descent', 'approach', 'landing', 'taxiIn', 'arrived']
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] })
 const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: theme, serviceWorkers: 'block' })
 await ctx.addInitScript((t) => localStorage.setItem('cnslab.prefs', JSON.stringify({ state: { theme: t, reducedMotionOverride: null, soundOn: false, captionsOn: true }, version: 1 })), theme)
@@ -47,9 +50,12 @@ for (const r of routes) {
   // The stage loads after idle; wait until its canvas has been sized.
   await page.waitForFunction(() => { const c = document.querySelector('canvas'); return c && c.width > 300 && c.height > 150 }, null, { timeout: 20000 }).catch(() => warn.push('stage canvas never sized'))
   await page.waitForTimeout(2500)
-  const list = r === '/' ? ['top'] : chapters
+  const list = r === '/' ? ['top'] : r === '/sandbox' ? phases : chapters
   for (const c of list) {
-    if (c !== 'top') {
+    if (r === '/sandbox') {
+      await page.locator('nav[aria-label="Journey phases"] button').nth(phases.indexOf(c)).click()
+      await page.waitForTimeout(1800)
+    } else if (c !== 'top') {
       await page.evaluate((id) => { const el = document.getElementById(id); if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 56) }, c)
       await page.waitForTimeout(1600)
     }

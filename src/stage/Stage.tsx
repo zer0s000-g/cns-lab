@@ -14,7 +14,7 @@ export type { Quality, Shot } from './types'
 /** three.js colour for a design token. */
 export const col = (t: ThemeTokens, name: keyof ThemeTokens) => new THREE.Color(toThreeStyle(String(t[name])))
 
-function webglAvailable(): boolean {
+export function webglAvailable(): boolean {
   try {
     const c = document.createElement('canvas')
     return Boolean(c.getContext('webgl2') || c.getContext('webgl'))

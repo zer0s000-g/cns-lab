@@ -16,11 +16,19 @@ respond: signals, timing, geometry and cockpit instruments.
 | Surveillance | Primary radar, SSR and Mode S, ADS-B and ADS-C, MLAT and WAM, Surface radar and A-SMGCS |
 | Navigation | NDB and ADF, VOR (CVOR and DVOR), DME, ILS, GNSS with SBAS and GBAS |
 | Communication | VHF/UHF radio, HF radio, CPDLC, SATCOM |
-| Integration | Airspace Sandbox (data fusion, controller display, STCA and MSAW safety nets) |
+| Integration | Airspace Sandbox: one aircraft, gate to gate, with every system at work |
 
 Every module follows the same seven sections: the simple idea, a simulator, how it works,
 guided experiments, failure toggles, a collapsed "Go deeper" with formulas and
 specifications, and a five-question quiz (progress is kept in the browser's localStorage).
+
+The **Airspace Sandbox** is a single interactive page instead. It follows CNS700 from boarding
+at the gate through push-back, taxi, take-off, a flight out over the ocean and back, the ILS
+approach and landing to the gate again. The view follows the controller who owns the flight:
+the airport as a true-scale digital twin (with passengers, ground crew and vehicles), the
+terminal area on the terrain table, and a region map over the ocean. Panels show what is
+happening, the radio and data-link traffic, the systems in use, and failures to try; a debrief
+with the quiz ends the journey.
 
 Also: a glossary (every jargon word has a tooltip), and a frequency chart of the radio
 spectrum.

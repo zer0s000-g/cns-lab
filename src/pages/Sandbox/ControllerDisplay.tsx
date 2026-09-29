@@ -1,13 +1,13 @@
 import { useCallback, useRef } from 'react'
 import { Canvas2D, type DrawFn } from '@/components/sim/Canvas2D'
-import { worldToScreen, type MapView } from '@/core/geometry'
+import { worldToScreen, type MapView, type Vec2 } from '@/core/geometry'
 import { predictTrack, trackPosition, trackSpeedKt, trackStatus, trackVelocity } from '@/core/fusion'
 import { DEFAULT_TERRAIN } from '@/core/world'
 import { drawTrackSymbol, type TrackSymbol } from '@/instruments'
 import { useSampled } from '@/hooks/useSampled'
 import { withAlpha } from '@/lib/color'
 import { OCEANIC_BOUNDARY_X } from './systems'
-import { VIEWS, useSandbox, useSandboxState } from './state'
+import { useSandbox, useSandboxState } from './state'
 import type { SandboxEngine } from './engine'
 
 export function symbolFor(sources: string[], status: string): TrackSymbol {
@@ -22,24 +22,18 @@ export function symbolFor(sources: string[], status: string): TrackSymbol {
 }
 
 /** What the controller sees: fused tracks with labels, history and alerts. */
-export function ControllerDisplay() {
+export function ControllerDisplay({ rangeNm, center, className }: { rangeNm: number; center: Vec2; className?: string }) {
   const { engine } = useSandbox()
-  const view = useSandboxState((s) => s.view)
-  const follow = useSandboxState((s) => s.followJourney)
   const selectedId = useSandboxState((s) => s.selectedId)
   const select = useSandboxState((s) => s.select)
   const geom = useRef<MapView | null>(null)
-  const followCenter = useSampled(() => {
-    const a = engine.journeyAircraft
-    return follow && a ? { x: Math.round(a.pos.x / 10) * 10, y: Math.round(a.pos.y / 10) * 10 } : VIEWS[view].center
-  }, 1500)
   const sel = useRef(selectedId)
   sel.current = selectedId
 
   const draw: DrawFn = useCallback(
     (ctx, { width, height, tokens: t }) => {
-      const v = VIEWS[view]
-      const mv: MapView = { center: followCenter, pxPerNm: Math.min(width, height) / 2 / v.rangeNm, width, height }
+      const v = { rangeNm }
+      const mv: MapView = { center, pxPerNm: Math.min(width, height) / 2 / v.rangeNm, width, height }
       geom.current = mv
       ctx.fillStyle = t['scope-bg']
       ctx.fillRect(0, 0, width, height)
@@ -178,7 +172,7 @@ export function ControllerDisplay() {
       ctx.textBaseline = 'bottom'
       ctx.fillText(`${engine.tracks.size} tracks`, width - 8, height - 6)
     },
-    [engine, view, followCenter],
+    [engine, rangeNm, center],
   )
 
   const label = useSampled(() => describe(engine), 1000)
@@ -187,7 +181,7 @@ export function ControllerDisplay() {
     <Canvas2D
       draw={draw}
       label={label}
-      className="aspect-square w-full rounded-lg bg-scope-bg"
+      className={className ?? 'aspect-square w-full rounded-lg bg-scope-bg'}
       onCanvasPointerDown={(e) => {
         const mv = geom.current
         if (!mv) return

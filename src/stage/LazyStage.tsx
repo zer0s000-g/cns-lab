@@ -17,7 +17,7 @@ export type StageProps = ComponentProps<typeof StageComponent>
  * (about 280 kB) never competes with the text, fonts and simulator code the
  * page needs first.
  */
-function useWhenIdle() {
+export function useWhenIdle() {
   const [ready, setReady] = useState(false)
   useEffect(() => {
     let cancelled = false
