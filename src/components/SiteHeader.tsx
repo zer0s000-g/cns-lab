@@ -1,16 +1,36 @@
 import { Link, NavLink } from 'react-router'
-import { BookOpen, House, Menu, RadioReceiver } from 'lucide-react'
+import { BookOpen, House, Menu, Network, RadioReceiver, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { PILLARS, isModuleReady, modulesByPillar, pillarName, type ModuleMeta } from '@/modules/registry'
 import { cn } from '@/lib/utils'
 
-const NAV = [
+interface NavItem {
+  to: string
+  label: string
+  icon: LucideIcon
+  /** The live, interactive page: marked with a glowing dot. */
+  live?: boolean
+  title?: string
+}
+
+/** Places to explore, then (after a divider) the reference pages. */
+const EXPLORE: NavItem[] = [
   { to: '/', label: 'Home', icon: House },
+  { to: '/sandbox', label: 'Sandbox', icon: Network, live: true, title: 'Airspace Sandbox: one flight, gate to gate' },
+]
+const REFERENCE: NavItem[] = [
   { to: '/glossary', label: 'Glossary', icon: BookOpen },
   { to: '/frequencies', label: 'Frequency chart', icon: RadioReceiver },
 ]
+const NAV = [...EXPLORE, ...REFERENCE]
+/** Pages linked at the top of the mobile menu, so the module list below leaves them out. */
+const LINKED = new Set(NAV.map((n) => n.to))
+
+function LiveDot() {
+  return <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-signal shadow-[0_0_6px_var(--signal)]" />
+}
 
 /** Top bar: CNS Lab wordmark, current module and pillar, Home link, settings. */
 export function SiteHeader({ module }: { module?: ModuleMeta }) {
@@ -38,17 +58,12 @@ export function SiteHeader({ module }: { module?: ModuleMeta }) {
         )}
 
         <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Main">
-          {NAV.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.to === '/'}
-              className={({ isActive }) =>
-                cn('hud-label inline-flex h-9 items-center px-3 transition-colors hover:text-foreground', isActive ? 'text-signal' : 'text-muted-foreground')
-              }
-            >
-              {n.label}
-            </NavLink>
+          {EXPLORE.map((n) => (
+            <DesktopLink key={n.to} n={n} />
+          ))}
+          <span aria-hidden className="mx-2 h-4 w-px bg-hud-line" />
+          {REFERENCE.map((n) => (
+            <DesktopLink key={n.to} n={n} />
           ))}
         </nav>
 
@@ -61,7 +76,28 @@ export function SiteHeader({ module }: { module?: ModuleMeta }) {
   )
 }
 
+function DesktopLink({ n }: { n: NavItem }) {
+  return (
+    <NavLink
+      to={n.to}
+      end={n.to === '/'}
+      title={n.title}
+      className="group hud-label inline-flex h-9 items-center gap-2 px-3"
+    >
+      {({ isActive }) => (
+        <>
+          {/* Colours sit on an inner span: .hud-label sets its own colour, which would win over a colour class on the link. */}
+          <span className={isActive ? 'text-signal' : 'transition-colors group-hover:text-foreground'}>{n.label}</span>
+          {n.live && <LiveDot />}
+        </>
+      )}
+    </NavLink>
+  )
+}
+
 function MobileNav() {
+  // Module sections, minus pages already linked at the top (the Sandbox), and any pillar left empty.
+  const sections = PILLARS.map((p) => ({ p, modules: modulesByPillar(p.id).filter((m) => !LINKED.has(m.path)) })).filter((x) => x.modules.length > 0)
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -89,12 +125,13 @@ function MobileNav() {
             >
               <n.icon className="size-4" aria-hidden />
               {n.label}
+              {n.live && <LiveDot />}
             </NavLink>
           ))}
-          {PILLARS.map((p) => (
+          {sections.map(({ p, modules }) => (
             <div key={p.id} className="mt-4">
               <p className="px-3 pb-1 text-xs font-medium tracking-wide text-muted-foreground uppercase">{p.name}</p>
-              {modulesByPillar(p.id).map((m) => (
+              {modules.map((m) => (
                 <NavLink
                   key={m.id}
                   to={m.path}

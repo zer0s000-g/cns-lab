@@ -85,6 +85,10 @@ legible in the light theme too.
 ## 4. Layout
 
 - **Header:** blurred bar with the CNS LAB wordmark, `// module · pillar` and mono nav.
+  - The nav reads Home, Sandbox (marked with a steady cyan "live" dot), a hairline
+    divider, then Glossary and Frequency chart.
+  - The ☰ menu below 1024 px lists the same four at the top, then the modules by
+    pillar.
 - **Module page with a hero** (`ModuleLayout` with `stage`):
   - A sticky full-bleed stage sits under the header. The 7 chapters (Idea, Simulator,
     How, Try, Failures, Spec, Quiz) scroll over it in `hud-panel`s.
