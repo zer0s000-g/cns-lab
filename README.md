@@ -46,7 +46,7 @@ npm run test         # Vitest unit tests for the simulation core and module engi
 npm run typecheck    # TypeScript project check
 npm run lint         # oxlint
 npm run build        # type-check, production build into dist/, route pages, bundle budget check
-npm run budget       # re-run the first-load size budget on dist/ (250 kB JS / 50 kB CSS gzip)
+npm run budget       # re-run the first-load size budget on every page in dist/ (250 kB JS / 50 kB CSS gzip)
 npm run preview      # serve the production build locally
 npm run expert-review  # regenerate docs/EXPERT_REVIEW.md from TODO(expert-review) comments
 ```
@@ -61,8 +61,9 @@ For paths that have no file, the host should fall back to `index.html`:
 
 - **Netlify**: `public/_redirects` is copied into `dist/` and does this automatically.
 - **Vercel**: `vercel.json` contains the rewrite.
-- **GitHub Pages**: `.github/workflows/deploy.yml` tests, builds with the repository sub-path,
-  checks the budget and deploys on every push to `main`. Unknown paths get `dist/404.html`
+- **GitHub Pages**: `.github/workflows/deploy.yml` lints, tests, runs `npm run build` with
+  `BASE_PATH` set to the repository sub-path (which also checks the budget) and deploys on
+  every push to `main`. Unknown paths get `dist/404.html`
   (a copy of `index.html`).
 - **Any other static server** (nginx, S3 + CloudFront, Azure Static Web Apps): configure a
   fallback to `/index.html` for 404s.

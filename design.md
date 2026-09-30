@@ -178,9 +178,11 @@ Slow-motion replays show "Slowed down so you can see it" and freeze the world.
 description and `modulepreload` hints for that route's code. Deep links therefore load
 in parallel and return a normal 200.
 
-**Budget.** `scripts/budget.mjs` runs after every build and in CI. It fails the build if the
-first-load JS (gzip) goes over 250 kB or the CSS over 50 kB. Current figures: about 182 kB
-JS and 24 kB CSS.
+**Budget.** `scripts/budget.mjs` runs after every build and in CI. It checks every route
+page, not just the home page (a deep link is a first load too), and fails the build if any
+page's first-load JS (gzip, scripts plus modulepreload hints) goes over 250 kB or its CSS over
+50 kB. Current figures: about 163 kB JS on the home page, 245 kB on the heaviest module page
+(SSR), 25 kB CSS. Glossary definitions load after the page renders, not up front.
 
 **Measured targets** (390 px, slow 4G, 4× CPU):
 

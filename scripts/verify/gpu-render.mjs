@@ -13,7 +13,11 @@
 // On /sandbox it steps through the twelve journey phases with the timeline.
 // and a Chromium with GPU access (CHROME env var overrides the executable). Small
 // black fractions (< 0.5 %) with no jump are usually dark UI (scopes, quiz rows):
-// look at the saved PNG (OUT=dir) before treating them as failures.
+// look at the saved PNG (OUT=dir) before treating them as failures. The ones already
+// checked by eye are listed in KNOWN_DARK_UI and reported as notes, not failures.
+// Exits 1 when anything fails, so it can gate a push.
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { chromium } from 'playwright-core'
 import { PNG } from 'pngjs'
 const exe = process.env.CHROME || process.env.HOME + '/Library/Caches/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-mac-arm64/chrome-headless-shell'
@@ -21,12 +25,19 @@ const HOST = process.env.HOST || 'http://localhost:4173'
 const OUT = process.env.OUT
 const [w, h] = (process.env.SIZE || '1440x900').split('x').map(Number)
 const theme = process.env.THEME || 'dark'
-const modules = ['psr', 'ssr', 'ads', 'mlat', 'surface', 'ndb', 'dvor', 'dme', 'ils', 'gnss', 'vhf', 'hf', 'cpdlc', 'satcom']
+// Every module from the catalog the app itself uses, so a new module is never skipped.
+const CATALOG = process.env.CATALOG || join(import.meta.dirname, '../../src/modules/catalog.json')
+const modules = JSON.parse(readFileSync(CATALOG, 'utf8')).map((m) => m.id).filter((id) => id !== 'sandbox')
+// Dark instrument UI that trips the black-pixel threshold without being a render fault
+// (checked by eye; the same at baseline 424f5ba): below 0.5 % black and no brightness jump.
+const KNOWN_DARK_UI = { '/modules/mlat': ['quiz'], '/modules/dme': ['simulator'] }
 const routes = process.argv.slice(2).length ? process.argv.slice(2) : ['/', '/sandbox', ...modules.map((m) => '/modules/' + m)]
 const chapters = ['idea', 'simulator', 'how', 'try', 'wrong', 'deeper', 'quiz']
 // The sandbox is one page: step through its twelve journey phases with the timeline instead.
 const phases = ['gate', 'pushback', 'taxi', 'takeoff', 'departure', 'climb', 'ocean', 'descent', 'approach', 'landing', 'taxiIn', 'arrived']
 const browser = await chromium.launch({ executablePath: exe, args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] })
+let problems = 0
+try {
 const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: theme, serviceWorkers: 'block' })
 await ctx.addInitScript((t) => localStorage.setItem('cnslab.prefs', JSON.stringify({ state: { theme: t, reducedMotionOverride: null, soundOn: false, captionsOn: true }, version: 1 })), theme)
 function stats(buf) {
@@ -40,7 +51,6 @@ function stats(buf) {
   }
   return { black: black / n, lum: sum / n }
 }
-let problems = 0
 for (const r of routes) {
   const page = await ctx.newPage()
   const warn = []
@@ -71,11 +81,18 @@ for (const r of routes) {
     const lums = frames.map((f) => f.lum)
     const jump = Math.max(...lums.slice(1).map((l, i) => Math.abs(l - lums[i])))
     const bad = maxBlack > 0.002 || jump > 6
-    if (bad) problems++
-    console.log(`${bad ? 'FAIL' : ' ok '} ${r.padEnd(16)} ${c.padEnd(9)} black ${(maxBlack * 100).toFixed(2)}%  lum ${lums.map((l) => l.toFixed(0)).join(',')}  jump ${jump.toFixed(1)}`)
+    const known = bad && KNOWN_DARK_UI[r]?.includes(c) && maxBlack < 0.005 && jump <= 6
+    if (bad && !known) problems++
+    console.log(`${bad ? (known ? 'note' : 'FAIL') : ' ok '} ${r.padEnd(16)} ${c.padEnd(9)} black ${(maxBlack * 100).toFixed(2)}%  lum ${lums.map((l) => l.toFixed(0)).join(',')}  jump ${jump.toFixed(1)}${known ? '  (known dark UI)' : ''}`)
   }
   if (warn.length) { problems++; console.log(`WARN ${r}: ${[...new Set(warn)].slice(0, 4).join(' | ')}`) }
   await page.close()
 }
+} catch (error) {
+  problems++
+  console.log(`FAIL ${error instanceof Error ? error.message : error}`)
+} finally {
+  await browser.close()
+}
 console.log(problems ? `${problems} problem(s)` : 'ALL CLEAN')
-await browser.close()
+process.exit(problems ? 1 : 0)

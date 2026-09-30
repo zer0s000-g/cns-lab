@@ -8,6 +8,8 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Sub-path the site is served from, e.g. BASE_PATH=/cns-lab/ for GitHub Pages (CI sets it).
+  base: process.env.BASE_PATH || '/',
   plugins: [
     { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react', remarkPlugins: [remarkGfm] }) },
     react({ include: /\.(jsx|js|mdx|md|tsx|ts)$/ }),

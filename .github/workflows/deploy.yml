@@ -10,9 +10,10 @@ permissions:
   pages: write
   id-token: write
 
+# Queue deploys instead of cancelling one that is already publishing.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -24,11 +25,10 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm test
-      - run: npx tsc -b
-      - run: npx vite build --base=/${{ github.event.repository.name }}/
-      - run: node scripts/postbuild.mjs
-      - run: node scripts/budget.mjs
+      # The same build as locally: typecheck, vite build, route pages, budget.
+      - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v5

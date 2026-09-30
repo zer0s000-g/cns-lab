@@ -1,5 +1,6 @@
 import { type ComponentType } from 'react'
 import { lazyRetry } from '@/lib/lazyRetry'
+import catalog from './catalog.json'
 import {
   Antenna,
   Compass,
@@ -42,27 +43,27 @@ export interface ModuleMeta {
   path: string
 }
 
-export const MODULES: ModuleMeta[] = [
-  // Surveillance (flagship first)
-  { id: 'psr', name: 'Primary Surveillance Radar', short: 'Primary radar', pillar: 'surveillance', phase: 1, minutes: 20, icon: Radar, path: '/modules/psr', summary: 'Finds aircraft by bouncing radio pulses off them, with no help from the aircraft.' },
-  { id: 'ssr', name: 'Secondary Surveillance Radar and Mode S', short: 'SSR / Mode S', pillar: 'surveillance', phase: 1, minutes: 20, icon: RadioTower, path: '/modules/ssr', summary: 'Asks each aircraft "who are you and how high?" and reads the answer.' },
-  { id: 'ads', name: 'ADS-B and ADS-C', short: 'ADS-B / ADS-C', pillar: 'surveillance', phase: 1, minutes: 20, icon: Antenna, path: '/modules/ads', summary: 'Aircraft broadcast their own satellite position twice a second.' },
-  { id: 'mlat', name: 'Multilateration (MLAT and WAM)', short: 'MLAT / WAM', pillar: 'surveillance', phase: 5, minutes: 15, icon: Crosshair, path: '/modules/mlat', summary: 'Pinpoints an aircraft from tiny differences in when its signal arrives.' },
-  { id: 'surface', name: 'Surface Movement Radar and A-SMGCS', short: 'Surface radar', pillar: 'surveillance', phase: 5, minutes: 15, icon: ScanLine, path: '/modules/surface', summary: 'A live map of every aircraft and vehicle on the airport, even in fog.' },
-  // Navigation
-  { id: 'ndb', name: 'NDB and ADF', short: 'NDB / ADF', pillar: 'navigation', phase: 2, minutes: 15, icon: Radio, path: '/modules/ndb', summary: 'A beacon that sends the same signal everywhere; the needle points at it.' },
-  { id: 'dvor', name: 'VOR (Conventional and Doppler)', short: 'VOR', pillar: 'navigation', phase: 2, minutes: 25, icon: Compass, path: '/modules/dvor', summary: 'Two signals ticking out of step tell you your direction from the station.' },
-  { id: 'dme', name: 'Distance Measuring Equipment', short: 'DME', pillar: 'navigation', phase: 2, minutes: 15, icon: Ruler, path: '/modules/dme', summary: 'Ask the ground "how far?", time the answer, and get the distance.' },
-  { id: 'ils', name: 'Instrument Landing System', short: 'ILS', pillar: 'navigation', phase: 2, minutes: 25, icon: PlaneLanding, path: '/modules/ils', summary: 'Two radio beams guide the aircraft down to the runway in fog.' },
-  { id: 'gnss', name: 'GNSS with SBAS and GBAS', short: 'GNSS', pillar: 'navigation', phase: 3, minutes: 25, icon: Satellite, path: '/modules/gnss', summary: 'Satellites broadcast the exact time; the receiver works out where it is.' },
-  // Communication
-  { id: 'vhf', name: 'VHF and UHF Air-Ground Radio', short: 'VHF radio', pillar: 'communication', phase: 4, minutes: 15, icon: Radio, path: '/modules/vhf', summary: 'Press to talk: straight-line radio whose range depends on height.' },
-  { id: 'hf', name: 'HF Radio', short: 'HF radio', pillar: 'communication', phase: 4, minutes: 15, icon: Waves, path: '/modules/hf', summary: 'Radio waves that bounce off the sky to reach across oceans.' },
-  { id: 'cpdlc', name: 'Controller–Pilot Data Link (CPDLC)', short: 'CPDLC', pillar: 'communication', phase: 4, minutes: 15, icon: MessageSquareText, path: '/modules/cpdlc', summary: 'Standard text messages instead of crowded voice radio.' },
-  { id: 'satcom', name: 'Satellite Communication (SATCOM)', short: 'SATCOM', pillar: 'communication', phase: 4, minutes: 15, icon: SatelliteDish, path: '/modules/satcom', summary: 'Talking to ATC through satellites over oceans and poles.' },
-  // Integration
-  { id: 'sandbox', name: 'Airspace Sandbox', short: 'Sandbox', pillar: 'integration', phase: 6, minutes: 30, icon: Network, path: '/sandbox', summary: 'One flight, gate to gate: every system at work, and what happens when one fails.' },
-]
+/** Icon per module id. The module data itself lives in catalog.json, which the build scripts read too. */
+const ICONS: Record<string, LucideIcon> = {
+  psr: Radar,
+  ssr: RadioTower,
+  ads: Antenna,
+  mlat: Crosshair,
+  surface: ScanLine,
+  ndb: Radio,
+  dvor: Compass,
+  dme: Ruler,
+  ils: PlaneLanding,
+  gnss: Satellite,
+  vhf: Radio,
+  hf: Waves,
+  cpdlc: MessageSquareText,
+  satcom: SatelliteDish,
+  sandbox: Network,
+}
+
+// Surveillance first (flagship), then navigation, communication and integration: the order of catalog.json.
+export const MODULES: ModuleMeta[] = catalog.map((m) => ({ ...m, pillar: m.pillar as Pillar, icon: ICONS[m.id] ?? Network }))
 
 export const MODULE_BY_ID = new Map(MODULES.map((m) => [m.id, m]))
 

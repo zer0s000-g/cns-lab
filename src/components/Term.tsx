@@ -2,7 +2,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { BookOpen } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { getTerm } from '@/content/glossary'
+import { loadGlossary, useGlossaryEntry } from '@/content/glossaryLoader'
 import { cn } from '@/lib/utils'
 
 /**
@@ -10,16 +10,17 @@ import { cn } from '@/lib/utils'
  * on focus + Enter (keyboard) and on tap (touch), so it never relies on hover.
  */
 export function Term({ id, children, className }: { id: string; children?: ReactNode; className?: string }) {
-  const entry = getTerm(id)
+  const entry = useGlossaryEntry(id)
   const [open, setOpen] = useState(false)
   const closeTimer = useRef<number | undefined>(undefined)
 
-  if (!entry) {
+  if (entry === null) {
     if (import.meta.env.DEV) console.warn(`[Term] Unknown glossary id "${id}"`)
     return <>{children}</>
   }
 
   const openSoon = () => {
+    loadGlossary().catch(() => {})
     window.clearTimeout(closeTimer.current)
     setOpen(true)
   }
@@ -39,9 +40,9 @@ export function Term({ id, children, className }: { id: string; children?: React
           )}
           onPointerEnter={(e) => e.pointerType === 'mouse' && openSoon()}
           onPointerLeave={(e) => e.pointerType === 'mouse' && closeSoon()}
-          aria-label={`${typeof children === 'string' ? children : entry.term}: show definition`}
+          aria-label={`${typeof children === 'string' ? children : (entry?.term ?? id)}: show definition`}
         >
-          {children ?? entry.term}
+          {children ?? entry?.term ?? id}
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -50,10 +51,10 @@ export function Term({ id, children, className }: { id: string; children?: React
         onPointerLeave={(e) => e.pointerType === 'mouse' && closeSoon()}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <p className="text-sm font-semibold">{entry.term}</p>
-        <p className="text-sm leading-relaxed text-muted-foreground">{entry.definition}</p>
+        <p className="text-sm font-semibold">{entry?.term ?? children}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{entry ? entry.definition : 'Loading the definition…'}</p>
         <Link
-          to={`/glossary#${entry.id}`}
+          to={`/glossary#${id}`}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
         >
           <BookOpen className="size-3.5" aria-hidden />

@@ -101,6 +101,7 @@ if (!ONLY || ONLY === 'layout') {
       const sw = await page.evaluate(() => document.documentElement.scrollWidth)
       check(sw <= width, `${tag}: no sideways scroll (${sw} ≤ ${width})`)
       await axe(page, tag)
+      const failuresBefore = failures
       for (const p of PHASES) {
         await phaseButton(page, p).click()
         await page.waitForFunction((want) => document.querySelector('[data-phase]')?.getAttribute('data-phase') === want, p, { timeout: 5000 }).catch(() => {})
@@ -112,7 +113,7 @@ if (!ONLY || ONLY === 'layout') {
         if (got !== p || view !== VIEW[p] || black.all > 0.005 || black.centre > 0.002) fail(`${tag} ${p}: phase ${got}, view ${view} (want ${VIEW[p]}), black ${(black.all * 100).toFixed(2)}% (centre ${(black.centre * 100).toFixed(2)}%)`)
         if (p === 'gate' || p === 'ocean' || p === 'landing') await page.screenshot({ path: `${OUT}/${size}-${theme}-${p}.png` })
       }
-      ok(`${tag}: all 12 phases reached from the timeline, right view, stage never black`)
+      check(failures === failuresBefore, `${tag}: all 12 phases reached from the timeline, right view, stage never black`)
       const sw2 = await page.evaluate(() => document.documentElement.scrollWidth)
       check(sw2 <= width, `${tag}: still no sideways scroll after every phase`)
       check(errors.length === 0, `${tag}: no console errors${errors.length ? ': ' + [...new Set(errors)].slice(0, 3).join(' | ') : ''}`)
