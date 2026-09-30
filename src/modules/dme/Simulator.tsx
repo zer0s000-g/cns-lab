@@ -1,4 +1,5 @@
 import { type ComponentProps } from 'react'
+import { wholeDegrees } from '@/lib/format'
 import { Navigation, RotateCw, Route } from 'lucide-react'
 import { AudioCaption, ClockControls, ClockSpeedLabel, ControlSlider, SimLabel } from '@/components/sim/Controls'
 import { ChapterHead } from '@/components/module/ModuleLayout'
@@ -181,7 +182,7 @@ function DmeControls() {
   const running = useClock(clock, (s) => s.running)
   const own = useSampled(() => {
     const a = engine.own
-    return { heading: Math.round(a.mode.kind === 'heading' ? a.targetHeadingDeg : a.headingDeg), speed: Math.round(a.targetSpeedKt), alt: Math.round(a.targetAltitudeFt), mode: a.mode.kind }
+    return { heading: wholeDegrees(a.mode.kind === 'heading' ? a.targetHeadingDeg : a.headingDeg), speed: Math.round(a.targetSpeedKt), alt: Math.round(a.targetAltitudeFt), mode: a.mode.kind }
   }, 200)
   const f = dmeFrequencies(engine.station.channel, env.mode)
   const capacityPps = Math.round(maxAcceptedInterrogationPps())

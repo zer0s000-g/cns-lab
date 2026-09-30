@@ -75,7 +75,11 @@ function predictAxis(a: Axis, dt: number, q = PROCESS_NOISE): Axis {
 }
 
 function updateAxis(a: Axis, z: number, r: number): Axis {
+  // A measurement that is not a number is ignored: one NaN would poison the track for good.
+  if (!Number.isFinite(z) || !Number.isFinite(r)) return a
   const s = a.pp + r
+  // No uncertainty on either side (sigma 0): take the measurement as it is.
+  if (!(s > 0)) return { ...a, p: z }
   const kp = a.pp / s
   const kv = a.pv / s
   const y = z - a.p

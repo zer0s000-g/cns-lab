@@ -20,6 +20,7 @@
 
 import { freeSpacePathLossDbNm, radioLineOfSightNm } from './propagation'
 import { clamp, EARTH_RADIUS_NM, ftToNm, kmToNm } from './units'
+import { positiveStep } from './guard'
 
 const R = EARTH_RADIUS_NM
 const HALF_PI = Math.PI / 2
@@ -317,6 +318,7 @@ export const MIN_ELEVATION_DEG = 2
 
 /** Elevation angles of the ray fan drawn in the side view, degrees. */
 export function fanElevationsDeg(stepDeg = 3): number[] {
+  positiveStep(stepDeg, 'stepDeg')
   const out: number[] = []
   for (let e = MIN_ELEVATION_DEG; e < 89; e += stepDeg) out.push(e)
   return out
@@ -712,6 +714,7 @@ export interface BandSegment {
  * aircraft's own reception.
  */
 export function groundCoverage(iono: Ionosphere, fMHz: number, maxNm: number, stepNm: number, opts: { storm?: boolean } = {}): BandSegment[] {
+  positiveStep(stepNm, 'stepNm')
   const out: BandSegment[] = []
   const ctx: ReceptionContext = {}
   for (let d = stepNm / 2; d < maxNm; d += stepNm) {

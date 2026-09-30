@@ -211,6 +211,7 @@ export function grayDecode(g: number): number {
 
 /** The pressure altitude a Mode C reply reports: the nearest 100 ft, or null outside the code's range. */
 export function modeCReportedFt(altitudeFt: number): number | null {
+  if (!Number.isFinite(altitudeFt)) return null
   const a = Math.round(altitudeFt / 100) * 100
   if (a < MODE_C_MIN_FT || a > MODE_C_MAX_FT) return null
   return a + 0 // avoid -0

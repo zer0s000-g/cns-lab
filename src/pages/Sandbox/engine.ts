@@ -559,7 +559,8 @@ export class SandboxEngine {
    */
   step(dt: number, haltOn?: (e: JourneyEventKind) => boolean): { halted: JourneyEventKind | null } {
     this.lastEvents = []
-    if (!(dt > 0)) return { halted: null }
+    // Infinity would split into infinitely many sub-steps.
+    if (!(dt > 0) || !Number.isFinite(dt)) return { halted: null }
     // Split big steps so radar sweeps and message timing stay accurate.
     const n = Math.max(1, Math.ceil(dt / 0.5))
     for (let i = 0; i < n; i++) {

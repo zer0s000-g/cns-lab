@@ -62,7 +62,7 @@ export interface ElementValues {
 }
 
 /** Flight level as CPDLC prints it: "FL350". */
-export const formatLevel = (fl: number) => `FL${String(Math.round(fl)).padStart(3, '0')}`
+export const formatLevel = (fl: number) => (Number.isFinite(fl) ? `FL${String(Math.max(0, Math.round(fl))).padStart(3, '0')}` : 'FL—')
 
 /** Fill a message element's parameters, e.g. UM20 + {level: 370} → "CLIMB TO FL370". */
 export function formatElement(id: string, v: ElementValues = {}): string {

@@ -343,6 +343,8 @@ export function islLinks(sats: LeoSatellite[], pos: Vec3[], opts: { planes: numb
 
 /** Shortest route through the link graph (Dijkstra on distance). Returns satellite indices, or null. */
 export function shortestIslRoute(n: number, links: IslLink[], from: number, to: number): { path: number[]; distanceM: number } | null {
+  const valid = (k: number) => Number.isInteger(k) && k >= 0 && k < n
+  if (!valid(from) || !valid(to) || links.some((l) => !valid(l.a) || !valid(l.b))) return null
   if (from === to) return { path: [from], distanceM: 0 }
   const adj: { to: number; d: number }[][] = Array.from({ length: n }, () => [])
   for (const l of links) {
@@ -511,6 +513,7 @@ export interface RoutePoint {
 
 /** Position, course and altitude a distance along a route (great-circle legs, simple climb and descent). */
 export function routePointAt(r: FlightRoute, distanceNm: number): RoutePoint {
+  if (r.waypoints.length === 0) throw new RangeError('routePointAt: the route has no waypoints')
   const total = routeLengthNm(r)
   const s = clamp(distanceNm, 0, total)
   let acc = 0

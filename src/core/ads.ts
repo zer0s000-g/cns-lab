@@ -494,6 +494,7 @@ export function qualityUnderJamming(base: { nacp: number; nic: number }, level: 
 /** Relative altitude tag in hundreds of feet, as on traffic displays: +05 is 500 ft above. */
 export function relativeAltitudeTag(ownFt: number, otherFt: number): string {
   const h = Math.round((otherFt - ownFt) / 100)
+  if (!Number.isFinite(h)) return '—'
   if (h === 0) return '00'
   return `${h > 0 ? '+' : '−'}${String(Math.abs(h)).padStart(2, '0')}`
 }

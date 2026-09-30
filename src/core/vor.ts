@@ -196,6 +196,8 @@ export interface VorCdi {
  *   |d| ≤ 90 → FROM, deviation = d;  else → TO, deviation = normalize180(180 − d)
  */
 export function vorCdi(obsDeg: number, radial: number): VorCdi {
+  // No usable radial (or course): flag the indicator, needle centred, like a receiver without signal.
+  if (!Number.isFinite(obsDeg) || !Number.isFinite(radial)) return { toFrom: 'OFF', deviationDeg: 0, lateral: 0 }
   const d = normalize180(obsDeg - radial)
   const from = Math.abs(d) <= 90
   const deviationDeg = from ? d : normalize180(180 - d)

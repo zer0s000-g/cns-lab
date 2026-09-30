@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { wholeDegrees } from '@/lib/format'
 import { Link } from 'react-router'
 import { ArrowRight, Radio, RotateCcw, Send } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -199,7 +200,7 @@ function AirportControls() {
   const running = useClock(clock, (s) => s.running)
   const sel = useSampled(() => {
     const a = engine.getAircraft(selectedId)
-    return a ? { heading: Math.round(a.mode.kind === 'heading' ? a.targetHeadingDeg : a.headingDeg), speed: Math.round(a.targetSpeedKt), alt: Math.round(a.targetAltitudeFt), mode: a.mode.kind } : null
+    return a ? { heading: wholeDegrees(a.mode.kind === 'heading' ? a.targetHeadingDeg : a.headingDeg), speed: Math.round(a.targetSpeedKt), alt: Math.round(a.targetAltitudeFt), mode: a.mode.kind } : null
   }, 200)
 
   return (

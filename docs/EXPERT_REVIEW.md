@@ -15,10 +15,10 @@ Total items: 231
 
 | Item | Where |
 |---|---|
-| representative RCS values for light / medium / heavy aircraft at S-band. | `src/core/radar.ts:42` |
-| simplified detection model (logistic curve instead of Marcum/Swerling statistics). | `src/core/radar.ts:52` |
-| MTI notch shape and width (20 kt) are illustrative. | `src/core/radar.ts:132` |
-| elevation coverage limit of a typical approach radar (about 40°). | `src/core/radar.ts:141` |
+| representative RCS values for light / medium / heavy aircraft at S-band. | `src/core/radar.ts:43` |
+| simplified detection model (logistic curve instead of Marcum/Swerling statistics). | `src/core/radar.ts:53` |
+| MTI notch shape and width (20 kt) are illustrative. | `src/core/radar.ts:133` |
+| elevation coverage limit of a typical approach radar (about 40°). | `src/core/radar.ts:142` |
 | RCS values, MTI notch width, elevation coverage and detection calibration used in the PSR simulator. | `src/modules/psr/deeper.mdx:50` |
 
 ## Secondary Surveillance Radar and Mode S
@@ -26,14 +26,14 @@ Total items: 231
 | Item | Where |
 |---|---|
 | SPI duration after IDENT (about 18 s, 15–30 s in Annex 10). | `src/core/ssr.ts:67` |
-| typical SSR (LVA) 3 dB beam width, about 2.4°. | `src/core/ssr.ts:382` |
-| side-lobe levels (−22 dB beside the main beam, −30 dB behind) and lobe spacing are teaching choices. | `src/core/ssr.ts:385` |
-| control (omni) antenna level relative to the main-beam peak (−15 dB here). | `src/core/ssr.ts:405` |
-| MTL −74 dBm (Annex 10 gives −74 ± 3 dBm for Mode S and about −73 ± 4 dBm for Mode A/C transponders). | `src/core/ssr.ts:428` |
-| interrogator effective radiated power (here set so the main beam reaches MTL at 300 NM). | `src/core/ssr.ts:436` |
-| transponder power 54 dBm (24 dBW), ground antenna gain 27 dBi and receiver threshold −80 dBm. | `src/core/ssr.ts:441` |
-| monopulse SSR accuracy (azimuth about 0.07°, range about 25 m, 1σ). | `src/core/ssr.ts:487` |
-| lockout timer (about 18 s after the last lockout command). | `src/core/ssr.ts:514` |
+| typical SSR (LVA) 3 dB beam width, about 2.4°. | `src/core/ssr.ts:383` |
+| side-lobe levels (−22 dB beside the main beam, −30 dB behind) and lobe spacing are teaching choices. | `src/core/ssr.ts:386` |
+| control (omni) antenna level relative to the main-beam peak (−15 dB here). | `src/core/ssr.ts:406` |
+| MTL −74 dBm (Annex 10 gives −74 ± 3 dBm for Mode S and about −73 ± 4 dBm for Mode A/C transponders). | `src/core/ssr.ts:429` |
+| interrogator effective radiated power (here set so the main beam reaches MTL at 300 NM). | `src/core/ssr.ts:437` |
+| transponder power 54 dBm (24 dBW), ground antenna gain 27 dBi and receiver threshold −80 dBm. | `src/core/ssr.ts:442` |
+| monopulse SSR accuracy (azimuth about 0.07°, range about 25 m, 1σ). | `src/core/ssr.ts:488` |
+| lockout timer (about 18 s after the last lockout command). | `src/core/ssr.ts:515` |
 | SPI duration (about 18 s) and pulse tolerances. | `src/modules/ssr/deeper.mdx:30` |
 | control antenna level, side-lobe envelope and beam width (2.4°) used in the simulator. | `src/modules/ssr/deeper.mdx:78` |
 | interrogation rate (250 per second), FRUIT rate and plot-extractor thresholds used in the simulator. | `src/modules/ssr/deeper.mdx:88` |
@@ -53,10 +53,10 @@ Total items: 231
 | NIC containment radii (DO-260B Table 2-14; NIC 6 has several radii depending on supplements). | `src/core/ads.ts:70` |
 | NIC ↔ type code mapping; NIC supplement-A (sent in operational status) is assumed equal to supplement-B. | `src/core/ads.ts:237` |
 | jamming footprint model (two radii, linear in between) is illustrative; real effects depend on power, antenna and receiver. | `src/core/ads.ts:466` |
-| space-based ADS-B end-to-end latency (about 1–2 s). | `src/core/ads.ts:518` |
-| oceanic periodic contract intervals (commonly 14–27 min in some regions). | `src/core/ads.ts:553` |
-| re-arming of event contracts after they trigger (FANS 1/A behaviour differs by event). | `src/core/ads.ts:561` |
-| ADS-C delivery time (RSP 180 expects 95% of reports within 90 s); 20–80 s here. | `src/core/ads.ts:579` |
+| space-based ADS-B end-to-end latency (about 1–2 s). | `src/core/ads.ts:519` |
+| oceanic periodic contract intervals (commonly 14–27 min in some regions). | `src/core/ads.ts:554` |
+| re-arming of event contracts after they trigger (FANS 1/A behaviour differs by event). | `src/core/ads.ts:562` |
+| ADS-C delivery time (RSP 180 expects 95% of reports within 90 s); 20–80 s here. | `src/core/ads.ts:580` |
 | message rates and the NIC ↔ type code mapping (DO-260B). | `src/modules/ads/deeper.mdx:28` |
 | NACp and NIC tables (DO-260B), and the simplification that NIC supplements are not modelled. | `src/modules/ads/deeper.mdx:53` |
 | space-based ADS-B latency (1.5 s in the simulator). | `src/modules/ads/deeper.mdx:64` |
@@ -92,13 +92,13 @@ Total items: 231
 | runway-holding position distance for a code 4 precision approach runway (Annex 14 Table 3-2, 90 m used here). | `src/core/surface.ts:39` |
 | exact extent of the protected area used by A-SMGCS runway incursion monitoring. | `src/core/surface.ts:62` |
 | 3° glide path with a 15 m (50 ft) threshold crossing height. | `src/core/surface.ts:73` |
-| typical taxi speeds (straight 15–25 kt, 90° turns about 10 kt). | `src/core/surface.ts:149` |
-| representative SMR parameters (X-band about 9 GHz, 60 rpm, 0.35° beam, 20 ns pulse; some SMRs use Ku-band). | `src/core/surface.ts:181` |
-| scatterer layout and RCS per point are illustrative, chosen so the painted shape looks like the object. | `src/core/surface.ts:218` |
-| P.838 coefficients at 9.2 GHz (k ≈ 0.0085, α ≈ 1.30 used here). | `src/core/surface.ts:280` |
-| SMR sensitivity calibration and rain clutter levels are illustrative. | `src/core/surface.ts:287` |
-| Koschmieder law with the 5% threshold for daytime objects; lights follow Allard's law instead. | `src/core/surface.ts:387` |
-| alert timing of A-SMGCS runway incursion monitoring (2 NM / 60 s used here) and ICAO Doc 9830 terminology. | `src/core/surface.ts:430` |
+| typical taxi speeds (straight 15–25 kt, 90° turns about 10 kt). | `src/core/surface.ts:150` |
+| representative SMR parameters (X-band about 9 GHz, 60 rpm, 0.35° beam, 20 ns pulse; some SMRs use Ku-band). | `src/core/surface.ts:182` |
+| scatterer layout and RCS per point are illustrative, chosen so the painted shape looks like the object. | `src/core/surface.ts:219` |
+| P.838 coefficients at 9.2 GHz (k ≈ 0.0085, α ≈ 1.30 used here). | `src/core/surface.ts:281` |
+| SMR sensitivity calibration and rain clutter levels are illustrative. | `src/core/surface.ts:288` |
+| Koschmieder law with the 5% threshold for daytime objects; lights follow Allard's law instead. | `src/core/surface.ts:388` |
+| alert timing of A-SMGCS runway incursion monitoring (2 NM / 60 s used here) and ICAO Doc 9830 terminology. | `src/core/surface.ts:431` |
 | typical SMR band, rotation rate, pulse length and beam width (9.2 GHz, 60 rpm, 20 ns, 0.35° used here). | `src/modules/surface/deeper.mdx:10` |
 | P.838 coefficients near 9 GHz and the circular polarisation rain rejection (15 dB) used here. | `src/modules/surface/deeper.mdx:22` |
 | Koschmieder daytime law with a 5% threshold; ICAO visibility conditions 1 to 4 (Doc 9830) for when controllers can no longer see the manoeuvring area. | `src/modules/surface/deeper.mdx:42` |
@@ -134,9 +134,9 @@ Total items: 231
 | ident tone 1020 Hz, keyed at about 7 words per minute, repeated about every 10 s. | `src/core/vor.ts:63` |
 | DVOR ring of about 48 antennas, about 13.5 m across. | `src/core/vor.ts:66` |
 | width of the zone near abeam where the TO/FROM flag shows OFF. | `src/core/vor.ts:181` |
-| Annex 10 guarantees coverage up to 40° elevation; the | `src/core/vor.ts:212` |
-| reflection strength of a building versus its distance from the station. | `src/core/vor.ts:245` |
-| alarm limits and the changeover delay to the standby transmitter. | `src/core/vor.ts:316` |
+| Annex 10 guarantees coverage up to 40° elevation; the | `src/core/vor.ts:214` |
+| reflection strength of a building versus its distance from the station. | `src/core/vor.ts:247` |
+| alarm limits and the changeover delay to the standby transmitter. | `src/core/vor.ts:318` |
 | channel plan in 108–112 MHz and typical service volumes of terminal and en-route VORs. | `src/modules/dvor/deeper.mdx:5` |
 | wording of the DVOR phase relationship and rotation sense (counter-clockwise commutation so a conventional receiver reads the correct bearing). | `src/modules/dvor/deeper.mdx:22` |
 | ident keying speed and repetition rate, modulation depths. | `src/modules/dvor/deeper.mdx:26` |
@@ -149,11 +149,11 @@ Total items: 231
 
 | Item | Where |
 |---|---|
-| confirm that for DME/N both X and Y reply delays are measured | `src/core/dme.ts:47` |
-| typical smoothing time of DME groundspeed computation in avionics. | `src/core/dme.ts:160` |
-| interrogation rates of typical DME/N avionics (search and track). | `src/core/dme.ts:208` |
-| transponder capacity (≈100 aircraft), maximum reply rate | `src/core/dme.ts:332` |
-| DME ident repetition when associated with a VOR (one ident period in four, about every 30–40 s). | `src/core/dme.ts:451` |
+| confirm that for DME/N both X and Y reply delays are measured | `src/core/dme.ts:48` |
+| typical smoothing time of DME groundspeed computation in avionics. | `src/core/dme.ts:161` |
+| interrogation rates of typical DME/N avionics (search and track). | `src/core/dme.ts:209` |
+| transponder capacity (≈100 aircraft), maximum reply rate | `src/core/dme.ts:335` |
+| DME ident repetition when associated with a VOR (one ident period in four, about every 30–40 s). | `src/core/dme.ts:454` |
 | interrogation rates (150 pps search, 30 pps track), transponder capacity (100 aircraft), 2,700 pps maximum, 60 µs dead time, 700 pps minimum transmission, memory time, and the DME ident timing relative to its paired VOR. | `src/modules/dme/deeper.mdx:60` |
 | memory (coast) time of DME avionics after replies are lost (typically several seconds). | `src/modules/dme/engine.ts:94` |
 | mix of interrogation rates in traffic (about 1 aircraft in 20 searching at 150 pps, the rest tracking at about 25 pps). | `src/modules/dme/engine.ts:546` |
@@ -186,8 +186,8 @@ Total items: 231
 | all budget values are teaching approximations, not a specification. | `src/core/gnss.ts:549` |
 | multipath/noise model from memory of RTCA DO-229/DO-253 airborne models. | `src/core/gnss.ts:590` |
 | illustrative value; certified RAIM/FDE uses a false-alert rate set by RTCA DO-229 / TSO-C129/C145. | `src/core/gnss.ts:717` |
-| illustrative curve (about 40 dB-Hz near the horizon, 48 dB-Hz overhead). | `src/core/gnss.ts:804` |
-| Q = 1 (narrowband-like) is an illustrative choice. | `src/core/gnss.ts:818` |
+| illustrative curve (about 40 dB-Hz near the horizon, 48 dB-Hz overhead). | `src/core/gnss.ts:805` |
+| Q = 1 (narrowband-like) is an illustrative choice. | `src/core/gnss.ts:819` |
 | every value in this table is an illustrative teaching budget, not a specification. | `src/modules/gnss/deeper.mdx:63` |
 | P_fa value and the RAIM/FDE description are simplified; certified FDE follows RTCA DO-229 / TSO-C145/C146 and ICAO Annex 10 Vol I requirements. | `src/modules/gnss/deeper.mdx:78` |
 | confirm the list of Annex 10 core constellations and the DFMC status at publication. | `src/modules/gnss/deeper.mdx:93` |
@@ -222,21 +222,21 @@ Total items: 231
 
 | Item | Where |
 |---|---|
-| aeronautical mobile (R) HF sub-bands (ITU Radio Regulations Appendix 27), kHz. | `src/core/hf.ts:35` |
-| example channel frequencies, one inside each (R) band. | `src/core/hf.ts:50` |
-| SELCAL tone frequencies (ICAO Annex 10 Vol III); the newer 32-tone set is not modelled. | `src/core/hf.ts:57` |
-| SELCAL pulse length 1.0 ± 0.25 s and gap 0.2 ± 0.1 s. | `src/core/hf.ts:77` |
-| further code-assignment rules (for example no letter repeated in a code). | `src/core/hf.ts:86` |
-| signal-to-noise ratio a SELCAL decoder needs. | `src/core/hf.ts:114` |
-| F2 build-up and decay time constant. | `src/core/hf.ts:136` |
-| every number below is a typical mid-latitude/equatorial teaching value; the real | `src/core/hf.ts:196` |
-| threshold used to call a ray "absorbed". | `src/core/hf.ts:311` |
-| lowest useful take-off angle of an HF antenna. | `src/core/hf.ts:315` |
-| HF ground-station transmitter power, antenna gains and sea-reflection loss. | `src/core/hf.ts:421` |
-| illustrative sea-path values; over land the range is much shorter. | `src/core/hf.ts:436` |
-| noise curves are illustrative (ITU-R P.372 has full maps by season and time). | `src/core/hf.ts:447` |
-| 0.85 × MUF as the optimum working frequency (FOT/OWF). | `src/core/hf.ts:671` |
-| fading depth and rate. | `src/core/hf.ts:760` |
+| aeronautical mobile (R) HF sub-bands (ITU Radio Regulations Appendix 27), kHz. | `src/core/hf.ts:36` |
+| example channel frequencies, one inside each (R) band. | `src/core/hf.ts:51` |
+| SELCAL tone frequencies (ICAO Annex 10 Vol III); the newer 32-tone set is not modelled. | `src/core/hf.ts:58` |
+| SELCAL pulse length 1.0 ± 0.25 s and gap 0.2 ± 0.1 s. | `src/core/hf.ts:78` |
+| further code-assignment rules (for example no letter repeated in a code). | `src/core/hf.ts:87` |
+| signal-to-noise ratio a SELCAL decoder needs. | `src/core/hf.ts:115` |
+| F2 build-up and decay time constant. | `src/core/hf.ts:137` |
+| every number below is a typical mid-latitude/equatorial teaching value; the real | `src/core/hf.ts:197` |
+| threshold used to call a ray "absorbed". | `src/core/hf.ts:312` |
+| lowest useful take-off angle of an HF antenna. | `src/core/hf.ts:316` |
+| HF ground-station transmitter power, antenna gains and sea-reflection loss. | `src/core/hf.ts:423` |
+| illustrative sea-path values; over land the range is much shorter. | `src/core/hf.ts:438` |
+| noise curves are illustrative (ITU-R P.372 has full maps by season and time). | `src/core/hf.ts:449` |
+| 0.85 × MUF as the optimum working frequency (FOT/OWF). | `src/core/hf.ts:673` |
+| fading depth and rate. | `src/core/hf.ts:763` |
 | the aeronautical mobile (R) HF sub-band edges (ITU Radio Regulations Appendix 27) and the example channel frequencies. | `src/modules/hf/deeper.mdx:19` |
 | layer heights, foF2 day/night values, the F2 time lag (3 h) and the foE and foF1 formulas used in the simulator. | `src/modules/hf/deeper.mdx:34` |
 | 0.85 × MUF as the optimum working frequency. | `src/modules/hf/deeper.mdx:53` |
@@ -271,7 +271,7 @@ Total items: 231
 | 5° is typical; some systems use 10°. | `src/core/satcom.ts:81` |
 | real antenna patterns and shadowing vary by type. | `src/core/satcom.ts:87` |
 | 1.6 GHz used as a representative value. | `src/core/satcom.ts:91` |
-| check the coefficient values against the current P.838 table. | `src/core/satcom.ts:430` |
+| check the coefficient values against the current P.838 table. | `src/core/satcom.ts:432` |
 | elevation masks (5° GEO, 8.2° LEO) and the 5° airframe mask used for antenna blockage. | `src/modules/satcom/deeper.mdx:21` |
 | illustrative processing and queuing delays (voice 0.25 s, CPDLC and ADS-C 3 s, space-based ADS-B 1 s), and handover interruption times. | `src/modules/satcom/deeper.mdx:34` |
 | Iridium constellation parameters (780 km, plane spacing 31.6°, 22° seam, cross-plane links off above 60° latitude), GEO satellite longitudes and ground station positions used in the simulator (illustrative, similar to Inmarsat's fleet). | `src/modules/satcom/deeper.mdx:49` |
@@ -291,8 +291,8 @@ Total items: 231
 | Item | Where |
 |---|---|
 | tracker tuning is illustrative, not an operational tracker. | `src/core/fusion.ts:61` |
-| STCA thresholds and look-ahead are set per ANSP; these are illustrative (terminal area). | `src/core/safetyNets.ts:30` |
-| MSAW clearance and look-ahead are set per ANSP; these are illustrative. | `src/core/safetyNets.ts:110` |
+| STCA thresholds and look-ahead are set per ANSP; these are illustrative (terminal area). | `src/core/safetyNets.ts:31` |
+| MSAW clearance and look-ahead are set per ANSP; these are illustrative. | `src/core/safetyNets.ts:111` |
 | representative angles of attack in climb, cruise and approach. | `src/pages/Sandbox/aircraftState.ts:23` |
 | typical airline exterior-light procedure (beacon from push-back, strobes entering the runway, landing lights below FL100). | `src/pages/Sandbox/aircraftState.ts:73` |
 | PAPI unit settings for a 3° approach (Annex 14: 2°30′, 2°50′, 3°10′, 3°30′ used here). | `src/pages/Sandbox/aircraftState.ts:93` |
@@ -300,8 +300,8 @@ Total items: 231
 | control changes here at each flight-phase boundary, while the scripted | `src/pages/Sandbox/atc.ts:65` |
 | radiotelephony phrases follow ICAO Doc 9432 examples in simplified form. | `src/pages/Sandbox/atc.ts:143` |
 | end-to-end ADS-C report latency over SATCOM. | `src/pages/Sandbox/engine.ts:134` |
-| WAM timing accuracy used for the error model. | `src/pages/Sandbox/engine.ts:660` |
-| MSAW inhibit volumes are defined per airport; this cylinder is illustrative. | `src/pages/Sandbox/engine.ts:823` |
+| WAM timing accuracy used for the error model. | `src/pages/Sandbox/engine.ts:661` |
+| MSAW inhibit volumes are defined per airport; this cylinder is illustrative. | `src/pages/Sandbox/engine.ts:824` |
 | typical push-back speed (about 3 kt). | `src/pages/Sandbox/ground.ts:40` |
 | typical yaw rate of an aircraft being pushed back (a few degrees per second). | `src/pages/Sandbox/ground.ts:128` |
 | typical altitude for the tower-to-departure transfer (local procedures vary). | `src/pages/Sandbox/journey.ts:148` |

@@ -88,7 +88,8 @@ export function realToSignalUs(realDtS: number, sm: SlowMotion): number {
 
 /** Choose a slow-motion factor so that an event lasting `eventUs` plays in about `targetRealS`. */
 export function slowMotionFor(eventUs: number, targetRealS: number): SlowMotion {
-  return { realSecondsPerMicrosecond: targetRealS / Math.max(eventUs, 1e-9) }
+  // A target of 0 s (or less) would be infinitely fast; show the event over at least 1 ms.
+  return { realSecondsPerMicrosecond: Math.max(targetRealS, 1e-3) / Math.max(eventUs, 1e-9) }
 }
 
 /** How many times slower than reality a slow-motion setting is (e.g. 20,000×). */

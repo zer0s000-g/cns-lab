@@ -95,6 +95,7 @@ export function makePath(points: Vec2[]): Path {
 /** Position and direction of travel (degrees true) a distance s along a path. */
 export function pointAt(path: Path, s: number): { pos: Vec2; trackDeg: number } {
   const n = path.points.length
+  if (n === 0) throw new RangeError('pointAt: the path has no points')
   if (n === 1) return { pos: { ...path.points[0] }, trackDeg: 0 }
   const d = Math.max(0, Math.min(path.length, s))
   let i = 1

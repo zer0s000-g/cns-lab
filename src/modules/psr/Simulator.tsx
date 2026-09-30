@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { wholeDegrees } from "@/lib/format";
 import { Link } from "react-router";
 import { ArrowRight } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -307,7 +308,7 @@ function ControlDeck() {
     const a = engine.getAircraft(selectedId);
     return a
       ? {
-          heading: Math.round(
+          heading: wholeDegrees(
             a.mode.kind === "heading" ? a.targetHeadingDeg : a.headingDeg,
           ),
           speed: Math.round(a.targetSpeedKt),

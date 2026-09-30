@@ -8,15 +8,7 @@ export const STATE_TEXT: Record<LinkState, string> = {
 }
 
 /** "2 h 05 min", "3 min 20 s", "4.2 s". */
-export function formatDuration(s: number): string {
-  if (!Number.isFinite(s)) return '—'
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = Math.floor(s % 60)
-  if (h > 0) return `${h} h ${String(m).padStart(2, '0')} min`
-  if (m > 0) return `${m} min ${String(sec).padStart(2, '0')} s`
-  return `${s < 10 ? s.toFixed(1) : Math.round(s)} s`
-}
+export { formatDuration } from '@/lib/format'
 
 /** Milliseconds with sensible precision. */
 export const formatMs = (s: number) => {

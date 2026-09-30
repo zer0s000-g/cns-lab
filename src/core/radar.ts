@@ -16,6 +16,7 @@ import { bearingDeg, distanceNm, sweepCovers, angleDiff, type Vec2 } from './geo
 import { earthDropFt, lineOfSight, radioLineOfSightNm, slantRangeNm, type TerrainFn } from './propagation'
 import { FT_PER_NM, LIGHT_NM_PER_US } from './units'
 import { valueNoise } from './random'
+import { positiveStep } from './guard'
 
 export interface RadarParams {
   /** Time for one antenna revolution (the update interval), s. */
@@ -181,6 +182,10 @@ export function evaluateTarget(
   const az = bearingDeg(site.pos, target.pos)
   const app = apparentRange(range, params.prfHz)
   const base = { trueRangeNm: range, apparentRangeNm: app.rangeNm, trace: app.trace, azimuthDeg: az }
+  // A target without a real position or altitude is never "detected".
+  if (!Number.isFinite(range) || !Number.isFinite(target.altitudeFt) || !Number.isFinite(target.rcsM2)) {
+    return { ...base, detected: false, reason: 'weak', snrDb: -Infinity, pd: 0 }
+  }
 
   if (elevationAngleDeg(ground, target.altitudeFt, site.heightFt) > MAX_ELEVATION_DEG) {
     return { ...base, detected: false, reason: 'cone', snrDb: -Infinity, pd: 0 }
@@ -227,8 +232,8 @@ export function buildGroundClutter(
   maxRangeNm: number,
   opts: { azStepDeg?: number; rangeStepNm?: number; seed?: number; isWater?: (p: Vec2) => boolean } = {},
 ): ClutterCell[] {
-  const azStep = opts.azStepDeg ?? 1
-  const rStep = opts.rangeStepNm ?? 0.5
+  const azStep = positiveStep(opts.azStepDeg ?? 1, 'azStepDeg')
+  const rStep = positiveStep(opts.rangeStepNm ?? 0.5, 'rangeStepNm')
   const seed = opts.seed ?? 7
   const cells: ClutterCell[] = []
   for (let az = 0; az < 360; az += azStep) {

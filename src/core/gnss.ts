@@ -785,6 +785,7 @@ export function raimCheck(
  * position"; near 1 means "it stands out".
  */
 export function faultVisibility(dirs: SkyDirection[], index: number): number {
+  if (!Number.isInteger(index) || index < 0 || index >= dirs.length) throw new RangeError(`faultVisibility: no satellite ${index} among ${dirs.length}`)
   if (dirs.length < 5) return 0
   const G = geometryMatrix(dirs)
   const { N } = normalEquations(G, new Array<number>(G.length).fill(0))

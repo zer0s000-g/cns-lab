@@ -19,6 +19,7 @@ import {
   type Vec2,
 } from './geometry'
 import { clamp, FT_PER_NM, ktToNmPerS } from './units'
+import { positiveStep } from './guard'
 
 // ---------------------------------------------------------------------------
 // Airport
@@ -336,7 +337,10 @@ export function stepAircraft(ac: Aircraft, dt: number, perf: AircraftPerformance
  * speeds. Each sub-step is at most `maxSubStepS`.
  */
 export function stepAircraftFine(ac: Aircraft, dt: number, maxSubStepS = 0.25): Aircraft {
-  if (dt <= 0) return ac
+  if (!(dt > 0)) return ac
+  // Infinity would mean infinitely many sub-steps.
+  if (!Number.isFinite(dt)) throw new RangeError(`stepAircraftFine: dt must be finite (got ${dt})`)
+  positiveStep(maxSubStepS, 'maxSubStepS')
   const n = Math.max(1, Math.ceil(dt / maxSubStepS))
   let a = ac
   for (let i = 0; i < n; i++) a = stepAircraft(a, dt / n)

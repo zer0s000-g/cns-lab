@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { wholeDegrees } from '@/lib/format'
 import { Link } from 'react-router'
 import { ArrowRight } from 'lucide-react'
 import { Label } from '@/components/ui/label'
@@ -274,7 +275,7 @@ function SsrControls() {
   const ids = useSampled(() => engine.aircraft.map((a) => a.id).join(','), 300)
   const sel = useSampled(() => {
     const a = engine.getAircraft(selectedId)
-    return a ? { heading: Math.round(a.mode.kind === 'heading' ? a.targetHeadingDeg : a.headingDeg), speed: Math.round(a.targetSpeedKt), alt: Math.round(a.targetAltitudeFt), mode: a.mode.kind, cat: a.category } : null
+    return a ? { heading: wholeDegrees(a.mode.kind === 'heading' ? a.targetHeadingDeg : a.headingDeg), speed: Math.round(a.targetSpeedKt), alt: Math.round(a.targetAltitudeFt), mode: a.mode.kind, cat: a.category } : null
   }, 200)
 
   return (

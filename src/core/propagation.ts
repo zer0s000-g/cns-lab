@@ -18,6 +18,7 @@ import {
   METRES_PER_NM,
   SPEED_OF_LIGHT_MS,
 } from './units'
+import { positiveStep } from './guard'
 
 /** Rule-of-thumb constant: NM of radio horizon per sqrt(ft) of antenna height. */
 export const RADIO_HORIZON_K = 1.23
@@ -106,6 +107,7 @@ export function lineOfSight(
   terrain: TerrainFn = () => 0,
   stepNm = 0.25,
 ): LineOfSightResult {
+  positiveStep(stepNm, 'stepNm')
   const total = distanceNm(tx, rx)
   if (total < 1e-9) {
     return { visible: true, minClearanceFt: Infinity, worstPoint: tx, worstDistanceNm: 0 }
@@ -119,7 +121,10 @@ export function lineOfSight(
     const t = i / n
     const s = total * t
     const p = { x: tx.x + (rx.x - tx.x) * t, y: tx.y + (rx.y - tx.y) * t }
-    const clear = rayHeightFt(s, total, hTxFt, hRxFt) - Math.max(0, terrain(p))
+    // Terrain of unknown height blocks the path: never report a line of sight that was not checked.
+    const h = terrain(p)
+    let clear = Number.isFinite(h) ? rayHeightFt(s, total, hTxFt, hRxFt) - Math.max(0, h) : -Infinity
+    if (Number.isNaN(clear)) clear = -Infinity // an antenna height that is not a number
     if (clear < minClear) {
       minClear = clear
       worst = p

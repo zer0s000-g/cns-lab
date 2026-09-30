@@ -6,14 +6,21 @@
 import type { ThemeTokens } from '@/hooks/useThemeTokens'
 import { toRad } from '@/core/geometry'
 
-/** Exponential smoothing toward a target (instrument needle damping). */
+/**
+ * Exponential smoothing toward a target (instrument needle damping). A reading that is
+ * not a number leaves the needle where it is, and a needle state that went bad snaps
+ * to the next good reading: one NaN must not hide the needle for the rest of the session.
+ */
 export function damp(current: number, target: number, dt: number, tauS: number): number {
-  if (!(dt > 0) || tauS <= 0) return target
+  if (!Number.isFinite(target)) return current
+  if (!Number.isFinite(current) || !(dt > 0) || tauS <= 0) return target
   return current + (target - current) * (1 - Math.exp(-dt / tauS))
 }
 
 /** Damping for angles: takes the short way round, result in [0, 360). */
 export function dampAngle(current: number, target: number, dt: number, tauS: number): number {
+  if (!Number.isFinite(target)) return current
+  if (!Number.isFinite(current)) return ((target % 360) + 360) % 360
   const diff = ((((target - current) % 360) + 540) % 360) - 180
   const v = current + damp(0, diff, dt, tauS)
   return ((v % 360) + 360) % 360

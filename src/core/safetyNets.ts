@@ -7,6 +7,7 @@
  */
 
 import type { Vec2 } from './geometry'
+import { positiveStep } from './guard'
 
 export interface PredictState {
   id: string
@@ -132,6 +133,7 @@ export function msaw(
   p: MsawParams = MSAW_DEFAULT,
   inhibit?: (pos: Vec2, altitudeFt: number) => boolean,
 ): MsawResult {
+  positiveStep(p.stepS, 'stepS')
   let tv: number | null = null
   let minClear = Infinity
   let worst = s.pos
@@ -139,7 +141,9 @@ export function msaw(
     const pos = { x: s.pos.x + s.vel.x * t, y: s.pos.y + s.vel.y * t }
     const alt = s.altitudeFt + (s.verticalSpeedFpm / 60) * t
     if (inhibit?.(pos, alt)) continue
-    const clear = alt - terrain(pos)
+    // An unknown terrain height or aircraft altitude counts as no clearance: warn rather than stay silent.
+    const h = terrain(pos)
+    const clear = Number.isFinite(h) && Number.isFinite(alt) ? alt - h : -Infinity
     if (clear < minClear) {
       minClear = clear
       worst = pos

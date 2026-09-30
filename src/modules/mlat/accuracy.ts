@@ -4,6 +4,7 @@
  * the fixes always agree.
  */
 
+import { formatLength } from '@/lib/format'
 import type { Bounds } from '@/core/mlat'
 import { arrivalTimeUs, expectedErrorM, mlatDop, solveTdoa, worldToEnuM } from '@/core/mlat'
 import type { Vec3 } from '@/core/geometry'
@@ -27,12 +28,7 @@ export function bandLabel(b: number): string {
 }
 
 export function formatM(m: number): string {
-  if (!Number.isFinite(m)) return '—'
-  if (m >= 10000) return `${(m / 1000).toFixed(0)} km`
-  if (m >= 1000) return `${(m / 1000).toFixed(1)} km`
-  if (m >= 100) return `${Math.round(m / 10) * 10} m`
-  if (m >= 10) return `${Math.round(m)} m`
-  return `${m.toFixed(1)} m`
+  return formatLength(m, { tens: true })
 }
 
 /** Centre of grid cell (i, j), NM. Row 0 is the SOUTH edge. */

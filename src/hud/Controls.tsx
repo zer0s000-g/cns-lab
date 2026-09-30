@@ -32,7 +32,9 @@ export function Dial({ label, value, min, max, step = 1, onChange, format, size 
   const drag = useRef<{ y: number; v: number } | null>(null)
   const f = (clamp(value, min, max) - min) / (max - min)
   const angle = -sweepDeg / 2 + f * sweepDeg
-  const snap = (v: number) => clamp(Math.round((v - min) / step) * step + min, min, max)
+  // Steps count from min; the ends are always reachable exactly, even when the range is not
+  // a whole number of steps (a log-scale power dial from log10(5) to 3).
+  const snap = (v: number) => (v >= max ? max : v <= min ? min : clamp(Math.round((v - min) / step) * step + min, min, max))
   const set = (v: number) => {
     const s = snap(v)
     if (s !== value) onChange(Number(s.toFixed(6)))

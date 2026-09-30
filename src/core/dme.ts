@@ -18,6 +18,7 @@
 
 import { rangeFromRoundTripNm, roundTripTimeUs, travelTimeUs } from './propagation'
 import { FT_PER_NM } from './units'
+import { positiveStep } from './guard'
 
 // ---------------------------------------------------------------------------
 // Channels and frequencies
@@ -259,6 +260,8 @@ export function randomReplyDelaysUs(rand: () => number, ratePps: number, windowU
 
 /** Count of delays in each bin of width `binUs` from 0 to `maxUs` over many interrogations. */
 export function replyHistogram(rows: readonly (readonly number[])[], binUs: number, maxUs: number): number[] {
+  positiveStep(binUs, 'binUs')
+  positiveStep(maxUs, 'maxUs')
   const n = Math.max(1, Math.ceil(maxUs / binUs))
   const bins = new Array<number>(n).fill(0)
   for (const row of rows) {

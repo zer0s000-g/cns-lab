@@ -25,8 +25,10 @@ Also read `CLAUDE.md`, `design.md` and the module's section in
 | `tests/modules/<id>-engine.test.ts` | Tests for the engine's behaviour (one per important claim the module makes). |
 | `src/content/glossary/<id>.json` | New jargon terms: `[{ "id", "term", "definition" }]`. ids are lowercase-kebab and unique across **all** glossary files (grep before adding; reuse an existing id instead of duplicating). |
 
-The route (`/modules/<id>`) and home-page card already exist in `src/modules/registry.ts`;
-creating `src/modules/<id>/index.tsx` makes the module "ready" automatically.
+The route (`/modules/<id>`) and home-page card come from `src/modules/catalog.json` (the
+module's data, also read by the build scripts) plus its icon in `ICONS` in
+`src/modules/registry.ts`; creating `src/modules/<id>/index.tsx` makes the module "ready"
+automatically.
 
 ## 2. Shared building blocks (do not duplicate, do not modify)
 
@@ -47,6 +49,8 @@ creating `src/modules/<id>/index.tsx` makes the module "ready" automatically.
 - **Colours** `@/hooks/useThemeTokens` (`tokens` in draw callbacks; `useThemeTokens()` in React), `@/lib/color` (`withAlpha`, `mix`).
 - **Audio** `@/lib/audio`: `audio.keyed(segments, hz, { loopPeriodS })`, `audio.tone`, `audio.noise`, `audio.heterodyne`, `audio.selcal`, `audio.stopAll()`, and `caption(text, seconds)`. Every sound must post a caption. Morse and marker timings come from `@/core/morse`.
 - **Core** `@/core/units`, `@/core/geometry`, `@/core/propagation`, `@/core/world`, `@/core/clock`, `@/core/morse`, `@/core/random`, `@/core/radar`.
+- **Formatting** `@/lib/format`: `formatLength`, `formatDuration`, `formatClock`, `formatHeading`, `wholeDegrees`, `fixed`, `NO_VALUE`. Use these for readouts instead of writing new formatters.
+- **Lazy loading** `@/lib/lazyRetry`: `lazyRetry(() => import('./Hero3D'))`, never `React.lazy` directly (see section 6).
 - **UI primitives** only from `@/components/ui/*` (shadcn/ui). Icons only from `lucide-react`.
 - **Glossary** `<Term id="...">words</Term>` from `@/components/Term`.
 
@@ -107,11 +111,47 @@ files outside your module(s), your core/test files and your glossary file.
 - Canvases get a meaningful `label` (screen-reader text) that updates with the state.
 - Draggable things also have a keyboard or slider alternative.
 
-## 6. Checks before you finish
+## 6. Wrong inputs and failures
+
+The app never shows "NaN", never freezes silently and never goes blank. The shared pieces
+already do most of this; a module keeps to these rules:
+
+- **Core functions** (`src/core`): a value that is not a number never becomes a plausible
+  answer. Return the function's "no answer" result (null, not detected, line of sight
+  blocked, MSAW alert, CDI flag OFF) for NaN or Infinity. A step size that would loop
+  forever throws: use `positiveStep(value, 'name')` from `@/core/guard`. Empty or
+  out-of-range inputs fail with a clear `RangeError`, not by reading `undefined`. Test
+  these cases (see `tests/core/guard.test.ts`).
+- **Readouts**: format with `@/lib/format`. It shows "—" for NaN/Infinity and rounds before
+  choosing the unit (999.6 m reads "1.0 km", 59.6 s "1 min 00 s", 359.6° "000").
+- **Controls**: `Dial` and `ControlSlider` ranges are the contract. Every value an engine
+  can receive comes from one of them, so give each control its real min, max and step.
+  Cyclic values (time of day, headings on a dial) use `<Dial wrap>`.
+- **Loops**: drive the simulation with `useSimulationLoop`. A frame that throws is logged,
+  and an error that repeats for 30 frames goes to the page's error screen. `Canvas2D`
+  skips drawing below 8 px and contains draw errors, but still clamp computed radii to
+  ≥ 0 (`ctx.arc` throws on a negative radius).
+- **Audio**: `audio.*` never throws (a refused AudioContext means silence, captions still
+  show). Keep the handle of any looping or long sound, and stop the previous one before
+  starting another. Put `soundOn` in the dependencies of an effect that starts a loop,
+  so it comes back after unmute. Clear pending timers in the module's `dispose`.
+- **Reset**: anything that remembers engine time (audio directors, caption throttles)
+  must notice the engine clock going backwards and forget it.
+- **3D**: load scenes with `lazyRetry` inside the stage (the `StageBoundary` offers
+  "Try again" or "Reload page" for a failed download). A texture, geometry or material
+  made in `useMemo` is disposed when it is replaced:
+  `useLayoutEffect(() => () => tex.dispose(), [tex])`.
+- **Saved state**: persisted stores use `safeStorage` from `@/stores/storage`, a
+  `version`, and a `merge` that checks every field (a full or blocked localStorage, or a
+  hand-edited value, must not break a page).
+- **Fuzz**: add the module to `tests/modules/fuzz.test.ts` with its controls' real ranges.
+  The test fails if any position, altitude, heading, speed or time becomes NaN.
+
+## 7. Checks before you finish
 
 ```bash
 npx tsc -p tsconfig.test.json --noEmit 2>&1 | grep -E "<your paths>"   # must print nothing
-npx vitest run tests/core/<topic>.test.ts tests/modules/<id>-engine.test.ts tests/content
+npx vitest run tests/core/<topic>.test.ts tests/modules/<id>-engine.test.ts tests/modules/fuzz.test.ts tests/content
 npx oxlint src/modules/<id> src/core/<topic>.ts
 ```
 
