@@ -57,7 +57,7 @@ export function ChapterScrubber({
                 c.id === active ? 'text-signal' : 'text-muted-foreground/70',
               )}
             >
-              <span className="mr-1 text-muted-foreground/60">{String(i + 1).padStart(2, '0')}</span>
+              <span className="mr-1 text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
               <span className="hidden sm:inline">{c.label}</span>
             </button>
           </li>

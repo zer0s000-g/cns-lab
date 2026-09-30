@@ -4,10 +4,27 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
+  // A table wider than the screen scrolls sideways; keyboard users can only scroll it if the
+  // container can take focus, so it becomes a focusable, labelled region while it overflows.
+  const ref = React.useRef<HTMLDivElement>(null)
+  const [scrolls, setScrolls] = React.useState(false)
+  React.useEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === "undefined") return
+    const check = () => setScrolls(el.scrollWidth > el.clientWidth + 1)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   return (
     <div
+      ref={ref}
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="relative w-full overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      tabIndex={scrolls ? 0 : undefined}
+      role={scrolls ? "region" : undefined}
+      aria-label={scrolls ? (props["aria-label"] ?? "Table (scrolls sideways)") : undefined}
     >
       <table
         data-slot="table"
