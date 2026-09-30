@@ -60,6 +60,9 @@ export const GROUND_FORWARD_S = 2
 /** Climb and descent rate after WILCO, flight levels per second (1,000 ft/min). */
 export const LEVEL_RATE_FL_S = 10 / 60
 /** Levels the controller can choose. */
+/** Messages kept in the log (open ones are never dropped). */
+export const MAX_ENTRIES = 40
+
 export const LEVELS = [300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410]
 /** Clock time shown on the displays at t = 0 (fictional UTC). */
 export const START_UTC_S = 14 * 3600 + 20 * 60
@@ -352,6 +355,10 @@ export class CpdlcEngine {
       return { ok: false, reason: this.logonNote }
     }
     if (this.link.active) return { ok: false, reason: 'Already connected.' }
+    // A second logon while the first is still on its way would restart the timeline and
+    // send a duplicate logon and connection request.
+    if (this.logonState === 'sent' || this.logonState === 'accepted') return { ok: false, reason: 'Logon in progress.' }
+    if (!flightId.trim()) return { ok: false, reason: 'Enter the flight ID.' }
     this.logonState = 'sent'
     this.logonNote = ''
     const to = this.logonTarget
@@ -640,8 +647,21 @@ export class CpdlcEngine {
       alerted: false,
     }
     this.entries.unshift(e)
-    if (this.entries.length > 40) this.entries.length = 40
+    this.trimLog()
     return e
+  }
+
+  /**
+   * Keep the log to MAX_ENTRIES by dropping the oldest finished messages. Anything
+   * still open, or still on the cockpit display, stays until it is dealt with:
+   * otherwise its RCP timer and alarm would silently disappear.
+   */
+  private trimLog() {
+    for (let i = this.entries.length - 1; i >= 0 && this.entries.length > MAX_ENTRIES; i--) {
+      const x = this.entries[i]
+      const onCockpit = x.dir === 'up' && x.status === 'received' && !x.handled
+      if (!x.open && !onCockpit) this.entries.splice(i, 1)
+    }
   }
 
   /** The uplink the cockpit display should show now (oldest unhandled first). */

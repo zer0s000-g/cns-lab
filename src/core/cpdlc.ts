@@ -180,10 +180,14 @@ export function answerConnectionRequest(link: AvionicsLink, fromUnit: string): C
   return { accept: false, reason: `${fromUnit} is not the next data authority`, link }
 }
 
-/** UM160: the current centre names the next one. */
+/**
+ * UM160: the current centre names the next one. Naming a different centre ends any
+ * inactive connection with the previously named one: only the Next Data Authority
+ * may hold it, so END SERVICE can never hand control to a centre no longer named.
+ */
 export function setNextDataAuthority(link: AvionicsLink, fromUnit: string, next: string): AvionicsLink {
   if (fromUnit !== link.active) return link
-  return { ...link, nda: next }
+  return { ...link, nda: next, inactive: link.inactive === next ? link.inactive : null }
 }
 
 /**

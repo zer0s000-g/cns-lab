@@ -119,7 +119,7 @@ export function BreakPanel({ className }: { className?: string }) {
           )
         })}
         <HudButton onClick={resetAll} className="mt-2 min-h-10">
-          <RotateCcw aria-hidden /> Reset everything
+          <RotateCcw aria-hidden /> Restore all systems
         </HudButton>
       </details>
       <p className="hud-label text-[9.5px] leading-4 text-muted-foreground/80">CNS700 keeps its planned path whatever you break; the panels show what would fail and what people would do.</p>

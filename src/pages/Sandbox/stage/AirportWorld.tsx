@@ -318,7 +318,7 @@ function IlsOverlay({ t, engine }: { t: ThemeTokens; engine: SandboxEngine }) {
 function Cns700({ t, engine, reduced, pixelRatio }: { t: ThemeTokens; engine: SandboxEngine; reduced: boolean; pixelRatio: number }) {
   const ref = useRef<THREE.Group>(null)
   const state = useRef<AirlinerState>({ ...PARKED_STATE })
-  const att = useRef({ pitch: 0, bank: 0, lastT: -1 })
+  const att = useRef({ pitch: 0, bank: 0, lastT: -1, runId: -1 })
   useFrame(() => {
     const a = engine.journeyAircraft
     const pose = engine.journeyPose()
@@ -329,9 +329,17 @@ function Cns700({ t, engine, reduced, pixelRatio }: { t: ThemeTokens; engine: Sa
     att.current.lastT = engine.timeS
     const onGround = j.ground != null
     const target = targetPitchDeg(j.phase, pose.speedKt, pose.verticalSpeedFpm)
-    att.current.pitch = dt === 0 && onGround ? target : stepPitch(att.current.pitch, target, dt)
     const bankWant = bankDeg(pose.speedKt, engine.journeyTurnRateDegS(), !onGround)
-    att.current.bank = stepPitch(att.current.bank, bankWant, dt * 3)
+    if (att.current.runId !== engine.runId) {
+      // A jump, restart or reset: take the new attitude at once (even while paused), not
+      // an easing from wherever the aircraft was, e.g. banked in a turn over the sea.
+      att.current.runId = engine.runId
+      att.current.pitch = target
+      att.current.bank = bankWant
+    } else {
+      att.current.pitch = dt === 0 && onGround ? target : stepPitch(att.current.pitch, target, dt)
+      att.current.bank = stepPitch(att.current.bank, bankWant, dt * 3)
+    }
     g.position.set(pose.posM.x, aglM(pose.altitudeFt), -pose.posM.y)
     g.rotation.order = 'YXZ'
     g.rotation.set((att.current.pitch * Math.PI) / 180, bearingToThreeRotationY(pose.headingDeg), (-att.current.bank * Math.PI) / 180)

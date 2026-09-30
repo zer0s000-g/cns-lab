@@ -1,4 +1,4 @@
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { Switch as SwitchPrimitive, ToggleGroup as ToggleGroupPrimitive } from 'radix-ui'
 import { cn } from '@/lib/utils'
 
@@ -17,15 +17,18 @@ export interface DialProps {
   className?: string
   /** Sweep of the dial, degrees (default 270°, from -135° to +135°). */
   sweepDeg?: number
+  /** Steps past max come round to min and back (a 24-hour clock). */
+  wrap?: boolean
 }
 
 /**
- * Rotary knurled dial. Drag up/down (or around), scroll, or use the keyboard:
- * arrows ±step, Page Up/Down ±10 steps, Home/End min/max. Exposes
+ * Rotary knurled dial. Drag up/down (or around), scroll while it has focus, or use
+ * the keyboard: arrows ±step, Page Up/Down ±10 steps, Home/End min/max. Exposes
  * role="slider" with a value text, like the sliders it replaces.
  */
-export function Dial({ label, value, min, max, step = 1, onChange, format, size = 64, className, sweepDeg = 270 }: DialProps) {
+export function Dial({ label, value, min, max, step = 1, onChange, format, size = 64, className, sweepDeg = 270, wrap = false }: DialProps) {
   const id = useId()
+  const knob = useRef<HTMLDivElement>(null)
   const drag = useRef<{ y: number; v: number } | null>(null)
   const f = (clamp(value, min, max) - min) / (max - min)
   const angle = -sweepDeg / 2 + f * sweepDeg
@@ -34,29 +37,52 @@ export function Dial({ label, value, min, max, step = 1, onChange, format, size 
     const s = snap(v)
     if (s !== value) onChange(Number(s.toFixed(6)))
   }
+  /** One relative move (keys, wheel). It never goes the wrong way, even from a value outside the dial's range. */
+  const nudge = (delta: number) => {
+    let v = value + delta
+    if (wrap) {
+      const span = max - min + step
+      v = ((((v - min) % span) + span) % span) + min
+      set(v)
+      return
+    }
+    const s = snap(v)
+    if ((delta > 0 && s > value) || (delta < 0 && s < value)) onChange(Number(s.toFixed(6)))
+  }
   const text = format ? format(value) : String(value)
   const onKey = (e: KeyboardEvent) => {
     const big = step * 10
-    const map: Record<string, number> = {
-      ArrowUp: value + step,
-      ArrowRight: value + step,
-      ArrowDown: value - step,
-      ArrowLeft: value - step,
-      PageUp: value + big,
-      PageDown: value - big,
-      Home: min,
-      End: max,
-    }
-    if (e.key in map) {
+    const moves: Record<string, number> = { ArrowUp: step, ArrowRight: step, ArrowDown: -step, ArrowLeft: -step, PageUp: big, PageDown: -big }
+    if (e.key in moves) {
       e.preventDefault()
-      set(map[e.key])
+      nudge(moves[e.key])
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault()
+      set(e.key === 'Home' ? min : max)
     }
   }
+  // The wheel turns the dial only while it has focus: scrolling the page past a dial must not
+  // change a frequency or an altitude. A native listener, because React's is passive and could
+  // not stop the page from scrolling at the same time.
+  const nudgeRef = useRef(nudge)
+  nudgeRef.current = nudge
+  useEffect(() => {
+    const el = knob.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (document.activeElement !== el || e.deltaY === 0) return
+      e.preventDefault()
+      nudgeRef.current(e.deltaY < 0 ? step : -step)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [step])
   const r = size / 2
   const teeth = 36
   return (
     <div className={cn('flex flex-col items-center gap-2', className)}>
       <div
+        ref={knob}
         role="slider"
         tabIndex={0}
         aria-labelledby={`${id}-l`}
@@ -77,7 +103,6 @@ export function Dial({ label, value, min, max, step = 1, onChange, format, size 
         }}
         onPointerUp={() => (drag.current = null)}
         onPointerCancel={() => (drag.current = null)}
-        onWheel={(e) => set(value + (e.deltaY < 0 ? step : -step))}
         className="relative cursor-ns-resize touch-none rounded-full outline-offset-4 select-none"
         style={{ width: size, height: size }}
       >

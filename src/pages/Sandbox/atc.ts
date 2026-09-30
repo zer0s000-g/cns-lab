@@ -62,6 +62,10 @@ export const PHASE_UNIT: Record<FlightPhase, AtcUnit> = {
   arrived: 'ground',
 }
 
+// TODO(expert-review): control changes here at each flight-phase boundary, while the scripted
+// radio hands over up to about 20 s earlier or later (e.g. the push-back request goes to Ground
+// while the card still shows Delivery). Should "Controlled by" follow the transfer instruction,
+// the check-in with the next unit, or the phase? Left phase-based until an ATC expert decides.
 export const controllingUnit = (p: FlightPhase): AtcUnit => PHASE_UNIT[p]
 
 /** A frequency as spoken on the radio: trailing zeros dropped ("121.900" → "121.9"). */

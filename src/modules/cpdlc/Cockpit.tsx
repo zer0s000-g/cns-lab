@@ -192,7 +192,7 @@ export function Cockpit() {
               size="sm"
               variant="outline"
               className={cn(keyClass, 'self-start')}
-              disabled={s.logonState === 'sent'}
+              disabled={s.logonState === 'sent' || s.logonState === 'accepted' || !flightId.trim()}
               onClick={() => {
                 engine.pilotLogon(flightId)
                 touch()

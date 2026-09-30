@@ -124,10 +124,14 @@ export function createSandboxStore(engine: SandboxEngine) {
       set({ activeStop: null, debrief: false, selectedId: 'CNS700' })
     },
     resetAll: () => {
-      engine.systems = { ...ALL_SYSTEMS_ON }
-      engine.scenario = 'normal'
-      engine.reset()
-      set({ systems: { ...ALL_SYSTEMS_ON }, scenario: 'normal', vhfStandby: false, selectedId: 'CNS700', coverage: null, activeStop: null, debrief: false })
+      // Failures only: the journey, a guided stop on screen and the clock are left as they are.
+      engine.restoreAllSystems()
+      set((s) => ({
+        systems: { ...engine.systems },
+        scenario: 'normal',
+        vhfStandby: false,
+        selectedId: s.selectedId && engine.aircraft.some((a) => a.id === s.selectedId) ? s.selectedId : 'CNS700',
+      }))
     },
   }))
 }

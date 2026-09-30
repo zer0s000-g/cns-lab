@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { deliveryRangeS, RCP } from '@/core/cpdlc'
-import { CpdlcEngine, EXTRA_DELAY_S, OWN } from '@/modules/cpdlc/engine'
+import { CpdlcEngine, EXTRA_DELAY_S, MAX_ENTRIES, OWN } from '@/modules/cpdlc/engine'
 
 function run(e: CpdlcEngine, seconds: number, dt = 0.5) {
   for (let t = 0; t < seconds; t += dt) e.step(dt)
@@ -277,5 +277,39 @@ describe('CPDLC engine: voice versus datalink challenge', () => {
     run(e, Math.max(c.voice.totalS, c.cpdlc.totalS) + 1, 1)
     expect(c.done).toBe(true)
     expect(e.challengeHistory[0].n).toBe(5)
+  })
+})
+
+describe('CPDLC engine: wrong inputs', () => {
+  it('refuses a second logon while the first is still on its way, keeping the timeline', () => {
+    const e = new CpdlcEngine()
+    expect(e.pilotLogon().ok).toBe(true)
+    run(e, 3)
+    const sentAt = e.milestones.logonSent
+    const again = e.pilotLogon()
+    expect(again).toEqual({ ok: false, reason: 'Logon in progress.' })
+    expect(e.milestones.logonSent).toBe(sentAt)
+    expect(e.transits.filter((t) => t.kind === 'logon')).toHaveLength(1)
+  })
+
+  it('refuses an empty flight ID instead of sending a garbled logon', () => {
+    const e = new CpdlcEngine()
+    expect(e.pilotLogon('   ')).toEqual({ ok: false, reason: 'Enter the flight ID.' })
+    expect(e.transits).toHaveLength(0)
+    expect(e.logonState).toBe('none')
+  })
+
+  it('never drops an open clearance from the log, however many messages follow', () => {
+    const e = new CpdlcEngine()
+    connect(e)
+    const up = e.sendUplink('CNS123', [{ id: 'UM20', values: { level: 370 } }]).entry!
+    for (let i = 0; i < MAX_ENTRIES + 5; i++) {
+      e.pilotRequest(i % 2 ? 390 : 330)
+      run(e, 1)
+    }
+    // Only finished messages are trimmed; every open one is still there.
+    expect(e.entries.filter((x) => !x.open).length).toBeLessThanOrEqual(MAX_ENTRIES)
+    expect(e.entry(up.id)).toBeDefined()
+    expect(e.openUplinks().some((x) => x.id === up.id)).toBe(true)
   })
 })

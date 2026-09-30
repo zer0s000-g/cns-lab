@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createSimClock } from '@/hooks/useSimClock'
 import { SANDBOX_SPEEDS, STOP_SLOWDOWN_MAX } from '@/pages/Sandbox/director'
 import { driveFrame, secondsToNextStop, type Driver } from '@/pages/Sandbox/drive'
-import { SandboxEngine } from '@/pages/Sandbox/engine'
+import { ALL_SYSTEMS_ON, SandboxEngine } from '@/pages/Sandbox/engine'
 import { getJourneyIndex } from '@/pages/Sandbox/phases'
 import { createSandboxStore } from '@/pages/Sandbox/state'
 
@@ -96,5 +96,51 @@ describe('the journey page, frame by frame', () => {
     d.store.getState().flyAgain()
     expect(d.store.getState().debrief).toBe(false)
     expect(d.engine.phase).toBe('gate')
+  })
+})
+
+describe('jumps, restore and repeated instructions', () => {
+  it('jumping to Ocean still shows the ocean-entry stop', () => {
+    const d = driver()
+    d.store.getState().jumpTo('ocean')
+    frames(d, () => d.store.getState().activeStop !== null, 5)
+    expect(d.store.getState().activeStop).toBe('oceanEntry')
+    expect(d.clock.getState().running).toBe(false)
+    // Shown once: resuming does not show it again.
+    d.store.getState().showStop(null)
+    d.clock.getState().play()
+    frames(d, () => false, 30)
+    expect(d.store.getState().activeStop).not.toBe('oceanEntry')
+  })
+
+  it('"Restore all systems" keeps the journey where it is, and a guided stop stays on screen', () => {
+    const d = driver()
+    d.store.getState().jumpTo('climb')
+    frames(d, () => d.store.getState().activeStop !== null, 40000)
+    expect(d.store.getState().activeStop).toBe('oceanEntry')
+    const tick = d.engine.journeyTick
+    d.store.getState().setSystem('vhf', false)
+    d.store.getState().setScenario('mountain')
+    d.engine.spawnConflict()
+    d.store.getState().resetAll()
+    const s = d.store.getState()
+    expect(d.engine.journeyTick).toBe(tick)
+    expect(d.engine.phase).toBe('ocean')
+    expect(s.activeStop).toBe('oceanEntry')
+    expect(s.scenario).toBe('normal')
+    expect(s.systems).toEqual(ALL_SYSTEMS_ON)
+    expect(d.engine.aircraft.some((a) => a.scenario)).toBe(false)
+    expect(s.selectedId).toBe('CNS700')
+  })
+
+  it('resolving the conflict twice climbs CNS9B to FL110 once', () => {
+    const d = driver()
+    d.engine.spawnConflict()
+    d.engine.resolveConflict()
+    const logs = d.engine.log.length
+    d.engine.resolveConflict()
+    d.engine.resolveConflict()
+    expect(d.engine.getAircraft('CNS9B')!.targetAltitudeFt).toBe(11000)
+    expect(d.engine.log.length).toBe(logs)
   })
 })

@@ -248,6 +248,7 @@ function HfControls() {
             onChange={(v) => setParam('hour', v)}
             format={(v) => `${formatHour(v)} · ${v >= 6 && v < 18 ? 'day' : 'night'}`}
             sweepDeg={330}
+            wrap
           />
           <p className="min-w-0 flex-1 text-[11.5px] leading-4 text-muted-foreground">Local time on the path. The Sun rises at 06:00 and sets at 18:00.</p>
         </div>

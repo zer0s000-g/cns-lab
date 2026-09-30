@@ -23,6 +23,7 @@ import {
   responseOptions,
   sampleDeliveryS,
   setNextDataAuthority,
+  type AvionicsLink,
   simulateCpdlc,
   simulateVoice,
   validateLogon,
@@ -208,5 +209,19 @@ describe('voice versus datalink (illustrative model)', () => {
     }
     expect(corrected).toBeGreaterThan(0)
     expect(blocked).toBeGreaterThan(0)
+  })
+})
+
+describe('changing the next data authority', () => {
+  it('ends an inactive connection with the centre no longer named, so END SERVICE cannot hand over to it', () => {
+    let link: AvionicsLink = { address: '8A1C23', active: 'XLAB', inactive: null, nda: null }
+    link = setNextDataAuthority(link, 'XLAB', 'XHBR')
+    link = { ...link, inactive: 'XHBR' }
+    link = setNextDataAuthority(link, 'XLAB', 'XOTH')
+    expect(link).toEqual({ address: '8A1C23', active: 'XLAB', inactive: null, nda: 'XOTH' })
+    expect(endService(link).active).toBeNull()
+    // Naming the same centre again keeps its connection.
+    const kept = setNextDataAuthority({ address: 'A', active: 'XLAB', inactive: 'XHBR', nda: 'XHBR' }, 'XLAB', 'XHBR')
+    expect(kept.inactive).toBe('XHBR')
   })
 })

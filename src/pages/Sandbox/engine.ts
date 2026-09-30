@@ -134,6 +134,9 @@ export const JAMMER = { pos: { x: 10, y: -10 }, radiusNm: 90 }
 // TODO(expert-review): end-to-end ADS-C report latency over SATCOM.
 export const ADSC_LATENCY_S = 25
 
+/** CNS9B's cleared level when the controller resolves the staged conflict (2,000 ft above the traffic). */
+export const CONFLICT_RESOLUTION_FT = 11000
+
 export const ALL_SYSTEMS_ON: Record<SystemId, boolean> = {
   radarApp: true,
   radarEnr: true,
@@ -205,6 +208,7 @@ export class SandboxEngine {
   runId = 0
   /** Journey events of the most recent step, in order (for the page to react to). */
   lastEvents: JourneyEventKind[] = []
+  private jumpEvents: JourneyEventKind[] = []
   /** CNS700 one tick ago, for smooth drawing between ticks. */
   private journeyPrev: SbAircraft | null = null
   private rand: () => number
@@ -242,6 +246,7 @@ export class SandboxEngine {
     this.journeyStartS = 0
     this.journeyPrev = null
     this.lastEvents = []
+    this.jumpEvents = []
     this.runId++
   }
 
@@ -296,6 +301,16 @@ export class SandboxEngine {
     this.replaceJourneyAircraft(a)
     this.journeyStartS = this.timeS - a.journey!.tick * TICK_S
     this.restoreRadioAt(a.journey!.tick)
+    // Events on the very tick the jump landed on will not fire again (stepping starts at the
+    // next tick); the driver shows their guided stop, e.g. ocean entry when jumping to Ocean.
+    this.jumpEvents = getJourneyIndex().events.filter((e) => e.tick === a.journey!.tick).map((e) => e.kind)
+  }
+
+  /** The journey events at the tick of the last jump, once. */
+  takeJumpEvents(): JourneyEventKind[] {
+    const e = this.jumpEvents
+    this.jumpEvents = []
+    return e
   }
 
   jumpToPhase(p: FlightPhase) {
@@ -320,6 +335,7 @@ export class SandboxEngine {
     this.adscLog = []
     this.alerts = this.alerts.filter((al) => !al.ids.includes(JOURNEY_ID))
     this.lastEvents = []
+    this.jumpEvents = []
     this.runId++
   }
 
@@ -471,6 +487,21 @@ export class SandboxEngine {
     if (id === 'mountain') this.spawnMountainAircraft()
   }
 
+  /**
+   * Break-it "Restore everything": every system back on, no scenario, no staged conflict.
+   * CNS700's journey and the clock carry on where they are.
+   */
+  restoreAllSystems() {
+    this.systems = { ...ALL_SYSTEMS_ON }
+    this.setScenario('normal')
+    this.vhfStandby = false
+    this.aircraft = this.aircraft.filter((a) => !a.scenario)
+    const ids = new Set(this.aircraft.map((a) => a.id))
+    this.alerts = this.alerts.filter((al) => al.ids.every((id) => ids.has(id)))
+    for (const id of [...this.tracks.keys()]) if (!ids.has(id)) this.tracks.delete(id)
+    this.addLog('All systems restored.')
+  }
+
   selectVhfStandby() {
     if (this.scenario === 'vhfFail' && !this.vhfStandby) {
       this.vhfStandby = true
@@ -487,11 +518,11 @@ export class SandboxEngine {
     this.addLog('Two aircraft at 9,000 ft are on converging tracks north of the airport.')
   }
 
-  /** Controller instruction resolving the conflict: CNS9B climbs 2,000 ft. */
+  /** Controller instruction resolving the conflict: CNS9B climbs to FL110, 2,000 ft above the traffic. Given once. */
   resolveConflict() {
     const b = this.aircraft.find((x) => x.id === 'CNS9B')
-    if (!b) return
-    this.setAircraft('CNS9B', { targetAltitudeFt: b.altitudeFt + 2000 })
+    if (!b || b.targetAltitudeFt === CONFLICT_RESOLUTION_FT) return
+    this.setAircraft('CNS9B', { targetAltitudeFt: CONFLICT_RESOLUTION_FT })
     this.addLog('Controller: "CNS9B, climb immediately to flight level 110, traffic ahead."')
   }
 
@@ -504,7 +535,7 @@ export class SandboxEngine {
   /** Controller instruction after an MSAW alert. */
   resolveTerrain() {
     const m = this.aircraft.find((x) => x.id === 'CNS9M')
-    if (!m) return
+    if (!m || m.targetAltitudeFt === 12000) return
     this.setAircraft('CNS9M', { targetAltitudeFt: 12000, mode: { kind: 'heading' }, targetHeadingDeg: 90 })
     this.addLog('Controller: "CNS9M, terrain alert, climb immediately to 12,000 ft, turn right heading 090."')
   }

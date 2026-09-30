@@ -29,6 +29,14 @@ export function secondsToNextStop(engine: SandboxEngine, stopsEnabled: boolean):
 /** Run one frame. `dt` is the world time step the clock produced for this frame (0 while paused). */
 export function driveFrame({ engine, clock, store }: Driver, dt: number) {
   const st = store.getState()
+  // A jump that lands exactly on a guided stop (Ocean starts at ocean entry) shows it now:
+  // that event will not fire again from stepping.
+  const landed = engine.takeJumpEvents().find((k) => st.stopsEnabled && st.activeStop === null && isStopEvent(k) && STOP_STORY[k])
+  if (landed) {
+    clock.getState().pause()
+    st.showStop(landed)
+    return
+  }
   if (st.timeMode === 'auto') {
     const want = autoSpeed(engine.phase, secondsToNextStop(engine, st.stopsEnabled))
     if (clock.getState().speed !== want) clock.getState().setSpeed(want)
