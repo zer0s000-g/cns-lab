@@ -141,6 +141,33 @@ describe('radio traffic in the engine', () => {
     expect(e.radio.some((m) => /cleared to land/.test(m.text))).toBe(false)
   })
 
+  it('after a jump, the rest of the exchange under way still plays', () => {
+    const e = new SandboxEngine()
+    e.jumpToTick(firstTick('toTower'))
+    expect(e.radio.some((m) => /cleared to land/i.test(m.text))).toBe(false)
+    runUntil(e, () => e.radio.some((m) => /cleared to land/i.test(m.text) && !m.earlier), 120)
+    const m = e.radio.find((x) => /cleared to land/i.test(x.text) && !x.earlier)
+    expect(m).toBeDefined()
+    expect(m!.unit).toBe('tower')
+  })
+
+  it('jumping to any phase plays the same lines a live flight would over the next minute', () => {
+    const live = new SandboxEngine()
+    for (const p of FLIGHT_PHASES) {
+      const start = idx.phaseStartTick[p]
+      const end = start + Math.round(70 / TICK_S)
+      const expected = idx.events
+        .filter((ev) => ev.tick <= end)
+        .flatMap((ev) => (RADIO_SCRIPT[ev.kind] ?? []).map((l) => ({ due: ev.tick + Math.round(l.delayS / TICK_S), text: l.text })))
+        .filter((l) => l.due > start && l.due <= end)
+        .map((l) => l.text)
+      live.jumpToPhase(p)
+      for (let i = 0; i < 70; i++) live.step(1)
+      const heard = live.radio.filter((r) => !r.earlier).map((r) => r.text)
+      for (const text of expected) expect(heard, `${p}: ${text}`).toContain(text)
+    }
+  })
+
   it('every phase has a unit, and the engine reports it', () => {
     const e = new SandboxEngine()
     for (const p of FLIGHT_PHASES) {

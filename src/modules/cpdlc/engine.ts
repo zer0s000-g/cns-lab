@@ -111,7 +111,7 @@ export interface Entry {
   closedBy: 'reply' | 'voice' | null
   /** The connection was lost while this was open: it must be handled by voice. */
   needsVoice: boolean
-  /** Handled by voice before it arrived: the cockpit only shows it for information. */
+  /** Handled by voice: the cockpit only shows it for information (OK key, no reply). */
   void: boolean
   /** Cockpit: the pilot has replied or dismissed it. */
   handled: boolean
@@ -481,7 +481,9 @@ export class CpdlcEngine {
     const e = this.entry(entryId)
     if (!e || !e.open) return
     this.close(e, 'voice')
-    e.void = e.status === 'sending' || e.status === 'lost'
+    // Whether it is still on its way or already on the cockpit display, the crew now has
+    // it by voice: the data link copy needs no reply.
+    e.void = true
     e.answer = 'Given by voice'
     const lv = e.values.level
     if (lv != null && (e.elements.includes('UM20') || e.elements.includes('UM23'))) this.clearedFl = lv
@@ -531,6 +533,7 @@ export class CpdlcEngine {
   pilotRespond(entryId: number, dm: 'DM0' | 'DM1' | 'DM2' | 'DM3' | 'DM4' | 'DM5'): { ok: boolean; reason?: string } {
     const up = this.entry(entryId)
     if (!up || up.dir !== 'up' || up.status !== 'received' || up.handled) return { ok: false, reason: 'Nothing to answer.' }
+    if (up.void) return { ok: false, reason: 'ATC has already given this by voice. No reply.' }
     if (this.env.lost || !this.link.active) return { ok: false, reason: 'No data link connection. Use voice.' }
     this.airMin = nextMin(this.airMin)
     const text = formatElement(dm)

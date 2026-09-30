@@ -282,6 +282,7 @@ export function gaussNewtonTdoa(
     const nm = weightedNormal(J, e, n)
     const g = nm.JtWe!
     let accepted = false
+    let invertible = false
     for (let tries = 0; tries < 12; tries++) {
       const A = nm.JtWJ.map((row, i) => row.map((v, j) => (i === j ? v * (1 + lambda) + 1e-12 : v)))
       const inv = invertSmall(A)
@@ -289,6 +290,7 @@ export function gaussNewtonTdoa(
         lambda *= 10
         continue
       }
+      invertible = true
       const step = inv.map((row) => -row.reduce((s, v, k) => s + v * g[k], 0))
       const q: Vec3 = { x: p.x + step[0], y: p.y + step[1], z: dims === 3 ? p.z + step[2] : p.z }
       const eq = evalAt(q)
@@ -307,13 +309,17 @@ export function gaussNewtonTdoa(
       lambda *= 4
     }
     if (!accepted) {
-      // No step reduces the cost: we are at a (possibly local) minimum.
-      converged = true
+      // No step reduces the cost: we are at a (possibly local) minimum, unless the
+      // equations could not be solved at all (singular geometry or non-finite inputs).
+      converged = invertible && Number.isFinite(cost)
       break
     }
     if (converged) break
     if (Math.hypot(p.x, p.y, p.z) > 5e6) break // ran away far outside any network
   }
+  // A zero residual proves nothing if the geometry cannot pin the point down
+  // (e.g. receivers on one spot): then every nearby point fits just as well.
+  if (converged && !invertSmall(weightedNormal(tdoaJacobian(receivers, p, dims), null, n).JtWJ)) converged = false
   return { position: p, cost: Math.max(0, cost), converged, iterations }
 }
 
@@ -351,6 +357,16 @@ export function minReceivers(heightKnown: boolean): number {
   return heightKnown ? 3 : 4
 }
 
+/**
+ * Number of receivers at distinct sites: closer than `toleranceM` across the ground counts
+ * as the same spot. Masts of different heights on one spot add almost nothing to the geometry.
+ */
+export function distinctCount(receivers: Vec3[], toleranceM = 1): number {
+  const kept: Vec3[] = []
+  for (const r of receivers) if (!kept.some((k) => Math.hypot(k.x - r.x, k.y - r.y) < toleranceM)) kept.push(r)
+  return kept.length
+}
+
 /** Start points spread over and around the receiver network. */
 function startPoints(receivers: Vec3[], z: number, quick: boolean): Vec3[] {
   const cx = receivers.reduce((s, r) => s + r.x, 0) / receivers.length
@@ -381,8 +397,12 @@ export function solveTdoa(receivers: Vec3[], timesUs: number[], opts: MlatSolveO
   const dims: 2 | 3 = heightM == null ? 3 : 2
   const n = receivers.length
   const base = { dims, receiversUsed: n, redundancy: Math.max(0, n - 1 - dims) }
-  if (n < minReceivers(heightM != null) || timesUs.length !== n) {
+  // Receivers on the same spot measure the same thing: they count once.
+  if (distinctCount(receivers) < minReceivers(heightM != null) || timesUs.length !== n) {
     return { ...base, status: 'too-few', position: null, candidates: [], residualRmsM: NaN }
+  }
+  if (!timesUs.every(Number.isFinite) || !receivers.every((r) => Number.isFinite(r.x) && Number.isFinite(r.y) && Number.isFinite(r.z))) {
+    return { ...base, status: 'no-solution', position: null, candidates: [], residualRmsM: NaN }
   }
   const d = timesUs.slice(1).map((t) => (t - timesUs[0]) * C_M_PER_US)
   const zStart = heightM ?? Math.max(3000, ...receivers.map((r) => r.z + 1000))
@@ -527,6 +547,8 @@ export function isNearlyCollinear(receivers: Vec3[], toleranceM = 1): boolean {
         b = j
       }
     }
+  // All on one spot: no line to measure from, and certainly no usable geometry.
+  if (!(best > toleranceM)) return true
   const ax = receivers[a].x
   const ay = receivers[a].y
   const ux = (receivers[b].x - ax) / best

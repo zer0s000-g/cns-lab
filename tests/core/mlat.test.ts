@@ -4,6 +4,7 @@ import {
   C_M_PER_NS,
   C_M_PER_US,
   contourSegments,
+  distinctCount,
   ELLIPSE_95,
   enuMToWorld,
   errorEllipse,
@@ -319,5 +320,42 @@ describe('contours and hyperbolas', () => {
   it('detects collinear receivers', () => {
     expect(isNearlyCollinear(SQUARE)).toBe(false)
     expect(isNearlyCollinear([{ x: 0, y: 0, z: 0 }, { x: 10, y: 0.5, z: 0 }, { x: 20, y: 0, z: 0 }], 1)).toBe(true)
+  })
+})
+
+describe('degenerate receiver layouts', () => {
+  const A = { x: 0, y: 0, z: 0 }
+  const p = { x: 3000, y: 4000, z: 3000 }
+
+  it('receivers on the same spot count once, so there are not enough of them', () => {
+    const stacked = [A, { ...A, z: 60 }, { x: 20000, y: 0, z: 0 }]
+    expect(distinctCount(stacked)).toBe(2)
+    expect(solveTdoa(stacked, times(p, stacked), { heightM: 3000 }).status).toBe('too-few')
+    const allOne = [A, { ...A }, { ...A }, { ...A }, { ...A }, { ...A }]
+    expect(solveTdoa(allOne, times(p, allOne), { heightM: null }).status).toBe('too-few')
+    const fourWithPair = [...SQUARE.slice(0, 3), { ...SQUARE[0] }]
+    expect(solveTdoa(fourWithPair, times(p, fourWithPair), { heightM: null }).status).toBe('too-few')
+  })
+
+  it('a time or position that is not a number gives no solution, not a guess', () => {
+    const t = times(p, SQUARE)
+    t[2] = NaN
+    expect(solveTdoa(SQUARE, t, { heightM: 3000 })).toMatchObject({ status: 'no-solution', position: null })
+    const t2 = times(p, SQUARE)
+    t2[1] = Infinity
+    expect(solveTdoa(SQUARE, t2, { heightM: 3000 }).status).toBe('no-solution')
+    const rx = SQUARE.map((r, i) => (i === 3 ? { ...r, x: NaN } : r))
+    expect(solveTdoa(rx, times(p, SQUARE), { heightM: 3000 }).status).toBe('no-solution')
+  })
+
+  it('Gauss–Newton does not call a singular system converged', () => {
+    const r = gaussNewtonTdoa([A, A, A, A], [0, 0, 0], { x: 1e5, y: 1e5, z: 0 }, null)
+    expect(r.converged).toBe(false)
+    const n = gaussNewtonTdoa(SQUARE, [NaN, 0, 0, 0], { x: 0, y: 0, z: 3000 }, 3000)
+    expect(n.converged).toBe(false)
+  })
+
+  it('receivers all on one spot count as collinear', () => {
+    expect(isNearlyCollinear([A, { ...A }, { ...A }, { ...A }])).toBe(true)
   })
 })

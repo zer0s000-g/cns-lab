@@ -188,6 +188,25 @@ describe('CPDLC engine: failures', () => {
     expect(e.xlab).toBe('active')
   })
 
+  it('a message already on the cockpit display and then given by voice needs no reply and can be cleared', () => {
+    const e = new CpdlcEngine()
+    connect(e)
+    const up = e.sendUplink('CNS123', [{ id: 'UM20', values: { level: 370 } }]).entry!
+    run(e, 60)
+    expect(e.cockpitMessage()?.id).toBe(up.id)
+    e.setEnv('lost', true)
+    e.giveByVoice(up.id)
+    expect(e.clearedFl).toBe(370)
+    expect(e.cockpitMessage()!.void).toBe(true)
+    // No WILCO/UNABLE for a clearance already in force by voice, even with the link back.
+    e.setEnv('lost', false)
+    connect(e)
+    expect(e.pilotRespond(up.id, 'DM1').ok).toBe(false)
+    expect(e.clearedFl).toBe(370)
+    e.pilotDismiss(up.id)
+    expect(e.cockpitMessage()).toBeUndefined()
+  })
+
   it('rejects a wrong aircraft that logs on with CNS123’s flight ID, and the nearby aircraft ignores uplinks not addressed to it', () => {
     const e = new CpdlcEngine()
     connect(e)

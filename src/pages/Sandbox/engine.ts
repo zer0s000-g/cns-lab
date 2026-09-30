@@ -295,7 +295,7 @@ export class SandboxEngine {
     const a = journeyAt(tick)
     this.replaceJourneyAircraft(a)
     this.journeyStartS = this.timeS - a.journey!.tick * TICK_S
-    this.radio = this.contextBefore(a.journey!.tick)
+    this.restoreRadioAt(a.journey!.tick)
   }
 
   jumpToPhase(p: FlightPhase) {
@@ -323,17 +323,24 @@ export class SandboxEngine {
     this.runId++
   }
 
-  /** The last few scripted lines before a point of the journey, shown as context after a jump. */
-  private contextBefore(tick: number): RadioMessage[] {
+  /**
+   * After a jump: the last few scripted lines before that point are shown as context,
+   * and the rest of any exchange already under way is queued so it still plays.
+   */
+  private restoreRadioAt(tick: number) {
     const out: RadioMessage[] = []
     for (const e of getJourneyIndex().events) {
       if (e.tick > tick) break
       for (const line of RADIO_SCRIPT[e.kind] ?? []) {
-        if (e.tick + Math.round(line.delayS / TICK_S) > tick) continue
+        const dueTick = e.tick + Math.round(line.delayS / TICK_S)
+        if (dueTick > tick) {
+          this.pendingRadio.push({ dueTick, unit: line.unit, from: line.from, channel: line.channel, text: line.text })
+          continue
+        }
         out.push({ id: ++this.radioId, timeS: this.timeS, unit: line.unit, from: line.from, text: line.text, medium: line.channel === 'note' ? 'none' : line.channel === 'datalink' ? 'cpdlcSat' : line.channel === 'hf' ? 'hf' : 'vhf', status: 'sent', earlier: true })
       }
     }
-    return out.slice(-6).reverse()
+    this.radio = out.slice(-6).reverse()
   }
 
   /** React to journey events: radio script, surveillance changes, log. */
