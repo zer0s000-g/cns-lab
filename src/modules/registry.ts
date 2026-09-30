@@ -1,4 +1,5 @@
-import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
+import { type ComponentType } from 'react'
+import { lazyRetry } from '@/lib/lazyRetry'
 import {
   Antenna,
   Compass,
@@ -70,15 +71,15 @@ export const LEARNING_PATH = ['psr', 'ssr', 'ads', 'dvor', 'dme', 'ils', 'gnss',
 /** Every module folder exposes a default-exported page component from index.tsx. */
 const loaders = import.meta.glob<{ default: ComponentType }>('./*/index.tsx')
 
-const lazyCache = new Map<string, LazyExoticComponent<ComponentType>>()
+const lazyCache = new Map<string, ComponentType>()
 
 /** Lazy page component for a module, or null if the module is not built yet. */
-export function getModuleComponent(id: string): LazyExoticComponent<ComponentType> | null {
+export function getModuleComponent(id: string): ComponentType | null {
   const loader = loaders[`./${id}/index.tsx`]
   if (!loader) return null
   let c = lazyCache.get(id)
   if (!c) {
-    c = lazy(loader)
+    c = lazyRetry(loader)
     lazyCache.set(id, c)
   }
   return c

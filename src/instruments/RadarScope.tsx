@@ -103,7 +103,7 @@ export function RadarScope({
       if (store.current.length > MAX_STORED) store.current.splice(0, store.current.length - MAX_STORED)
     }
 
-    const R = Math.min(width, height) / 2 - 4
+    const R = Math.max(0, Math.min(width, height) / 2 - 4)
     const pxPerNm = R / maxRangeNm
     const cx = width / 2 - centerNm.x * pxPerNm
     const cy = height / 2 + centerNm.y * pxPerNm

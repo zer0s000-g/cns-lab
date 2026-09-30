@@ -22,7 +22,7 @@ export function SkyPlot({ className }: { className?: string }) {
       ctx.fillRect(0, 0, width, height)
       const cx = width / 2
       const cy = height / 2 + 6
-      const R = Math.min(width, height) / 2 - 36
+      const R = Math.max(0, Math.min(width, height) / 2 - 36)
       const rOf = (el: number) => ((90 - Math.max(0, el)) / 90) * R
       const xy = (relAz: number, el: number) => ({ x: cx + rOf(el) * Math.sin(toRad(relAz)), y: cy - rOf(el) * Math.cos(toRad(relAz)) })
 

@@ -1,4 +1,5 @@
-import { lazy, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { Link, useNavigate } from 'react-router'
 import { ArrowRight, ArrowUpRight, BookOpen, Check, RadioReceiver, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,7 +13,7 @@ import type { Shot } from '@/stage/types'
 import { AIRPORT_ZOOM, WORLD_SITES, WORLD_TIME_SCALE, type WorldFilter } from './home/worldSites'
 
 // three.js and the scene load after the page text (see LazyStage).
-const WorldScene = lazy(() => import('./home/World3D'))
+const WorldScene = lazyRetry(() => import('./home/World3D'))
 
 const SHOT_START: Shot = { position: [2, 34, 26], target: [0, 0, 0], fov: 30 }
 const SHOT_HERO: Shot = { position: [12, 10, 17], target: [-4.6, 1.2, 0.6], fov: 36 }

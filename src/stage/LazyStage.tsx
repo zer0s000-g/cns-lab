@@ -1,6 +1,9 @@
-import { Suspense, lazy, useEffect, useState, type ComponentProps } from 'react'
+import { Suspense, useEffect, useState, type ComponentProps, type ReactNode } from 'react'
+import { RotateCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { isChunkLoadError, lazyRetry } from '@/lib/lazyRetry'
 import { cn } from '@/lib/utils'
-import { StageBoundary } from './StageBoundary'
+import { StageBoundary, type StageFailure } from './StageBoundary'
 import type { Stage as StageComponent } from './Stage'
 
 /**
@@ -8,7 +11,7 @@ import type { Stage as StageComponent } from './Stage'
  * their own chunk, so a page's text, controls and layout appear before the
  * 3D engine has downloaded. The poster holds the same box, so nothing shifts.
  */
-const StageImpl = lazy(() => import('./Stage').then((m) => ({ default: m.Stage })))
+const StageImpl = lazyRetry(() => import('./Stage').then((m) => ({ default: m.Stage })))
 
 export type StageProps = ComponentProps<typeof StageComponent>
 
@@ -43,7 +46,7 @@ export function LazyStage(props: StageProps) {
   const ready = useWhenIdle()
   if (!ready) return <StagePoster className={props.className} label={props.label} />
   return (
-    <StageBoundary fallback={<StagePoster className={props.className} label={props.label} message="3D view unavailable on this device" />}>
+    <StageBoundary fallback={(f) => <StageFailurePoster {...f} className={props.className} label={props.label} />}>
       <Suspense fallback={<StagePoster className={props.className} label={props.label} />}>
         <StageImpl {...props} />
       </Suspense>
@@ -51,18 +54,46 @@ export function LazyStage(props: StageProps) {
   )
 }
 
-/** Placeholder with the stage's size and backdrop while the 3D chunk loads. */
-export function StagePoster({ className, label, message }: { className?: string; label: string; message?: string }) {
+/**
+ * What a failed stage shows. A download that failed can be tried again; if that fails
+ * too (Chromium remembers a failed module download until the page reloads) the button
+ * reloads the page. Anything else (no WebGL, a shader the GPU rejects) is a limit of
+ * this device.
+ */
+export function StageFailurePoster({ error, retry, attempts, className, label }: StageFailure & { className?: string; label: string }) {
+  const download = isChunkLoadError(error)
+  const reload = attempts >= 2
   return (
-    <div role="img" aria-label={label} className={cn('relative overflow-hidden bg-stage-bg', className)}>
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-40 [background-image:linear-gradient(var(--hud-line)_1px,transparent_1px),linear-gradient(90deg,var(--hud-line)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_60%_60%,black,transparent_70%)]"
-      />
-      <p className="hud-label absolute bottom-1/2 left-1/2 flex -translate-x-1/2 items-center gap-2 text-foreground/50">
-        {!message && <span aria-hidden className="block size-1.5 animate-pulse rounded-full bg-signal motion-reduce:animate-none" />}
-        {message ?? 'Loading 3D stage'}
-      </p>
+    <StagePoster
+      className={className}
+      label={label}
+      message={download ? '3D view could not be downloaded' : '3D view unavailable on this device'}
+      action={
+        download ? (
+          <Button size="sm" variant="outline" onClick={reload ? () => window.location.reload() : retry}>
+            <RotateCw aria-hidden /> {reload ? 'Reload page' : 'Try again'}
+          </Button>
+        ) : undefined
+      }
+    />
+  )
+}
+
+/** Placeholder with the stage's size and backdrop while the 3D chunk loads. */
+export function StagePoster({ className, label, message, action }: { className?: string; label: string; message?: string; action?: ReactNode }) {
+  return (
+    <div className={cn('relative overflow-hidden bg-stage-bg', className)}>
+      <div role="img" aria-label={label} className="absolute inset-0">
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-40 [background-image:linear-gradient(var(--hud-line)_1px,transparent_1px),linear-gradient(90deg,var(--hud-line)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(ellipse_at_60%_60%,black,transparent_70%)]"
+        />
+        <p className={cn('hud-label absolute bottom-1/2 left-1/2 flex -translate-x-1/2 items-center gap-2', message ? 'text-foreground/85' : 'text-foreground/50')}>
+          {!message && <span aria-hidden className="block size-1.5 animate-pulse rounded-full bg-signal motion-reduce:animate-none" />}
+          {message ?? 'Loading 3D stage'}
+        </p>
+      </div>
+      {action && <div className="absolute top-1/2 left-1/2 mt-4 -translate-x-1/2">{action}</div>}
     </div>
   )
 }

@@ -1,4 +1,5 @@
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { createBrowserRouter, Outlet, RouterProvider, ScrollRestoration, useLocation, useMatch } from 'react-router'
 import { MDXProvider } from '@mdx-js/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -13,9 +14,9 @@ import ModulePage from '@/pages/ModulePage'
 import NotFound from '@/pages/NotFound'
 import { RouteError } from '@/components/RouteError'
 
-const Glossary = lazy(() => import('@/pages/Glossary'))
-const Frequencies = lazy(() => import('@/pages/Frequencies'))
-const SandboxRoute = lazy(() => import('@/pages/SandboxRoute'))
+const Glossary = lazyRetry(() => import('@/pages/Glossary'))
+const Frequencies = lazyRetry(() => import('@/pages/Frequencies'))
+const SandboxRoute = lazyRetry(() => import('@/pages/SandboxRoute'))
 
 function useThemeSync() {
   const theme = usePrefs((s) => s.theme)

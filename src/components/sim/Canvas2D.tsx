@@ -43,6 +43,9 @@ export interface Canvas2DHandle {
   toLocal: (e: { clientX: number; clientY: number }) => { x: number; y: number }
 }
 
+/** Below this CSS size (hidden, collapsed or squeezed) nothing is drawn. */
+export const MIN_DRAW_PX = 8
+
 /**
  * A high-DPI canvas that fills its container, redraws at 60 fps while on
  * screen and reads colours from the theme tokens.
@@ -71,6 +74,7 @@ export const Canvas2D = forwardRef<Canvas2DHandle, Canvas2DProps>(function Canva
   const sizeRef = useRef({ width: 0, height: 0, dpr: 1 })
   const drawRef = useRef(draw)
   drawRef.current = draw
+  const reported = useRef(new Set<string>())
   const [visible, setVisible] = useState(true)
 
   useImperativeHandle(ref, () => ({
@@ -90,10 +94,21 @@ export const Canvas2D = forwardRef<Canvas2DHandle, Canvas2DProps>(function Canva
     const ctx = c.getContext('2d')
     if (!ctx) return
     const { width, height, dpr } = sizeRef.current
-    if (width === 0 || height === 0) return
+    // Hidden or squeezed to almost nothing: instruments would compute negative radii.
+    if (width < MIN_DRAW_PX || height < MIN_DRAW_PX) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, width, height)
-    drawRef.current(ctx, { width, height, dpr, dt, now, tokens: getThemeTokens() })
+    try {
+      drawRef.current(ctx, { width, height, dpr, dt, now, tokens: getThemeTokens() })
+    } catch (error) {
+      // A drawing bug blanks this canvas for one frame; it must not take the page down
+      // (this also runs from resize and theme callbacks, outside any error boundary).
+      const msg = String(error)
+      if (!reported.current.has(msg)) {
+        reported.current.add(msg)
+        console.error('Canvas draw failed:', error)
+      }
+    }
   }, [])
 
   // Size the backing store to the container at device pixel ratio.
@@ -106,7 +121,7 @@ export const Canvas2D = forwardRef<Canvas2DHandle, Canvas2DProps>(function Canva
       const dpr = Math.min(window.devicePixelRatio || 1, 2.5)
       const w = Math.max(1, Math.round(r.width))
       const h = Math.max(1, Math.round(r.height))
-      sizeRef.current = { width: w, height: h, dpr }
+      sizeRef.current = { width: Math.round(r.width), height: Math.round(r.height), dpr }
       c.width = Math.round(w * dpr)
       c.height = Math.round(h * dpr)
       c.style.width = `${w}px`

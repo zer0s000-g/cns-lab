@@ -52,6 +52,8 @@ class AudioEngine {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private handles = new Set<SoundHandle>()
+  /** The browser refused to create an audio context: stay silent for this session. */
+  private unavailable = false
 
   get enabled() {
     return usePrefs.getState().soundOn
@@ -61,14 +63,23 @@ class AudioEngine {
   ensure(): AudioContext | null {
     if (typeof window === 'undefined') return null
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!Ctor) return null
+    if (!Ctor || this.unavailable) return null
     if (!this.ctx) {
-      this.ctx = new Ctor()
-      this.master = this.ctx.createGain()
-      this.master.gain.value = 0.8
-      this.master.connect(this.ctx.destination)
+      try {
+        this.ctx = new Ctor()
+        this.master = this.ctx.createGain()
+        this.master.gain.value = 0.8
+        this.master.connect(this.ctx.destination)
+      } catch {
+        // Blocked or unsupported (too many contexts, sandboxed frame): stay silent, captions still show.
+        this.ctx = null
+        this.master = null
+        this.unavailable = true
+        return null
+      }
     }
-    if (this.ctx.state === 'suspended') void this.ctx.resume()
+    // 'interrupted' is Safari's state after a phone call or another app took the audio.
+    if (this.ctx.state === 'suspended' || (this.ctx.state as string) === 'interrupted') this.ctx.resume().catch(() => {})
     return this.ctx
   }
 
@@ -290,6 +301,27 @@ class AudioEngine {
       hs.push(this.tone(f2, 1.0, { gain: (opts.gain ?? 0.1) / 2, delayS: delay }))
     })
     return { stop: () => hs.forEach((h) => h.stop()) }
+  }
+}
+
+const NO_SOUND: SoundHandle = { stop: () => {} }
+const reportedAudioErrors = new Set<string>()
+
+// A sound that fails to build (a node the browser rejects, a value it will not take)
+// must never throw into the caller: most sounds start from a simulation step.
+for (const name of ['tone', 'keyed', 'noise', 'heterodyne', 'selcal'] as const) {
+  const impl = AudioEngine.prototype[name] as (...args: unknown[]) => SoundHandle
+  ;(AudioEngine.prototype as unknown as Record<string, unknown>)[name] = function (this: AudioEngine, ...args: unknown[]) {
+    try {
+      return impl.apply(this, args)
+    } catch (error) {
+      const msg = `${name}: ${String(error)}`
+      if (!reportedAudioErrors.has(msg)) {
+        reportedAudioErrors.add(msg)
+        console.error('Sound failed:', error)
+      }
+      return NO_SOUND
+    }
   }
 }
 

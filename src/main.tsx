@@ -15,7 +15,21 @@ createRoot(document.getElementById('root')!).render(
 
 // Offline support in production builds only (see public/sw.js).
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  // The first visit loads before the service worker controls the page, so tell it
+  // which build assets are already here; it caches them for offline use.
+  const sendLoadedAssets = () => {
+    const urls = performance
+      .getEntriesByType('resource')
+      .map((e) => e.name)
+      .filter((u) => u.startsWith(location.origin) && u.includes('/assets/'))
+    navigator.serviceWorker.controller?.postMessage({ type: 'cache-urls', urls })
+  }
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {})
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .then(() => navigator.serviceWorker.ready)
+      .then(sendLoadedAssets)
+      .catch(() => {})
   })
+  navigator.serviceWorker.addEventListener('controllerchange', sendLoadedAssets)
 }

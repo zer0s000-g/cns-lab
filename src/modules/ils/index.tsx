@@ -1,5 +1,5 @@
-import { lazy } from 'react'
 import { Link } from 'react-router'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
@@ -17,7 +17,7 @@ import { IlsProvider, useIls, useIlsState } from './state'
 import { CompareVisual, GlideslopeVisual, HonestVisual, LocalizerVisual, MarkersVisual, MinimumsVisual, NeedlesVisual, TwoBeamsVisual } from './visuals'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const IlsHero = lazy(() => import('./Hero3D'))
+const IlsHero = lazyRetry(() => import('./Hero3D'))
 
 /** Honesty labels: the runway close-up has its own scale, and the tone colours are always explained. */
 const SCALE_LABEL = `Runway close-up · ${TABLE_LENGTH_KM.toFixed(1)} km table · sideways ×${LAT_X} · heights ×${HEIGHT_X} · aircraft and antennas ×${MODEL_X}`

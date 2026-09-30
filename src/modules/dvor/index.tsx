@@ -1,5 +1,5 @@
-import { lazy } from 'react'
 import { Link } from 'react-router'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
@@ -20,7 +20,7 @@ import { DvorProvider, useDvor, useDvorState } from './state'
 import { CdiVisual, CvorVisual, DvorVisual, LighthouseVisual, LimitsVisual, PhaseVisual } from './visuals'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const DvorHero = lazy(() => import('./Hero3D'))
+const DvorHero = lazyRetry(() => import('./Hero3D'))
 
 /** Honesty labels: what is to scale on the table and what is not. */
 const tableScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · station and aircraft larger than life`

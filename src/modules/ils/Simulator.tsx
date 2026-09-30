@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef } from 'react'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { PlaneLanding, RotateCcw } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
 import { AudioCaption, ClockControls, ClockSpeedLabel, ControlSwitch, Readout, ReadoutGrid, SimLabel } from '@/components/sim/Controls'
@@ -19,7 +20,7 @@ import { TopView } from './TopView'
 import { useIls, useIlsState } from './state'
 
 // The pilot's-eye view needs three.js: load it after the page, like the stage.
-const Approach3D = lazy(() => import('./Approach3D').then((m) => ({ default: m.Approach3D })))
+const Approach3D = lazyRetry(() => import('./Approach3D').then((m) => ({ default: m.Approach3D })))
 
 const MARKER_TEXT: Record<MarkerKind, string> = {
   outer: 'Outer marker: 400 Hz, two dashes a second, blue light',

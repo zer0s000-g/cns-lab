@@ -1,5 +1,5 @@
-import { lazy } from 'react'
 import { Link } from 'react-router'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
@@ -19,7 +19,7 @@ import { AdsProvider, useAds, useAdsState } from './state'
 import { AdsbInVisual, AdscVisual, BroadcastVisual, DependencyVisual, GnssVisual, QualityVisual, ReceiversVisual } from './visuals'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const AdsHero = lazy(() => import('./Hero3D'))
+const AdsHero = lazyRetry(() => import('./Hero3D'))
 
 /** Honesty labels for the two dioramas. */
 const airportScaleLabel = `Table ${TABLE_RADIUS_NM * 2} NM across · heights ×${Math.round(HEIGHT_EXAGGERATION * 10) / 10} · stations and aircraft larger than life`

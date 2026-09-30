@@ -1,5 +1,5 @@
-import { lazy } from 'react'
 import { Link } from 'react-router'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
@@ -20,7 +20,7 @@ import { SurfaceProvider, useSurface, useSurfaceState } from './state'
 import { FogVisual, FusionVisual, LevelsVisual, NamesVisual, SmrVisual, StopBarVisual } from './visuals'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const SurfaceHero = lazy(() => import('./Hero3D'))
+const SurfaceHero = lazyRetry(() => import('./Hero3D'))
 
 /** Honesty labels: the airport miniature has its own scale. */
 const SCALE_LABEL = `Airport ${TABLE_W_KM.toFixed(1)} × ${TABLE_H_KM.toFixed(1)} km · heights ×${HEIGHT_X}`

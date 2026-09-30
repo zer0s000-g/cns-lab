@@ -1,4 +1,5 @@
-import { lazy, useMemo } from 'react'
+import { useMemo } from 'react'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { Link } from 'react-router'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
@@ -21,7 +22,7 @@ import { SatcomProvider, useSatcom, useSatcomState } from './state'
 import { BankVisual, DelayVisual, GeoVisual, LeoVisual, RainVisual, UpDownVisual, UsesVisual } from './visuals'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const SatcomHero = lazy(() => import('./Hero3D'))
+const SatcomHero = lazyRetry(() => import('./Hero3D'))
 
 const TURN_SETUP_NM = 600
 

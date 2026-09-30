@@ -4,7 +4,8 @@
  * learner). A short fade covers every switch. Camera controls, honesty labels
  * and a keyboard path for everything the pointer can do.
  */
-import { Suspense, lazy, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Suspense, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { Binoculars, Crosshair, LocateFixed, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -13,7 +14,7 @@ import { useSampled } from '@/hooks/useSampled'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { useReducedMotion } from '@/stores/prefs'
 import { StageBoundary } from '@/stage/StageBoundary'
-import { StagePoster, useWhenIdle } from '@/stage/LazyStage'
+import { StageFailurePoster, StagePoster, useWhenIdle } from '@/stage/LazyStage'
 import { HEIGHT_EXAGGERATION, TABLE_RADIUS_NM } from '@/stage/scale'
 import { cn } from '@/lib/utils'
 import { resolveView, VIEW_LABEL, type CameraMode, type WorldView } from './director'
@@ -23,7 +24,7 @@ import type { LookOffsets } from './stage/JourneyCamera'
 import { useSandbox, useSandboxState } from './state'
 import type { SystemId } from './systems'
 
-const JourneyStage = lazy(() => import('./stage/JourneyStage'))
+const JourneyStage = lazyRetry(() => import('./stage/JourneyStage'))
 
 const FADE_MS = 180
 
@@ -120,7 +121,7 @@ export function JourneyViewport({ className, sideInset = 0 }: { className?: stri
         className="absolute inset-0 outline-offset-[-3px]"
       >
         {idle ? (
-          <StageBoundary fallback={<StagePoster className="absolute inset-0" label={label} message="3D view unavailable on this device" />}>
+          <StageBoundary fallback={(f) => <StageFailurePoster {...f} className="absolute inset-0" label={label} />}>
             <Suspense fallback={<StagePoster className="absolute inset-0" label={label} />}>
               <JourneyStage engine={engine} store={store} world={world} paused={shown === 'map'} reduced={reduced} look={look} label={label} className="absolute inset-0" />
             </Suspense>

@@ -56,7 +56,7 @@ export function PatternView() {
       ctx.fillRect(0, 0, width, height)
       const cx = width / 2
       const cy = height / 2
-      const R = Math.min(width, height) / 2 - 16
+      const R = Math.max(0, Math.min(width, height) / 2 - 16)
       const rOf = (db: number) => (Math.max(FLOOR_DB, Math.min(0, db)) - FLOOR_DB) / -FLOOR_DB * R
       // dB rings.
       ctx.strokeStyle = t['sim-grid']

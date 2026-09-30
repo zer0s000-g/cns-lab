@@ -1,4 +1,5 @@
-import { lazy, useMemo } from 'react'
+import { useMemo } from 'react'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { Link } from 'react-router'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
@@ -18,7 +19,7 @@ import { useSampled } from '@/hooks/useSampled'
 import { TelemetryRow } from '@/hud/Telemetry'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const CpdlcHero = lazy(() => import('./Hero3D'))
+const CpdlcHero = lazyRetry(() => import('./Hero3D'))
 
 const PANEL_SHOT = { position: [-21, 8, 20], target: [-9.5, 3.6, 0.5], fov: 38 } satisfies StageSpec['shots']['idea']
 

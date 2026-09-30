@@ -1,5 +1,5 @@
-import { lazy } from 'react'
 import { Link } from 'react-router'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
@@ -20,7 +20,7 @@ import { TelemetryRow } from '@/hud/Telemetry'
 import { HERO_D_MAX, HERO_D_MIN, HERO_HEIGHT_X } from './heroScale'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const HfHero = lazy(() => import('./Hero3D'))
+const HfHero = lazyRetry(() => import('./Hero3D'))
 
 /** Honesty labels: what is to scale in the Earth slice and what is not. */
 const sliceLabel = `Earth slice ${(HERO_D_MAX - HERO_D_MIN).toLocaleString('en-US')} NM long · heights and curve ×${HERO_HEIGHT_X}`

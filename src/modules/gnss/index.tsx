@@ -1,5 +1,5 @@
-import { lazy } from 'react'
 import { Link } from 'react-router'
+import { lazyRetry } from '@/lib/lazyRetry'
 import { ModuleLayout, type StageSpec } from '@/components/module/ModuleLayout'
 import type { FailureItem } from '@/components/module/FailureList'
 import type { Experiment } from '@/components/module/TryThis'
@@ -19,7 +19,7 @@ import { GnssProvider, useGnss, useGnssState } from './state'
 import { BroadcastVisual, ClockVisual, CorrectionsVisual, GeometryVisual, RaimVisual, SpheresVisual, TravelTimeVisual } from './visuals'
 
 // The 3D scene is its own chunk, so the page text appears before three.js loads.
-const GnssHero = lazy(() => import('./Hero3D'))
+const GnssHero = lazyRetry(() => import('./Hero3D'))
 
 const steps: Step[] = [
   {

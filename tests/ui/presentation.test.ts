@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FT_PER_NM } from '@/core/units'
 import { formatMissionTime } from '@/hud/MissionClock'
-import { isChunkLoadError } from '@/components/RouteError'
+import { isChunkLoadError } from '@/lib/lazyRetry'
 import { MODULE_BY_ID } from '@/modules/registry'
 import { AIRPORT_ZOOM, RUNWAY_HALF_NM, WORLD_SITES } from '@/pages/home/worldSites'
 import { HEIGHT_EXAGGERATION, S, TABLE_RADIUS_NM, TABLE_RADIUS_U, V, toU } from '@/stage/scale'

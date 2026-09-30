@@ -72,6 +72,16 @@ rmSync(join(dist, '.vite'), { recursive: true, force: true })
 const sw = join(dist, 'sw.js')
 if (existsSync(sw)) {
   const id = process.env.GITHUB_SHA?.slice(0, 12) || Date.now().toString(36)
-  writeFileSync(sw, readFileSync(sw, 'utf8').replace('__BUILD_ID__', id))
-  console.log(`postbuild: stamped service worker build ${id}`)
+  // The entry JS and CSS, so the offline shell can start even if the first visit was cut short.
+  const shellAssets = [...indexHtml.matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g)]
+    .map((m) => m[1])
+    .filter((u) => u.startsWith(base + 'assets/'))
+    .map((u) => './' + u.slice(base.length))
+  const src = readFileSync(sw, 'utf8')
+  if (!src.includes('__BUILD_ID__') || !src.includes('/* __SHELL_ASSETS__ */')) {
+    console.error('postbuild: dist/sw.js is missing its __BUILD_ID__ or __SHELL_ASSETS__ placeholder')
+    process.exit(1)
+  }
+  writeFileSync(sw, src.replace('__BUILD_ID__', id).replace('/* __SHELL_ASSETS__ */', shellAssets.map((u) => JSON.stringify(u)).join(', ')))
+  console.log(`postbuild: stamped service worker build ${id} with ${shellAssets.length} shell assets`)
 }
