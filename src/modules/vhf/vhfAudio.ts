@@ -62,6 +62,13 @@ export class VhfAudioDirector {
       return
     }
     const now = e.timeS
+    if (now < this.now) {
+      // The engine was reset (its clock went back to 0): timers kept in its old time would
+      // silence the squeal and captions until the new time caught up.
+      this.squealUntil = 0
+      this.againAt = 0
+      this.lastState = ''
+    }
     this.now = now
     const at = listenAt === 'controller' ? 'At the controller' : 'Your radio'
     if (listenAt === 'cockpit' && e.pttActive) {

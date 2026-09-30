@@ -1,4 +1,5 @@
 import { useEffect, type ComponentProps } from 'react'
+import { usePrefs } from '@/stores/prefs'
 import { Link } from 'react-router'
 import { ArrowRight, Volume2, VolumeX } from 'lucide-react'
 import { AudioCaption, ClockControls, ClockSpeedLabel, ControlSlider, SimLabel } from '@/components/sim/Controls'
@@ -266,6 +267,8 @@ function Row({ hint, ...props }: ComponentProps<typeof TelemetryRow> & { hint?: 
 function useIdentAudio() {
   const { engine } = useDvor()
   const listening = useDvorState((s) => s.listening)
+  // Muting stops the ident loop; start it again when sound comes back on.
+  const soundOn = usePrefs((s) => s.soundOn)
   const audible = useSampled(() => engine.last.identAudible, 250)
   const removed = useSampled(() => engine.env.identRemoved && engine.last.received, 250)
   useEffect(() => {
@@ -286,7 +289,7 @@ function useIdentAudio() {
       h.stop()
       window.clearInterval(id)
     }
-  }, [listening, audible, removed])
+  }, [listening, audible, removed, soundOn])
 }
 
 const PRESETS: { id: Preset; label: string }[] = [

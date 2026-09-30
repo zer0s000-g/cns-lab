@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef } from 'react'
 import { lazyRetry } from '@/lib/lazyRetry'
+import { usePrefs } from '@/stores/prefs'
 import { PlaneLanding, RotateCcw } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
 import { AudioCaption, ClockControls, ClockSpeedLabel, ControlSwitch, Readout, ReadoutGrid, SimLabel } from '@/components/sim/Controls'
@@ -36,6 +37,7 @@ function userHasInteracted(): boolean {
 export function IlsSimulator() {
   const { engine, clock, store } = useIls()
   const markerSound = useRef<{ kind: MarkerKind | null; handle: SoundHandle | null }>({ kind: null, handle: null })
+  const identSound = useRef<SoundHandle | null>(null)
 
   useSimulationLoop(clock, (dt) => {
     const s = store.getState()
@@ -45,12 +47,17 @@ export function IlsSimulator() {
       else if (ev.kind === 'minimums') caption(ev.continue ? `Minimums, ${ev.dhFt} ft: lights in sight, continue` : `Minimums, ${ev.dhFt} ft: nothing in sight, go around`, 5)
       else if (ev.kind === 'ident' && s.identSound) {
         caption(`Localizer ident ${engine.site.ident.split('').join(' ')} (${toMorse(engine.site.ident)}), ${LOC_IDENT_TONE_HZ} Hz`, 6)
-        if (userHasInteracted()) audio.keyed(morseTimeline(engine.site.ident, 7).segments, LOC_IDENT_TONE_HZ, { gain: 0.08 })
+        if (userHasInteracted()) {
+          // Sped up, the next ident can come before this one has finished: never play two at once.
+          identSound.current?.stop()
+          identSound.current = audio.keyed(morseTimeline(engine.site.ident, 7).segments, LOC_IDENT_TONE_HZ, { gain: 0.08 })
+        }
       } else if (ev.kind === 'loc-off') caption('Localizer switched off by its monitor: flag, ident stops', 5)
       else if (ev.kind === 'touchdown') caption(ev.td.onRunway ? 'Touchdown' : 'The aircraft touched the ground off the runway', 4)
     }
     // Marker tone follows the beam the aircraft is in (state, not events, so a reset also stops it).
-    const want = s.markerSound && clock.getState().running ? engine.receiver.marker : null
+    // Muting stops every sound; counting "muted" as no marker restarts the tone on unmute.
+    const want = s.markerSound && clock.getState().running && usePrefs.getState().soundOn ? engine.receiver.marker : null
     const cur = markerSound.current
     if (want !== cur.kind) {
       cur.handle?.stop()
@@ -62,7 +69,13 @@ export function IlsSimulator() {
       }
     }
   })
-  useEffect(() => () => markerSound.current.handle?.stop(), [])
+  useEffect(
+    () => () => {
+      markerSound.current.handle?.stop()
+      identSound.current?.stop()
+    },
+    [],
+  )
 
   return (
     <div className="flex flex-col gap-4">

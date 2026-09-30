@@ -165,6 +165,8 @@ function useCompassTexture(t: ThemeTokens) {
 
 export function DioramaTable({ t }: { t: ThemeTokens }) {
   const tex = useCompassTexture(t)
+  // A new 2048² texture is drawn on every theme change: free the old one's GPU memory.
+  useLayoutEffect(() => () => tex.dispose(), [tex])
   const R = TABLE_RADIUS_U
   return (
     <group>

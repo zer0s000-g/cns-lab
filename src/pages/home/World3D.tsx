@@ -109,6 +109,7 @@ function useRunwayTexture(t: ThemeTokens) {
 
 function Airport({ t, m }: { t: ThemeTokens; m: M }) {
   const tex = useRunwayTexture(t)
+  useLayoutEffect(() => () => tex.dispose(), [tex])
   const len = 2 * RUNWAY_HALF_NM * S
   const y = groundY({ x: 0, y: 0 }) + 0.004
   return (

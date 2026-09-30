@@ -30,6 +30,8 @@ export class HfAudioDirector {
   private voiceUntil = -1
   private voiceGain = 0
   private listenCaptionAt = -99
+  /** The message waiting for the SELCAL chime to finish (cancelled when leaving the module). */
+  private voiceTimer: number | undefined
 
   private ensureNoise(crackle: boolean) {
     if (this.noise && this.crackle === crackle) return
@@ -125,7 +127,8 @@ export class HfAudioDirector {
       speak(HF_MESSAGE, { rate: 1, volume: q === 'clear' ? 0.9 : 0.7 })
       caption(`HF (${QUALITY_TEXT[q].toLowerCase()}, with hiss, fading and static): "${HF_MESSAGE}"`, dur)
     }
-    if (delayS > 0) window.setTimeout(start, delayS * 1000)
+    window.clearTimeout(this.voiceTimer)
+    if (delayS > 0) this.voiceTimer = window.setTimeout(start, delayS * 1000)
     else start()
   }
 
@@ -138,6 +141,7 @@ export class HfAudioDirector {
   }
 
   dispose() {
+    window.clearTimeout(this.voiceTimer)
     this.noise?.stop()
     this.noise = null
     cancelSpeech()

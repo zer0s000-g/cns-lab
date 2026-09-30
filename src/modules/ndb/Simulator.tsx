@@ -1,4 +1,5 @@
 import { useEffect, type ComponentProps } from 'react'
+import { usePrefs } from '@/stores/prefs'
 import { Link } from 'react-router'
 import { ArrowRight, Navigation, Volume2, VolumeX } from 'lucide-react'
 import { AudioCaption, ClockControls, ClockSpeedLabel, ControlSlider, SimLabel } from '@/components/sim/Controls'
@@ -221,6 +222,8 @@ function Row({ hint, ...props }: ComponentProps<typeof TelemetryRow> & { hint?: 
 function useIdentAudio() {
   const { engine } = useNdb()
   const listening = useNdbState((s) => s.listening)
+  // Muting stops the ident loop; start it again when sound comes back on.
+  const soundOn = usePrefs((s) => s.soundOn)
   const signal = useSampled(() => engine.last.signal, 300)
   useEffect(() => {
     if (!listening) return
@@ -238,7 +241,7 @@ function useIdentAudio() {
       h.stop()
       window.clearInterval(id)
     }
-  }, [listening, signal, engine])
+  }, [listening, signal, engine, soundOn])
 }
 
 const PRESETS: { id: Preset; label: string }[] = [
